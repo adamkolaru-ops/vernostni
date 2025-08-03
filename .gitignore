@@ -1,6 +1,21 @@
 # Logs
 *.log
+*-debug.log
+*-debug*.log
 
 # Certificates
-# Certificates
 **/certificates/
+
+# macOS
+.DS_Store
+
+# Dependencies
+**/node_modules/
+**/.temp-npm-cache/
+
+# Build artifacts & installations
+**/google-cloud-sdk/
+**/google-cloud-sdk-*.tar.gz
+
+# Misc
+**/package-lock 2.json
