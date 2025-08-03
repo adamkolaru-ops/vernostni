@@ -1,0 +1,10 @@
+{
+  "teamIdentifier": "C4DK9TP2QY",
+  "passTypeIdentifier": "pass.pass.com.example.vernostkarty",
+  "organizationName": "organizationName",
+  "description": "description",
+  "webServiceURL": "https://applewalletwebhook-2sun3frzja-uc.a.run.app",
+  "authenticationToken": "a7d8g9h2j4k5l6m7n8b9v0c1x2z3",
+  "formatVersion": 1,
+  "storeCard": {}
+}
