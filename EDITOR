@@ -359,7 +359,7 @@
           } else {
             localStorage.removeItem(tokenKey);
             showPasswordPrompt(userData, cafeId, userId);
-          }
+          }ll
         } else {
           showPasswordPrompt(userData, cafeId, userId);
         }
