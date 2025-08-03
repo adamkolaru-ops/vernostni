@@ -19,3 +19,10 @@
 
 # Misc
 **/package-lock 2.json
+
+# Firebase Service Accounts
+*.json
+
+# Local certificate testing folders
+certificates-rotate/
+
