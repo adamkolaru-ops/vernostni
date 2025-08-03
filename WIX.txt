@@ -1,0 +1,2301 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kart Maker – Slevy, Razítka, Body + Info od klienta</title>
+  <!-- Přidáváme knihovnu QRCode.js z CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- Firebase CDN skripty (v kompatibilitním režimu) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+  <!-- html2canvas for rendering logo slot to PNG -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    /* RESET */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #f3f3f3;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    /* TABULKA NAHOŘE */
+    .info-table {
+      width: 330px;
+      background: #fff;
+      border-radius: 2px;
+      box-shadow: 0 2px 2px rgba(0,0,0,0.2);
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .info-table table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    .info-table th, .info-table td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+      font-size: 14px;
+    }
+    .info-table thead th {
+      background: #f0f0f0;
+      font-weight: 600;
+    }
+    /* NADPIS KARTY */
+    #cardTitleDisplay {
+      font-size: 24px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    /* TELEFON + FAKE CARD */
+    .phone-container {
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .phone-image {
+      width: 300px;
+      display: block;
+    }
+    .fake-card {
+      position: absolute;
+      top: 76px;
+      left: 22px;
+      width: 257px;
+      height: 363px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 0 2px rgba(0,0,0,0.3);
+      pointer-events: none;
+      overflow: hidden;
+    }
+    /* LOGO-SLOT */
+    .logo-slot {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 120px;
+      height: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      overflow: hidden;
+      padding-left: 2px;
+    }
+    .logo-img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      object-position: left center;
+    }
+    .logo-text {
+      white-space: pre-wrap;
+      font-weight: bold;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      text-align: left;
+    }
+    /* STRIP => #stripResultImg */
+    #stripResultImg {
+      position: absolute;
+      top: 57px;
+      left: 0;
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+      display: none;
+      z-index: 0;
+    }
+    /* menší QR kód */
+    .qr-code {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 96px;
+      z-index: 1;
+    }
+    /* UŠETŘIL (vpravo) */
+    .saved-amount {
+      position: absolute;
+      top: 157px;
+      right: 10px;
+      text-align: right;
+      display: none;
+      font-family: sans-serif;
+      color: var(--discountColor, #000);
+    }
+    .saved-amount .saved-label {
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .saved-amount .saved-value {
+      display: block;
+      margin-top: 2px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    /* DISCOUNT LEVEL */
+    .discount-level {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 95px;
+      text-align: right;
+      display: none;
+      color: var(--discountColor, #000);
+    }
+    .discount-level-rows {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .discount-level-values {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      margin-top: 2px;
+      font-weight: 600;
+    }
+    /* RAZÍTKA (vpravo dole) */
+    .stamp-counter {
+      position: absolute;
+      top: 157px;
+      right: 10px;
+      text-align: right;
+      display: none;
+      font-family: sans-serif;
+      color: var(--discountColor, #000);
+    }
+    .stamp-counter .saved-label {
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .stamp-counter .saved-value {
+      display: block;
+      margin-top: 2px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    /* BODY (vpravo nahoře) */
+    .body-level {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 95px;
+      text-align: right;
+      display: none; 
+      color: var(--discountColor, #000);
+    }
+    .body-level-rows {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .body-level-values {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      margin-top: 2px;
+      font-weight: 600;
+    }
+    /* BODY dole (vpravo) */
+    .body-bottom {
+      position: absolute;
+      top: 157px;
+      right: 10px;
+      text-align: right;
+      display: none;
+      font-family: sans-serif;
+      color: var(--discountColor, #000);
+    }
+    .body-bottom .top-line {
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .body-bottom .bottom-line {
+      display: block;
+      margin-top: 2px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    /* ZÁKAZNÍK (vlevo) */
+    .customer-info {
+      position: absolute;
+      top: 157px;
+      left: 10px;
+      text-align: left;
+      display: none;
+      font-family: sans-serif;
+      color: var(--discountColor, #000);
+    }
+    .customer-info .cust-label {
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .customer-info .cust-value {
+      display: block;
+      margin-top: 2px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    /* TEXT NA STRIPU */
+    .strip-text {
+      position: absolute;
+      display: none;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+    /* FORM PANEL */
+    .form-panel {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      padding: 20px;
+      margin-bottom: 20px;
+      width: 320px;
+    }
+    .form-panel label {
+      font-weight: 500;
+      display: block;
+      margin-top: 10px;
+    }
+    .form-panel input[type="text"],
+    .form-panel input[type="file"],
+    .form-panel textarea,
+    .form-panel select,
+    .form-panel input[type="number"],
+    .form-panel input[type="password"],
+    .form-panel input[type="color"] {
+      width: 100%;
+      padding: 8px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-top: 5px;
+    }
+    .form-panel input[type="color"] {
+      width: 60px;
+      height: 40px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+    /* KARTY DOLE */
+    .choose-style-title {
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .cards-container {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 0;
+    }
+    .card {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 1px;
+      width: 100px;
+      padding: 2px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      cursor: pointer;
+      transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+      text-align: center;
+    }
+    .card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+    }
+    .card.selected {
+      border-color: #2196f3;
+      box-shadow: 0 3px 7px rgba(33,150,243,0.3);
+    }
+    .card h2 {
+      margin: 0 0 5px;
+      font-size: 10px;
+    }
+    .card img {
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+    }
+    .card ul {
+      margin: 8px 0 0;
+      padding-left: 10px;
+      line-height: 1.3;
+      font-size: 14px;
+      text-align: left;
+    }
+    .hidden { display: none; }
+    .visible { display: block; }
+    /* STRIP generátor */
+    .predef-strips {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .predef-strips img {
+      width: 60px;
+      height: auto;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .predef-strips img.selected { border-color: #2196f3; }
+    /* Linky a tlačítko dole (ke stažení) */
+    #stripUrl {
+      margin-top: 5px;
+      font-size: 12px;
+      word-wrap: break-word;
+      max-width: 300px;
+      background: #fafafa;
+      padding: 6px;
+      margin-bottom: 6px;
+    }
+    #stripView, #stripDownload {
+      display: none;
+      margin-bottom: 6px;
+    }
+    #stripCanvas {
+      display: none;
+    }
+    /* TABULKA SLEV */
+    .discount-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    .discount-table th, .discount-table td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      font-size: 13px;
+      text-align: center;
+    }
+    .discount-table thead th {
+      background: #fafafa;
+      font-weight: bold;
+    }
+    .discount-table tbody tr.selectedRow {
+      background: #ffeaaa;
+    }
+    /* SCÉNÁŘE KONTEJNER */
+    .scenario-container {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+      margin-top: 20px;
+      display: none;
+    }
+    /* RAZÍTKA: drobná stylizace */
+    .stamp-gallery img,
+    .border-gallery img {
+      border: 1px solid transparent; 
+      width: 64px; 
+      height: auto; 
+      cursor: pointer; 
+      margin-right:5px;
+    }
+    /* TLAČÍTKO VYTVOŘIT KARTU – původní tlačítko je skryto */
+    #createCardBtn {
+      display: none;
+    }
+    #createCardBtn:hover {
+      background-color: #1976d2;
+    }
+    /* NOVÉ tlačítko Poslat do Firebase */
+    #sendToFirebaseBtn {
+      font-size: 18px;
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #sendToFirebaseBtn:hover {
+      background-color: #45a049;
+    }
+    /* Styly pro pole s heslem */
+    .password-container {
+      position: relative;
+      width: 100%;
+    }
+    .password-container input[type="password"],
+    .password-container input[type="text"] {
+      width: 100%;
+      padding-right: 40px; /* Místo pro ikonu oka */
+    }
+    .toggle-password {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+      cursor: pointer;
+      user-select: none; /* Zamezí označení textu ikony */
+    }
+  </style>
+</head>
+<body>
+
+  <!-- (1) TABULKA NAHOŘE -->
+  <div class="info-table">
+    <table>
+      <thead>
+        <tr>
+          <th>Identifikátor</th>
+          <th>Datum vytvoření karty</th>
+          <th>Název karty</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td id="tableCardID">---</td>
+          <td>17.09.2025</td>
+          <td id="tableCardName">Moje první karta</td>
+          <td>Aktivní</td>
+        </tr>
+        <tr>
+          <td colspan="4" style="font-weight:600; cursor:pointer; background:#eef;">
+            Přidat kartu +
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- (2) NADPIS KARTY -->
+  <h2 id="cardTitleDisplay">Moje první karta</h2>
+
+  <!-- (3) TELEFON + FAKE CARD -->
+  <div class="phone-container">
+    <img 
+      src="https://static.wixstatic.com/media/1cf87e_7d2b3744c04f4bf6af84a1b9868ea0b2~mv2.png"
+      alt="Telefon"
+      class="phone-image"
+    >
+    <div class="fake-card" id="fakeCard">
+      <!-- STRIP => #stripResultImg -->
+      <img id="stripResultImg" alt="Strip náhled">
+      <!-- DISCOUNT LEVEL -->
+      <div class="discount-level" id="discountLevelDisplay">
+        <div class="discount-level-rows">
+          <div id="discountLabel1">STATUS</div>
+          <div id="discountLabel2">SLEVA</div>
+        </div>
+        <div class="discount-level-values">
+          <div id="statusVal">VIP</div>
+          <div id="discountVal">10%</div>
+        </div>
+      </div>
+      <!-- UŠETŘIL (vpravo) -->
+      <div class="saved-amount" id="savedAmountDisplay">
+        <span class="saved-label">Ušetřil</span>
+        <span class="saved-value" id="savedVal">378 Kč</span>
+      </div>
+      <!-- RAZÍTKA (vpravo dole) -->
+      <div class="stamp-counter" id="stampCounterDisplay">
+        <span class="saved-label" id="stampLabel">Razítka</span>
+        <span class="saved-value" id="stampVal">0 / 0</span>
+      </div>
+      <!-- BODY (vpravo nahoře) -->
+      <div class="body-level" id="bodyLevelDisplay">
+        <div class="body-level-rows">
+          <div id="bodyLabel1">BODY</div>
+        </div>
+        <div class="body-level-values">
+          <div id="bodyVal">0</div>
+        </div>
+      </div>
+      <!-- BODY dole (vpravo) -->
+      <div class="body-bottom" id="bodyBottomDisplay">
+        <span class="top-line" id="bodyBottomTop">ZA 100B KÁVA ZDARMA</span>
+        <span class="bottom-line" id="bodyBottomBot">10Kč=1BOD</span>
+      </div>
+      <!-- Menší QR kód -->
+      <img 
+        src="https://static.wixstatic.com/media/1cf87e_9b1be513b4124062be87f14644f4c7db~mv2.png"
+        alt="QR kód"
+        class="qr-code"
+      >
+      <!-- Zákazník (vlevo) -->
+      <div class="customer-info" id="customerInfo">
+        <span class="cust-label">Zákazník:</span>
+        <span class="cust-value" id="custName">Jan Novák</span>
+      </div>
+      <!-- Logo / Nápis -->
+      <div class="logo-slot" id="logoSlot"></div>
+      <!-- Text na stripu -->
+      <div class="strip-text" id="stripTextElem"></div>
+    </div>
+  </div>
+
+  <!-- NOVÁ SEKCE: Detail podniku a ID kavárny -->
+  <div class="form-panel" id="businessDetailsPanel">
+    <h3>Název vašeho podniku</h3>
+    <input type="text" id="businessNameInput" placeholder="Zadejte název podniku" />
+    <button id="saveBusinessBtn" onclick="saveBusinessName()">Nastavit název podniku</button>
+    <div id="businessInfoDisplay">ID kavárny: </div>
+  </div>
+
+  <!-- NOVÁ SEKCE: Vytvoření ID karty -->
+  <div class="form-panel" id="cardIDPanel">
+    <h3>Vytvoření ID karty</h3>
+    <button id="createCardIDBtn" onclick="createCardID()">Vytvořit ID karty</button>
+    <p id="cardIDDisplay">Unikátní ID karty: </p>
+    <p id="customerUrlDisplay">Vaše URL pro vaše zákazníky ke stažení karty: </p>
+    <!-- QR kód sekce – skryté dokud se karta nevytvoří -->
+    <div id="qrCodeSection">
+      <div id="qrCodeContainer"></div>
+      <br>
+      <button onclick="downloadQRCode()">Stáhnout QR kód</button>
+      <br>
+      <label>Barva QR kódu:</label>
+      <input type="color" id="qrColor" value="#000000" onchange="updateQRCode()">
+      <label>Barva pozadí:</label>
+      <input type="color" id="qrBgColor" value="#ffffff" onchange="updateQRCode()">
+      <br>
+      <label>Nahrát logo pro QR kód (PNG):</label>
+      <input type="file" id="qrLogoFile" accept="image/png" onchange="updateQRCode()">
+      <br>
+      <label>Nahrát vlastní QR kód (PNG):</label>
+      <input type="file" id="customQRCodeFile" accept="image/png" onchange="updateQRCode()">
+      <p>
+        Link v případě, pokud by vám nešel načíst qrkod:
+        <a id="scanLink" href="#" target="_blank"></a>
+      </p>
+      <p style="text-align:center; font-size:12px; margin-top:10px;">
+        Speciální Designové kódy můžete vytvořit zdarma zde: <a href="https://www.qrcode-monkey.com" target="_blank">qrcode-monkey.com</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- (4) FORMULÁŘ -->
+  <div class="form-panel">
+    <!-- Sekce: Zobrazovat jméno a text na stripu -->
+    <input type="checkbox" id="showNameChk" checked onclick="toggleShowName()">
+    <label for="showNameChk">Zobrazovat jméno zákazníka</label>
+    <br><br>
+    <input type="checkbox" id="showStripTextChk" onclick="toggleStripText()">
+    <label for="showStripTextChk">Zobrazovat text dole na stripu</label>
+    <label>Text:</label>
+    <input type="text" id="stripTextVal" value="Desátá káva je na nás." oninput="updateStripText()">
+    <label>Barva:</label>
+    <input type="color" id="stripTextColor" value="#000000" oninput="updateStripText()">
+    <label>Velikost(px):</label>
+    <input type="number" id="stripTextSize" value="25" style="width:60px;" oninput="updateStripText()">
+    <input type="checkbox" id="stripTextBold" onclick="updateStripText()">
+    <label for="stripTextBold">Tučné</label>
+    <label style="margin-top:10px;">Posun X:</label>
+    <input type="number" id="stripTextPosX" value="0" style="width:60px;" oninput="updateStripText()">
+    <label>Posun Y:</label>
+    <input type="number" id="stripTextPosY" value="0" style="width:60px;" oninput="updateStripText()">
+    <hr>
+    <label for="nazevKarty">Název karty:</label>
+    <input type="text" id="nazevKarty" value="Moje první karta" oninput="updateCardTitle()">
+
+    <hr style="margin: 20px 0;">
+
+    <label for="staffPassword">Heslo pro obsluhu:</label>
+    <p style="font-size:12px; color:#666; margin-bottom:5px;">Heslo, které obsluha potřebuje pro přidání např. razítka klientovi nebo bonusových bodů. Doporučení: Zvolte jednoduché heslo, které jednou za čas vyměníte.</p>
+    <div class="password-container">
+        <input type="password" class="form-panel" id="staffPassword" name="staffPassword" placeholder="Minimálně 8 znaků" minlength="8">
+        <span class="toggle-password" onclick="toggleStaffPasswordVisibility('staffPassword', this)">👁️</span>
+    </div>
+
+    <label for="staffPasswordConfirm" style="margin-top:10px;">Ověření hesla:</label>
+    <div class="password-container">
+        <input type="password" class="form-panel" id="staffPasswordConfirm" name="staffPasswordConfirm" placeholder="Zadejte heslo znovu" minlength="8">
+        <span class="toggle-password" onclick="toggleStaffPasswordVisibility('staffPasswordConfirm', this)">👁️</span>
+    </div>
+    <div id="passwordError" style="color: red; font-size: 12px; margin-top: 5px; height: 15px;"></div>
+
+    <hr style="margin: 20px 0;">
+    <label for="textColor">Barva písma (pro slevové texty atd.):</label>
+    <input type="color" id="textColor" value="#000000" oninput="updateDiscountColor()">
+    <label for="cardColor">Barva karty:</label>
+    <input type="color" id="cardColor" value="#ffffff" onchange="changeCardColor()">
+    <p style="margin:10px 0 5px; font-weight:600;">Pravý horní roh:</p>
+    <input type="radio" name="horniRoh" id="radioNapis" value="napis" checked onclick="updateHorniRoh()">
+    <label for="radioNapis">Nápis</label>
+    <br>
+    <input type="radio" name="horniRoh" id="radioLogo" value="logo" onclick="updateHorniRoh()">
+    <label for="radioLogo">Logo</label>
+    <!-- Nápis box -->
+    <div id="napiBox" class="visible">
+      <label for="napisText" style="margin-top:10px;">Vaše Logo/Nápis:</label>
+      <textarea id="napisText" rows="2" oninput="renderLogoSlot()">Vaše Logo/Nápis</textarea>
+      <label for="napisFont">Styl písma (Wix fonty):</label>
+      <select id="napisFont" onchange="renderLogoSlot()">
+        <option value="Arial">Arial</option>
+        <option value="Georgia">Georgia</option>
+        <option value="Helvetica">Helvetica</option>
+        <option value="Tahoma">Tahoma</option>
+        <option value="Trebuchet MS">Trebuchet MS</option>
+        <option value="Verdana">Verdana</option>
+        <option value="Wix Freed Script">Wix Freed Script</option>
+        <option value="Wix Crisp Sans">Wix Crisp Sans</option>
+        <option value="Wix Deco Modern">Wix Deco Modern</option>
+        <option value="Wix Cafe Handwriting">Wix Cafe Handwriting</option>
+        <option value="Wix Fancy Cursive">Wix Fancy Cursive</option>
+      </select>
+      <label for="napisAlign">Zarovnání textu:</label>
+      <select id="napisAlign" onchange="renderLogoSlot()">
+        <option value="left">Vlevo</option>
+        <option value="center" selected>Na střed</option>
+        <option value="right">Vpravo</option>
+      </select>
+      <br>
+      <input type="checkbox" id="napisBold" checked onclick="renderLogoSlot()">
+      <label for="napisBold">Tučné</label>
+      <label for="napisColor" style="margin-top:10px;">Barva nápisu:</label>
+      <input type="color" id="napisColor" value="#ff0000" oninput="renderLogoSlot()">
+    </div>
+    <!-- Logo box -->
+    <div id="logoBox" class="hidden">
+      <label>Nahrát soubor (PNG) <small>(Ideální poměr např. 4:1)</small>:</label>
+      <input type="file" id="logoFile" accept="image/png" onchange="renderLogoSlot()">
+    </div>
+    <hr style="margin:15px 0;">
+    <h4>Strip Image Generator</h4>
+    <p>(Pozadí + overlay → 0 % = originál, 100 % = silueta)</p>
+    <div>
+      <input type="radio" name="stripChoice" id="stripPredef" value="predef" onclick="updateStripChoice()">
+      <label for="stripPredef">Vybrat předpřipravený vzor + barvy</label>
+    </div>
+    <div style="margin-bottom:10px;">
+      <input type="radio" name="stripChoice" id="stripCustom" value="custom" onclick="updateStripChoice()">
+      <label for="stripCustom">Nahrát vlastní (5:2 = 624×246px)</label>
+    </div>
+    <!-- Předpřipravené styly -->
+    <div id="predefStripBox" class="hidden">
+      <label>Vzor (horní kresba):</label>
+      <div class="predef-strips">
+        <img src="https://static.wixstatic.com/media/1cf87e_dc47ca91c0c849bda67a6d65a9a0445b~mv2.png" alt="Vzor 1" id="predefPattern1" onclick="selectPredefPattern('pattern1')">
+        <img src="https://static.wixstatic.com/media/1cf87e_dc47ca91c0c849bda67a6d65a9a0445b~mv2.png" alt="Vzor 2" id="predefPattern2" onclick="selectPredefPattern('pattern2')">
+      </div>
+      <label>Barva vzoru (overlay):</label>
+      <input type="color" id="overlayColor" value="#ffffff" oninput="renderStrip()">
+      <label>Alpha:</label>
+      <input type="range" id="overlayAlpha" min="0" max="100" value="100" oninput="renderStrip()">
+      <label>Barva pozadí (background):</label>
+      <input type="color" id="bgColor" value="#000000" oninput="renderStrip()">
+      <label>Alpha:</label>
+      <input type="range" id="bgAlpha" min="0" max="100" value="0" oninput="renderStrip()">
+    </div>
+    <!-- Vlastní strip -->
+    <div id="customStripBox" class="hidden">
+      <label>Nahrát strip (5:2 = 624×246px):</label>
+      <input type="file" id="stripFile" accept="image/*" onchange="renderStrip()">
+    </div>
+    <!-- Tlačítko a linky -->
+    <button style="margin-top:10px;" onclick="renderStrip()">Vytvořit strip</button>
+    <p id="stripUrl"></p>
+    <a id="stripView" href="#" target="_blank">Otevřít strip v novém okně</a>
+    <br>
+    <button id="stripDownload" onclick="downloadStrip()">Stáhnout strip</button>
+  </div>
+
+  <!-- (5) KARTY DOLE + TLAČÍTKO -->
+  <div class="choose-style-title">Vyberte styl karty</div>
+  <div class="cards-container">
+    <div class="card" id="card-procentni" onclick="selectCard('card-procentni')">
+      <h2>Procentní sleva</h2>
+      <img src="https://static.wixstatic.com/media/1cf87e_1b6bd7c6f0714a54b2377e6888de446e~mv2.png" alt="Procentní sleva">
+      <ul>
+        <li>Jednoduchost pro klienty</li>
+        <li>Velká variabilita slev</li>
+        <li>Dlouhodobá motivace</li>
+      </ul>
+    </div>
+    <div class="card" id="card-razitka" onclick="selectCard('card-razitka')">
+      <h2>Razítka</h2>
+      <img src="https://static.wixstatic.com/media/1cf87e_f661c5e0c0e44014a6f7229d4178dee9~mv2.png" alt="Razítka">
+      <ul>
+        <li>Výhody razítkového systému</li>
+        <li>Snadné načítání a správa</li>
+      </ul>
+    </div>
+    <div class="card" id="card-body" onclick="selectCard('card-body')">
+      <h2>Body</h2>
+      <img src="https://static.wixstatic.com/media/1cf87e_ca5f3dda10ba401795176a01ef46564f~mv2.png" alt="Body">
+      <ul>
+        <li>Vyzkoušejte bodový systém</li>
+        <li>1 bod za každých 10 Kč</li>
+      </ul>
+    </div>
+  </div>
+  <div style="margin-top:20px; text-align:center;">
+    <button onclick="confirmCardSelection()">Potvrdit výběr karty</button>
+    <p style="font-size:12px; margin-top:5px;">(Je možné kdykoli změnit)</p>
+  </div>
+
+  <!-- (6a) SCÉNÁŘE - SLEVOVÁ KARTA -->
+  <div class="scenario-container" id="discountScenario">
+    <h3>Slevová karta – zadejte úrovně</h3>
+    <table class="discount-table" id="discountTable">
+      <thead>
+        <tr>
+          <th>Úroveň</th>
+          <th>Název</th>
+          <th>Sleva (%)</th>
+          <th>Celkový zůstatek</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr onclick="selectDiscountRow(this)">
+          <td>1</td>
+          <td><input type="text" id="status1" value="VIP" style="width:90px;" oninput="updateDiscountFromTable()"></td>
+          <td><input type="number" id="sleva1" value="10" style="width:60px;" oninput="updateDiscountFromTable()"></td>
+          <td><span style="white-space:nowrap;">0 až </span><input type="number" id="zustatek1" value="9999" style="width:80px;"></td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="4">
+        <button onclick="addDiscountRow()">+ Přidat úroveň</button>
+        <button onclick="removeDiscountRow()">− Odebrat</button>
+      </td>
+    </tr>
+  </tfoot>
+</table>
+</div>
+
+<!-- (6b) SCÉNÁŘE - RAZÍTKOVÁ KARTA -->
+<div class="scenario-container" id="razitkaScenario">
+  <h3>Razítková karta</h3>
+  <div class="razitka-form">
+    <label>Vyberte celkový počet razítek:</label>
+    <input type="number" id="stampCount" value="10" style="width:80px;" oninput="onStampCountChange()">
+    <!-- NOVÉ pole dle zadání pro výchozí počet razítek -->
+    <label>Kolik razítek bude mít uživatel po přidání karty (výchozí 0):</label>
+    <input type="number" id="stampValInput" value="0" style="width:60px;">
+    <label>Vyplněno (0 až N):</label>
+    <input type="range" id="stampFilled" min="0" max="10" value="0" style="width:120px;" oninput="renderStrip()">
+    <label>Posun X (px) pro razítka:</label>
+    <input type="number" id="stampOffsetX" value="0" style="width:80px;" oninput="renderStrip()">
+    <label>Posun Y (px) pro razítka:</label>
+    <input type="number" id="stampOffsetY" value="0" style="width:80px;" oninput="renderStrip()">
+    <label>Velikost vnitřku (razítko) (px):</label>
+    <input type="number" id="stampSize" value="80" style="width:80px;" oninput="renderStrip()">
+    <label>Mezera mezi razítky (px):</label>
+    <input type="number" id="stampGap" value="10" style="width:80px;" oninput="renderStrip()">
+    <hr>
+    <h4>Design vnitřku (razítko) + overlay alpha</h4>
+    <div>
+      <input type="radio" name="stampChoice" id="stampPredef" value="stampPredef" onclick="renderStrip()">
+      <label for="stampPredef">Vybrat předpřipravené razítko</label>
+    </div>
+    <div>
+      <input type="radio" name="stampChoice" id="stampCustom" value="stampCustom" onclick="renderStrip()">
+      <label for="stampCustom">Nahrát vlastní PNG</label>
+    </div>
+    <div class="stamp-gallery" style="margin-top:6px;">
+      <img src="https://static.wixstatic.com/media/1cf87e_b902bf7ff01d45679dc1964eedc548d2~mv2.png" alt="Razítko 1" id="stamp1" onclick="selectPredefStamp('stamp1')">
+      <img src="https://static.wixstatic.com/media/1cf87e_4f9563aebb5d4391ab392f456c1f8c74~mv2.png" alt="Razítko 2" id="stamp2" onclick="selectPredefStamp('stamp2')">
+    </div>
+    <label>Barva razítka (overlay):</label>
+    <input type="color" id="stampColor" value="#ffffff" oninput="renderStrip()">
+    <label>Alpha (0–100):</label>
+    <input type="range" id="stampAlpha" min="0" max="100" value="0" oninput="renderStrip()">
+    <div style="margin-top:6px;">
+      <label>Vlastní razítko (PNG):</label>
+      <input type="file" id="stampFile" accept="image/png" onchange="renderStrip()">
+      <label>Barva (overlay):</label>
+      <input type="color" id="stampColor2" value="#ffffff" oninput="renderStrip()">
+      <label>Alpha:</label>
+      <input type="range" id="stampAlpha2" min="0" max="100" value="0" oninput="renderStrip()">
+    </div>
+    <label style="margin-top:10px;">Zapnout “stroke” i pro razítko?</label>
+    <input type="checkbox" id="stampStrokeOn" onclick="renderStrip()">
+    <label>Barva:</label>
+    <input type="color" id="stampStrokeColor" value="#000000" oninput="renderStrip()">
+    <label>Size(px):</label>
+    <input type="number" id="stampStrokeSize" value="2" style="width:60px;" oninput="renderStrip()">
+    <label>Alpha(0–100):</label>
+    <input type="range" id="stampStrokeAlpha" min="0" max="100" value="100" oninput="renderStrip()">
+    <hr>
+    <h4>Ohraničení (border) + overlay alpha</h4>
+    <label>Velikost ohraničení (px):</label>
+    <input type="number" id="borderSize" value="80" style="width:80px;" oninput="renderStrip()">
+    <div>
+      <input type="radio" name="borderChoice" id="borderPredef" value="borderPredef" onclick="renderStrip()">
+      <label for="borderPredef">Vybrat předpřipravené</label>
+    </div>
+    <div>
+      <input type="radio" name="borderChoice" id="borderCustom" value="borderCustom" onclick="renderStrip()">
+      <label for="borderCustom">Nahrát vlastní PNG</label>
+    </div>
+    <div class="border-gallery" style="margin-top:6px;">
+      <img src="https://static.wixstatic.com/media/1cf87e_f9c1f6035fd14a6c87eb72e797edb4e1~mv2.png" alt="Border1" id="border1" onclick="selectPredefBorder('border1')">
+      <img src="https://static.wixstatic.com/media/1cf87e_c9af8c73f3dc4513bcae356276cc9809~mv2.png" alt="Border2" id="border2" onclick="selectPredefBorder('border2')">
+    </div>
+    <label>Barva ohraničení (overlay):</label>
+    <input type="color" id="borderColor" value="#ffffff" oninput="renderStrip()">
+    <label>Alpha:</label>
+    <input type="range" id="borderAlpha" min="0" max="100" value="0" oninput="renderStrip()">
+    <div style="margin-top:6px;">
+      <label>Vlastní ohraničení (PNG):</label>
+      <input type="file" id="borderFile" accept="image/png" onchange="renderStrip()">
+      <label>Barva (overlay):</label>
+      <input type="color" id="borderColor2" value="#ffffff" oninput="renderStrip()">
+      <label>Alpha:</label>
+      <input type="range" id="borderAlpha2" min="0" max="100" value="0" oninput="renderStrip()">
+    </div>
+    <label style="margin-top:10px;">Zapnout “stroke” okolo ohraničení?</label>
+    <input type="checkbox" id="borderStrokeOn" onclick="renderStrip()">
+    <label>Barva:</label>
+    <input type="color" id="borderStrokeColor" value="#000000" oninput="renderStrip()">
+    <label>Size(px):</label>
+    <input type="number" id="borderStrokeSize" value="2" style="width:60px;" oninput="renderStrip()">
+    <label>Alpha(0–100):</label>
+    <input type="range" id="borderStrokeAlpha" min="0" max="100" value="100" oninput="renderStrip()">
+    <hr style="margin:15px 0;">
+    <h4>Průběžná sleva (text/obrázek):</h4>
+    <label>Chcete průběžnou slevu?</label>
+    <div>
+      <input type="radio" name="prubeznaSleva2" id="pbYes" onclick="togglePrubezna2(true)"> Ano
+      <input type="radio" name="prubeznaSleva2" id="pbNo" checked onclick="togglePrubezna2(false)"> Ne
+    </div>
+    <div id="pbSlevaBox" style="display:none; border:1px solid #ccc; padding:6px; margin-top:8px;">
+      <label>Na kolikátém razítku chcete průběžnou slevu?</label>
+      <input type="number" id="pbIndex" value="5" style="width:80px;" oninput="renderStrip()">
+      <label>Volba: text / obrázek?</label>
+      <div>
+        <input type="radio" name="pbType" id="pbTypeText" onclick="renderStrip()" checked> Text
+        <input type="radio" name="pbType" id="pbTypeImg" onclick="renderStrip()"> Obrázek
+      </div>
+      <!-- TEXT BOX -->
+      <div id="pbTextBox" style="margin-left:10px; margin-top:6px;">
+        <label>Průb. text:</label>
+        <input type="text" id="pbTextVal" value="50%" style="width:80px;" oninput="renderStrip()">
+        <label>Velikost (px):</label>
+        <input type="number" id="pbTextSize" value="20" style="width:50px;" oninput="renderStrip()">
+        <label>Barva:</label>
+        <input type="color" id="pbTextColor" value="#000000" oninput="renderStrip()">
+        <label>X:</label>
+        <input type="number" id="pbTextOffsetX" value="0" style="width:40px;" oninput="renderStrip()">
+        <label>Y:</label>
+        <input type="number" id="pbTextOffsetY" value="0" style="width:40px;" oninput="renderStrip()">
+      </div>
+      <!-- OBRÁZEK BOX -->
+      <div id="pbImgBox" style="margin-left:10px; margin-top:6px; display:none;">
+        <label>Nahrát PNG:</label>
+        <input type="file" id="pbFile" accept="image/png" onchange="renderStrip()">
+        <label>Velikost (px):</label>
+        <input type="number" id="pbImgSize" value="40" style="width:50px;" oninput="renderStrip()">
+        <label>X:</label>
+        <input type="number" id="pbImgOffsetX" value="0" style="width:40px;" oninput="renderStrip()">
+        <label>Y:</label>
+        <input type="number" id="pbImgOffsetY" value="0" style="width:40px;" oninput="renderStrip()">
+      </div>
+    </div>
+  </div>
+</div> <!-- close razitkaScenario -->
+
+  <!-- (6c) BODOVÁ KARTA -->
+  <div class="scenario-container" id="bodyScenario">
+    <h3>Bodová karta</h3>
+    <label>Text vpravo nahoře (např. BODY):</label>
+    <input type="text" id="bodyLabel1Input" value="BODY" style="width:80px;" oninput="updateBodyDisplay()">
+    <label>Počet bodů:</label>
+    <input type="number" id="bodyValInput" value="97" style="width:60px;" oninput="updateBodyDisplay()">
+
+    <hr>
+    <label>Text vpravo dole (ř.1):</label>
+    <input type="text" id="bodyBottomTopInput" value="ZA 100B KÁVA ZDARMA" oninput="updateBodyDisplay()">
+    <label>Text vpravo dole (ř.2):</label>
+    <input type="text" id="bodyBottomBotInput" value="10Kč=1BOD" oninput="updateBodyDisplay()">
+
+    <hr>
+    <label>Nastavit kolik Kč = kolik bodů (libovolný text):</label>
+    <input type="text" id="bodyKonverze" value="10Kč=1BOD" oninput="updateBodyDisplay()">
+  </div>
+
+  <!-- (7) INFORMACE OD KLIENTA -->
+  <div class="scenario-container" id="clientInfoScenario">
+    <h3>Informace od klienta:</h3>
+    <p>Vyberte a nastavte povinnost vybraných údajů:</p>
+    <ul style="list-style-type: disc; margin-left:20px;">
+      <li>
+        <label>Jméno</label>
+      </li>
+      <li>
+        <label>Příjmení</label>
+      </li>
+      <li>
+        <label>Email</label>
+      </li>
+      <li>
+        <input type="checkbox" id="clientDob" checked>
+        <label for="clientDob">Datum narození</label>
+        <input type="checkbox" id="clientDobRequired">
+        <label for="clientDobRequired">Povinné</label>
+      </li>
+      <li>
+        <input type="checkbox" id="clientPhone" checked>
+        <label for="clientPhone">Telefon</label>
+        <input type="checkbox" id="clientPhoneRequired">
+        <label for="clientPhoneRequired">Povinné</label>
+      </li>
+    </ul>
+    <p style="font-size:12px; color:#666;">(Vše bude součástí formuláře pro klienta.)</p>
+  </div>
+
+  <div style="text-align:center; margin-top:20px;">
+    <button id="collectData">Seber data</button>
+  </div>
+
+  <pre id="result" style="white-space: pre-wrap; background:#fff; padding:10px; border:1px solid #ccc; width:320px; margin:10px auto;"></pre>
+
+  <div id="send-wrapper" style="text-align:center; margin-top:20px; display:none;">
+    <button id="sendToFirebaseFromCollect">Odeslat do Firebase</button>
+  </div>
+  <p id="resultFirebase" style="margin-top:20px; font-weight:bold;"></p>
+  <div style="text-align:center; margin-top:10px;">
+    <input type="file" id="uploadImageInput" />
+    <button id="uploadImagesBtn">Poslat obrázky</button>
+  </div>
+  <p id="uploadStatus" style="margin-top:10px; font-weight:bold;"></p>
+
+  <!-- Canvas pro generování stripu -->
+  <canvas id="stripCanvas" width="624" height="246" style="display:none;"></canvas>
+
+  <script>
+    document.getElementById('collectData').addEventListener('click', () => {
+      const vybrana = document.querySelector('.card.selected');
+      let output = 'cardType: ' + (vybrana ? vybrana.id : '') + '\n';
+
+      // Sbírat data z obecných polí
+      document.querySelectorAll('input:not([type="file"]), textarea, select').forEach(f => {
+        // Přeskočíme inputy z tabulky slev, protože je sebereme zvlášť
+        if (f.closest('#discountTable')) return;
+        const key = f.id || f.name;
+        if (!key || key === 'cardType' || f.type === 'file') return;
+        let val = '';
+        if (f.type === 'checkbox' || f.type === 'radio') {
+          if (f.checked) val = f.value || 'on';
+        } else {
+          val = f.value;
+        }
+        output += key + ': ' + val + '\n';
+      });
+
+      // Sbírat data ze slevové tabulky a vždy vygenerovat 3 úrovně dle pravidel
+      const discountRows = document.querySelectorAll('#discountTable tbody tr');
+      let statuses = [], slevy = [], zustatky = [];
+      discountRows.forEach((row, idx) => {
+        const statusInput = row.querySelector('input[type="text"]');
+        const slevaInput = row.querySelectorAll('input[type="number"]')[0];
+        // První řádek má před inputem pro zůstatek ještě span "0 až ", proto musíme vzít druhý input[type=number] pro první řádek, jinak první
+        let zustatekInput;
+        if (idx === 0) {
+          zustatekInput = row.querySelectorAll('input[type="number"]')[1];
+        } else {
+          zustatekInput = row.querySelectorAll('input[type="number"]')[1] || row.querySelectorAll('input[type="number"]')[0];
+        }
+        statuses.push(statusInput ? statusInput.value : '');
+        slevy.push(slevaInput ? slevaInput.value : '');
+        zustatky.push(zustatekInput ? zustatekInput.value : '');
+      });
+      // fallback logika
+      for (let i = 0; i < 3; i++) {
+        if (!statuses[i]) statuses[i] = statuses[i-1] || statuses[0] || '';
+        if (!slevy[i]) slevy[i] = slevy[i-1] || slevy[0] || '';
+        if (!zustatky[i]) zustatky[i] = zustatky[i-1] || zustatky[0] || '';
+      }
+      // zápis do výsledku
+      for (let i = 0; i < 3; i++) {
+        output += `status${i+1}: ${statuses[i]}\n`;
+        output += `sleva${i+1}: ${slevy[i]}\n`;
+        output += `zustatek${i+1}: ${zustatky[i]}\n`;
+      }
+
+      // Přidat ostatní specifická data
+      const cardIdText = document.getElementById('cardIDDisplay').textContent.trim();
+      const pureCardId = cardIdText.replace('Unikátní ID karty: ', '');
+      output += 'cardID: ' + pureCardId + '\n';
+      const bizName = document.getElementById('businessNameInput').value.trim();
+      if (bizName) output += 'businessName: ' + bizName + '\n';
+      const bizIdText = document.getElementById('businessInfoDisplay').textContent.trim();
+      const businessID = bizIdText.replace('ID kavárny: ', '').trim();
+      output += 'businessID: ' + businessID + '\n';
+      const custFullUrl = document.getElementById('customerUrlDisplay').textContent.trim();
+      if (custFullUrl) {
+        const customerUrl = custFullUrl.replace('Vaše URL pro vaše zákazníky ke stažení karty: ', '');
+        output += 'customerUrl: ' + customerUrl + '\n';
+      }
+      output += 'patternURL: ' + ((typeof selectedPattern !== 'undefined' && selectedPattern)
+        ? document.getElementById('predefPattern' + selectedPattern.slice(-1)).src
+        : '') + '\n';
+      output += 'stampURL: ' + ((typeof stampSelected !== 'undefined' && stampSelected)
+        ? stampSelected
+        : '') + '\n';
+      output += 'borderURL: ' + ((typeof borderSelected !== 'undefined' && borderSelected)
+        ? borderSelected
+        : '') + '\n';
+      document.getElementById('result').textContent = output;
+      // Show the send button after data collection
+      document.getElementById('send-wrapper').style.display = 'block';
+    });
+  </script>
+
+  <script>
+    // Receive fullId from other HTML via BroadcastChannel
+    let fullId = '';
+    const channel = new BroadcastChannel('id-channel');
+    channel.onmessage = ev => {
+      if (ev.data.fullId) {
+        fullId = ev.data.fullId;
+        const wixInd = document.getElementById('wixIdIndicator');
+        if (wixInd) wixInd.textContent = 'ID karty: ' + fullId;
+        fetchAndPopulateFirestoreData(fullId);
+      }
+    };
+    async function fetchAndPopulateFirestoreData(fullId) {
+      const CARDDATA_URL = "https://us-central1-vernostkarty-db.cloudfunctions.net/getCardData";
+      try {
+        const resp = await fetch(`${CARDDATA_URL}?fullId=${fullId}`);
+        const j = await resp.json();
+        if (!j.success) {
+          console.error('Error fetching card data:', j.error);
+          return;
+        }
+        const data = j.data;
+        Object.keys(data).forEach(key => {
+          const el = document.getElementById(key);
+          if (!el) return;
+          if (el.tagName === 'INPUT') {
+            if (el.type === 'checkbox' || el.type === 'radio') {
+              el.checked = Boolean(data[key]);
+            } else if (el.type === 'file') {
+              // skip file inputs (cannot set value programmatically)
+            } else {
+              el.value = data[key];
+            }
+          } else if (el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') {
+            el.value = data[key];
+          } else if (el.tagName === 'IMG') {
+            el.src = data[key];
+            el.style.display = 'block';
+          } else {
+            el.textContent = data[key];
+          }
+        });
+        // always update business and card displays
+        // --- DOPLNĚNÍ: discount levels do tabulky ---
+        const discountRows = document.querySelectorAll('#discountTable tbody tr');
+        if (discountRows.length > 0) {
+          // level1
+          if (data.level1_status) discountRows[0].querySelector('input[type="text"]').value = data.level1_status;
+          if (data.level1_sleva) discountRows[0].querySelectorAll('input[type="number"]')[0].value = data.level1_sleva;
+          if (data.level1_zustatek) discountRows[0].querySelectorAll('input[type="number"]')[1].value = data.level1_zustatek;
+          // level2
+          if (discountRows[1]) {
+            if (data.level2_status) discountRows[1].querySelector('input[type="text"]').value = data.level2_status;
+            if (data.level2_sleva) discountRows[1].querySelectorAll('input[type="number"]')[0].value = data.level2_sleva;
+            if (data.level2_zustatek) discountRows[1].querySelectorAll('input[type="number"]')[1].value = data.level2_zustatek;
+          }
+          // level3
+          if (discountRows[2]) {
+            if (data.level3_status) discountRows[2].querySelector('input[type="text"]').value = data.level3_status;
+            if (data.level3_sleva) discountRows[2].querySelectorAll('input[type="number"]')[0].value = data.level3_sleva;
+            if (data.level3_zustatek) discountRows[2].querySelectorAll('input[type="number"]')[1].value = data.level3_zustatek;
+          }
+        }
+        // --- KONEC DOPLNĚNÍ ---
+        const bizName = data.businessName || '';
+        const bizId = data.businessID || '';
+        document.getElementById('businessNameInput').value = bizName;
+        document.getElementById('businessInfoDisplay').textContent = 'ID kavárny: ' + bizId;
+        cardID = data.cardID || '';
+        document.getElementById('cardIDDisplay').textContent = 'Unikátní ID karty: ' + cardID;
+        const custUrl = cardID ? 'https://onlineloyaltycards.com/cafe/?id=' + fullId.slice(-12) : '';
+        document.getElementById('customerUrlDisplay').textContent = 'Vaše URL pro vaše zákazníky ke stažení karty: ' + custUrl;
+        if (cardID) updateQRCode();
+        document.getElementById('cardIDPanel').style.display = 'block';
+        document.getElementById('businessDetailsPanel').style.display = 'block';
+        // persist global business vars so ID kavárny stays same when name changes
+        savedBusinessName = bizName;
+        businessID = bizId;
+        const createBtn = document.getElementById('createCardIDBtn');
+        if (cardID) {
+          createBtn.style.display = 'none';
+        } else {
+          createBtn.style.display = 'inline-block';
+        }
+        // load saved card type from Firestore and apply UI
+        const savedCardType = data.cardType || '';
+        if (savedCardType) {
+          selectCard(savedCardType);
+          confirmCardSelection();
+        }
+        // trigger input/change events to update preview UI
+        document.querySelectorAll('input:not([type="file"]), textarea, select').forEach(el => {
+          el.dispatchEvent(new Event('input'));
+          el.dispatchEvent(new Event('change'));
+        });
+        // apply all update functions so fake card reflects loaded data
+        toggleShowName();
+        toggleStripText();
+        updateHorniRoh();
+        updateBodyDisplay();
+        updateCardTitle();
+        changeCardColor();
+        updateStripText();
+        updateDiscountColor();
+        updateDiscountFromTable();
+      } catch (e) {
+        console.error('Error fetching card data:', e);
+      }
+    }
+    // continuous data collection & preview update
+    document.querySelectorAll('input:not([type="file"]), textarea, select').forEach(el => {
+      el.addEventListener('input', () => {
+        document.getElementById('collectData').click();
+        updateCardTitle(); changeCardColor(); updateStripText(); updateDiscountColor();
+        updateDiscountFromTable(); toggleShowName(); toggleStripText(); updateHorniRoh(); updateBodyDisplay();
+      });
+      el.addEventListener('change', () => {
+        document.getElementById('collectData').click();
+        updateCardTitle(); changeCardColor(); updateStripText(); updateDiscountColor();
+        updateDiscountFromTable(); toggleShowName(); toggleStripText(); updateHorniRoh(); updateBodyDisplay();
+      });
+    });
+  </script>
+
+  <script>
+    // --- Původní funkce (discount, razítka, aktualizace obsahu karty, renderování stripu atd.) ---
+    let discountSelectedRow = null;
+    function selectDiscountRow(tr) {
+      const rows = tr.parentNode.querySelectorAll('tr');
+      rows.forEach(r => r.classList.remove('selectedRow'));
+      tr.classList.add('selectedRow');
+      discountSelectedRow = tr;
+    }
+    function addDiscountRow() {
+      const tbody = document.getElementById('discountTable').querySelector('tbody');
+      const rows = tbody.querySelectorAll('tr');
+      if (rows.length >= 3) return;
+      const newIndex = rows.length + 1;
+      const newRow = document.createElement('tr');
+      newRow.onclick = () => selectDiscountRow(newRow);
+      newRow.innerHTML = `
+        <td>${newIndex}</td>
+        <td><input type="text" style="width:90px;" oninput="updateDiscountFromTable()"></td>
+        <td><input type="number" style="width:60px;" oninput="updateDiscountFromTable()"></td>
+        <td><input type="number" style="width:80px;"></td>
+      `;
+      tbody.appendChild(newRow);
+    }
+    function removeDiscountRow() {
+      const tbody = document.getElementById('discountTable').querySelector('tbody');
+      const rows = tbody.querySelectorAll('tr');
+      if (rows.length <= 1) return;
+      if (!discountSelectedRow) {
+        alert('Nejdříve označte řádek tabulky kliknutím.');
+        return;
+      }
+      tbody.removeChild(discountSelectedRow);
+      discountSelectedRow = null;
+      const reRows = tbody.querySelectorAll('tr');
+      for (let i = 0; i < reRows.length; i++) {
+        reRows[i].cells[0].textContent = (i + 1).toString();
+      }
+    }
+    function updateDiscountFromTable() {
+      const row1 = document.getElementById('discountTable').querySelector('tbody tr');
+      if (!row1) return;
+      const titleVal = row1.cells[1].querySelector('input').value || 'VIP';
+      const discountVal = row1.cells[2].querySelector('input').value || '10';
+      document.getElementById('statusVal').textContent = titleVal;
+      document.getElementById('discountVal').textContent = discountVal + '%';
+    }
+    function selectCard(id) {
+      document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+      document.getElementById(id).classList.add('selected');
+    }
+    function confirmCardSelection() {
+      console.log('confirmCardSelection invoked, selected:', document.querySelector('.card.selected')?.id);
+      alert('confirmCardSelection invoked, selected: ' + (document.querySelector('.card.selected')?.id || 'none'));
+      document.getElementById('discountScenario').style.display = 'none';
+      document.getElementById('razitkaScenario').style.display = 'none';
+      document.getElementById('bodyScenario').style.display = 'none';
+      document.getElementById('discountLevelDisplay').style.display = 'none';
+      document.getElementById('savedAmountDisplay').style.display = 'none';
+      document.getElementById('stampCounterDisplay').style.display = 'none';
+      document.getElementById('bodyLevelDisplay').style.display = 'none';
+      document.getElementById('bodyBottomDisplay').style.display = 'none';
+      document.getElementById('clientInfoScenario').style.display = 'none';
+      const sel = document.querySelector('.card.selected');
+      if (!sel) {
+        alert('Nejdříve vyberte styl karty!');
+        return;
+      }
+      if (sel.id === 'card-procentni') {
+        document.getElementById('discountScenario').style.display = 'block';
+        document.getElementById('discountLevelDisplay').style.display = 'block';
+        document.getElementById('savedAmountDisplay').style.display = 'block';
+        updateDiscountFromTable();
+      }
+      else if (sel.id === 'card-razitka') {
+        document.getElementById('razitkaScenario').style.display = 'block';
+        document.getElementById('stampCounterDisplay').style.display = 'block';
+      }
+      else if (sel.id === 'card-body') {
+        console.log('card-body branch entered');
+        const bs = document.getElementById('bodyScenario');
+        console.log('bodyScenario element:', bs, 'current display:', bs.style.display);
+        document.getElementById('bodyScenario').style.display = 'block';
+        console.log('bodyScenario after show display:', bs.style.display);
+        document.getElementById('bodyLevelDisplay').style.display = 'block';
+        document.getElementById('bodyBottomDisplay').style.display = 'block';
+        updateBodyDisplay();
+      }
+      document.getElementById('clientInfoScenario').style.display = 'block';
+      renderStrip();
+    }
+    function updateBodyDisplay() {
+      const label1 = document.getElementById('bodyLabel1Input') ? document.getElementById('bodyLabel1Input').value : 'BODY';
+      const val1   = document.getElementById('bodyValInput').value || '0';
+      document.getElementById('bodyLabel1').textContent = label1;
+      document.getElementById('bodyVal').textContent    = val1;
+      const top = document.getElementById('bodyBottomTopInput').value || 'ZA 100B KÁVA ZDARMA';
+      const bot = document.getElementById('bodyBottomBotInput').value || '10Kč=1BOD';
+      document.getElementById('bodyBottomTop').textContent = top;
+      document.getElementById('bodyBottomBot').textContent = bot;
+    }
+    function toggleShowName() {
+      const on = document.getElementById('showNameChk').checked;
+      document.getElementById('customerInfo').style.display = on ? 'block' : 'none';
+    }
+    function toggleStripText() {
+      const on = document.getElementById('showStripTextChk').checked;
+      document.getElementById('stripTextElem').style.display = on ? 'block' : 'none';
+    }
+    function updateStripText() {
+      const val  = document.getElementById('stripTextVal').value || '';
+      const c    = document.getElementById('stripTextColor').value || '#000';
+      const s    = +document.getElementById('stripTextSize').value || 25;
+      const bold = document.getElementById('stripTextBold').checked;
+      const posX = +document.getElementById('stripTextPosX').value || 0;
+      const posY = +document.getElementById('stripTextPosY').value || 0;
+      const elem = document.getElementById('stripTextElem');
+      elem.innerHTML = '';
+      elem.textContent = val;
+      elem.style.color = c;
+      elem.style.fontSize = s + 'px';
+      elem.style.fontWeight = bold ? 'bold' : 'normal';
+      elem.style.bottom = (10 - posY) + 'px';
+      renderStrip();
+    }
+    function updateCardTitle() {
+      const val = document.getElementById('nazevKarty').value || 'Moje první karta';
+      document.getElementById('cardTitleDisplay').textContent = val;
+      document.getElementById('tableCardName').textContent    = val;
+    }
+    function updateDiscountColor() {
+      const col = document.getElementById('textColor').value;
+      document.documentElement.style.setProperty('--discountColor', col);
+    }
+    function changeCardColor() {
+      const c = document.getElementById('cardColor').value;
+      document.getElementById('fakeCard').style.backgroundColor = c;
+    }
+    function updateHorniRoh() {
+      const napiBox = document.getElementById('napiBox');
+      const logoBox = document.getElementById('logoBox');
+      if (document.getElementById('radioNapis').checked) {
+        napiBox.classList.remove('hidden');
+        logoBox.classList.add('hidden');
+      } else {
+        napiBox.classList.add('hidden');
+        logoBox.classList.remove('hidden');
+      }
+      renderLogoSlot();
+    }
+    function renderLogoSlot() {
+      const slot = document.getElementById('logoSlot');
+      slot.innerHTML = '';
+      const isNapis = document.getElementById('radioNapis').checked;
+      const fileInput = document.getElementById('logoFile');
+      if (isNapis) {
+        const textVal = document.getElementById('napisText').value || '';
+        const bold    = document.getElementById('napisBold').checked;
+        const fontFam = document.getElementById('napisFont').value;
+        const color   = document.getElementById('napisColor').value;
+        const align   = document.getElementById('napisAlign').value;
+        const div = document.createElement('div');
+        div.className = 'logo-text';
+        div.style.fontFamily = fontFam;
+        div.style.fontWeight = bold ? 'bold' : 'normal';
+        div.style.color      = color;
+        div.style.textAlign  = align;
+        div.style.lineHeight = '1.2';
+        div.innerHTML        = textVal.replace(/\n/g, '<br>');
+        slot.appendChild(div);
+        autoSizeText(div, 120, 45);
+      }
+      else {
+        if (fileInput.files && fileInput.files[0]) {
+          const img = document.createElement('img');
+          img.className = 'logo-img';
+          img.src = URL.createObjectURL(fileInput.files[0]);
+          slot.appendChild(img);
+        }
+        else {
+          const textVal = document.getElementById('napisText').value || '(Logo text)';
+          const bold    = document.getElementById('napisBold').checked;
+          const fontFam = document.getElementById('napisFont').value;
+          const color   = document.getElementById('napisColor').value;
+          const align   = document.getElementById('napisAlign').value;
+          const div = document.createElement('div');
+          div.className = 'logo-text';
+          div.style.fontFamily = fontFam;
+          div.style.fontWeight = bold ? 'bold' : 'normal';
+          div.style.color      = color;
+          div.style.textAlign  = align;
+          div.style.lineHeight = '1.2';
+          div.innerHTML        = textVal.replace(/\n/g, '<br>');
+          slot.appendChild(div);
+          autoSizeText(div, 120, 45);
+        }
+      }
+    }
+    function autoSizeText(el, maxW, maxH) {
+      const maxFont = 50;
+      const minFont = 8;
+      for (let size = maxFont; size >= minFont; size--) {
+        el.style.fontSize   = size + 'px';
+        el.style.lineHeight = (size * 1.2) + 'px';
+        if (el.scrollWidth <= maxW && el.scrollHeight <= maxH) {
+          break;
+        }
+      }
+    }
+    function onStampCountChange() {
+      const n = +document.getElementById('stampCount').value || 10;
+      const sf = document.getElementById('stampFilled');
+      sf.max = n;
+      if (+sf.value > n) {
+        sf.value = n;
+      }
+      renderStrip();
+    }
+    function updateStripChoice() {
+      const predefBox = document.getElementById('predefStripBox');
+      const customBox = document.getElementById('customStripBox');
+      if (document.getElementById('stripPredef').checked) {
+        predefBox.classList.remove('hidden');
+        customBox.classList.add('hidden');
+      } else {
+        predefBox.classList.add('hidden');
+        customBox.classList.remove('hidden');
+      }
+      renderStrip();
+    }
+    let selectedPattern = null;
+    function selectPredefPattern(id) {
+      document.getElementById('predefPattern1').classList.remove('selected');
+      document.getElementById('predefPattern2').classList.remove('selected');
+      if (id === 'pattern1') {
+        document.getElementById('predefPattern1').classList.add('selected');
+        selectedPattern = 'pattern1';
+      } else {
+        document.getElementById('predefPattern2').classList.add('selected');
+        selectedPattern = 'pattern2';
+      }
+      renderStrip();
+    }
+    let stampSelected = null;
+    function selectPredefStamp(id) {
+      document.getElementById('stamp1').style.borderColor = 'transparent';
+      document.getElementById('stamp2').style.borderColor = 'transparent';
+      if (id === 'stamp1') {
+        document.getElementById('stamp1').style.borderColor = '#2196f3';
+        stampSelected = 'https://static.wixstatic.com/media/1cf87e_b902bf7ff01d45679dc1964eedc548d2~mv2.png';
+      }
+      else {
+        document.getElementById('stamp2').style.borderColor = '#2196f3';
+        stampSelected = 'https://static.wixstatic.com/media/1cf87e_4f9563aebb5d4391ab392f456c1f8c74~mv2.png';
+      }
+      renderStrip();
+    }
+    let borderSelected = null;
+    function selectPredefBorder(id) {
+      document.getElementById('border1').style.borderColor = 'transparent';
+      document.getElementById('border2').style.borderColor = 'transparent';
+      if (id === 'border1') {
+        document.getElementById('border1').style.borderColor = '#2196f3';
+        borderSelected = 'https://static.wixstatic.com/media/1cf87e_f9c1f6035fd14a6c87eb72e797edb4e1~mv2.png';
+      }
+      else {
+        document.getElementById('border2').style.borderColor = '#2196f3';
+        borderSelected = 'https://static.wixstatic.com/media/1cf87e_c9af8c73f3dc4513bcae356276cc9809~mv2.png';
+      }
+      renderStrip();
+    }
+    function togglePrubezna2(isYes) {
+      document.getElementById('pbSlevaBox').style.display = isYes ? 'block' : 'none';
+      renderStrip();
+    }
+    async function renderStrip() {
+      currentStripBlob = null;
+      const canvas = document.getElementById('stripCanvas');
+      const ctx    = canvas.getContext('2d');
+      canvas.width  = 624;
+      canvas.height = 246;
+      ctx.clearRect(0, 0, 624, 246);
+      const isPredef = document.getElementById('stripPredef').checked;
+      const isCustom = document.getElementById('stripCustom').checked;
+      if (isPredef) {
+        if (!selectedPattern) {
+          selectedPattern = 'pattern1';
+        }
+        const bgHex = document.getElementById('bgColor').value || '#000000';
+        const bgA   = +document.getElementById('bgAlpha').value || 0;
+        ctx.fillStyle = hexToRgba(bgHex, bgA / 100);
+        ctx.fillRect(0, 0, 624, 246);
+        const ovHex = document.getElementById('overlayColor').value || '#ffffff';
+        const ovA   = +document.getElementById('overlayAlpha').value || 100;
+        const patternUrl = 'https://static.wixstatic.com/media/1cf87e_dc47ca91c0c849bda67a6d65a9a0445b~mv2.png';
+        try {
+          const patImg = await loadImage(patternUrl);
+          const tinted = tintPatternBlend(patImg, ovHex, 624, 246, ovA);
+          ctx.drawImage(tinted, 0, 0);
+        } catch (e) {}
+      }
+      else if (isCustom) {
+        const f = document.getElementById('stripFile').files && document.getElementById('stripFile').files[0];
+        if (!f) {
+          document.getElementById('stripUrl').textContent = '(Zatím žádný vlastní strip nahrán)';
+          return;
+        }
+        try {
+          const blobUrl = URL.createObjectURL(f);
+          const cimg    = await loadImage(blobUrl);
+          ctx.drawImage(cimg, 0, 0, 624, 246);
+        } catch(e) {}
+      }
+      else {
+        document.getElementById('stripUrl').textContent = '(Nebyla vybrána žádná varianta stripu)';
+        return;
+      }
+      if (document.getElementById('card-razitka').classList.contains('selected')) {
+        const n         = +document.getElementById('stampCount').value || 10;
+        const fillCount = +document.getElementById('stampFilled').value || 0;
+        document.getElementById('stampVal').textContent = `${fillCount} / ${n}`;
+        if (n > 0) {
+          await drawStampGrid(ctx, n, fillCount, 624, 246);
+        }
+      }
+      if (document.getElementById('showStripTextChk').checked) {
+        const val  = document.getElementById('stripTextVal').value || '';
+        const col  = document.getElementById('stripTextColor').value || '#000';
+        const size = +document.getElementById('stripTextSize').value || 25;
+        const bold = document.getElementById('stripTextBold').checked;
+        const posX = +document.getElementById('stripTextPosX').value || 0;
+        const posY = +document.getElementById('stripTextPosY').value || 0;
+        ctx.save();
+        ctx.font         = (bold ? 'bold ' : '') + size + 'px sans-serif';
+        ctx.fillStyle    = col;
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'bottom';
+        const x = canvas.width / 2 + posX;
+        const y = canvas.height - 10 - posY;
+        ctx.fillText(val, x, y);
+        ctx.restore();
+      }
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        currentStripBlob = blob;
+        const shortUrl = URL.createObjectURL(blob);
+        document.getElementById('stripUrl').textContent = shortUrl;
+        const linkView = document.getElementById('stripView');
+        linkView.href  = shortUrl;
+        linkView.style.display = 'inline-block';
+        document.getElementById('stripDownload').style.display = 'inline-block';
+        const preview = document.getElementById('stripResultImg');
+        preview.style.display = 'block';
+        preview.src = shortUrl;
+      }, 'image/png');
+    }
+    async function drawStampGrid(ctx, n, filled, W, H) {
+      const row1Count = Math.ceil(n / 2);
+      const row2Count = n - row1Count;
+      const offx = +document.getElementById('stampOffsetX').value || 0;
+      const offy = +document.getElementById('stampOffsetY').value || 0;
+      const gap  = +document.getElementById('stampGap').value || 10;
+      const {
+        stampImg, stampColor, stampAlpha, stampSize,
+        stampStrokeOn, stampStrokeColor, stampStrokeSize, stampStrokeAlpha
+      } = await getStampParams();
+      const {
+        borderImg, borderColor, borderAlpha, borderSize,
+        borderStrokeOn, borderStrokeColor, borderStrokeSize, borderStrokeAlpha
+      } = await getBorderParams();
+      const fill1 = filled > row1Count ? row1Count : filled;
+      drawOneRow(ctx, row1Count, 0, W, H, offx, offy, stampSize, borderSize, gap,
+                 stampImg, stampColor, stampAlpha,
+                 stampStrokeOn, stampStrokeColor, stampStrokeSize, stampStrokeAlpha,
+                 borderImg, borderColor, borderAlpha,
+                 borderStrokeOn, borderStrokeColor, borderStrokeSize, borderStrokeAlpha,
+                 fill1);
+      const secondFill = filled - row1Count;
+      if (row2Count > 0) {
+        const fill2 = secondFill > 0 ? secondFill : 0;
+        drawOneRow(ctx, row2Count, 1, W, H, offx, offy, stampSize, borderSize, gap,
+                   stampImg, stampColor, stampAlpha,
+                   stampStrokeOn, stampStrokeColor, stampStrokeSize, stampStrokeAlpha,
+                   borderImg, borderColor, borderAlpha,
+                   borderStrokeOn, borderStrokeColor, borderStrokeSize, borderStrokeAlpha,
+                   fill2);
+      }
+      if (document.getElementById('pbYes').checked) {
+        const idx = +document.getElementById('pbIndex').value || 5;
+        if (idx > 0 && idx <= n) {
+          let row = 0; 
+          let col = 0;
+          if (idx <= row1Count) {
+            row = 0; col = idx - 1;
+          } else {
+            row = 1; col = idx - 1 - row1Count;
+          }
+          const slotSize = Math.max(stampSize, borderSize);
+          const rowCount = (row === 0 ? row1Count : row2Count);
+          const rowWidth = rowCount * (slotSize + gap) - gap;
+          const offsetX  = (W - rowWidth) / 2 + offx;
+          const offsetY  = (H / 2) - (slotSize + gap) + offy;
+          const baseY    = offsetY + row * (slotSize + gap);
+          const x = offsetX + col * (slotSize + gap);
+          const y = baseY;
+          if (document.getElementById('pbTypeText').checked) {
+            const txt   = document.getElementById('pbTextVal').value || '50%';
+            const fsize = +document.getElementById('pbTextSize').value || 20;
+            const tcol  = document.getElementById('pbTextColor').value || '#000000';
+            const txOfs = +document.getElementById('pbTextOffsetX').value || 0;
+            const tyOfs = +document.getElementById('pbTextOffsetY').value || 0;
+            ctx.save();
+            ctx.font      = fsize + 'px sans-serif';
+            ctx.fillStyle = tcol;
+            const cx = x + slotSize / 2 + txOfs;
+            const cy = y + slotSize / 2 + tyOfs;
+            const tw = ctx.measureText(txt).width;
+            ctx.fillText(txt, cx - tw / 2, cy + (fsize / 2));
+            ctx.restore();
+          }
+          else {
+            const pf = document.getElementById('pbFile').files[0];
+            if (pf) {
+              const s  = +document.getElementById('pbImgSize').value || 40;
+              const dx = +document.getElementById('pbImgOffsetX').value || 0;
+              const dy = +document.getElementById('pbImgOffsetY').value || 0;
+              try {
+                const purl = URL.createObjectURL(pf);
+                const pimg = await loadImage(purl);
+                const cx   = x + slotSize / 2 + dx;
+                const cy   = y + slotSize / 2 + dy;
+                ctx.drawImage(pimg, cx - (s/2), cy - (s/2), s, s);
+              } catch(e) {}
+            }
+          }
+        }
+      }
+    }
+    function drawOneRow(ctx, count, rowIndex, W, H, offx, offy, stampSize, borderSize, gap,
+                        stampImg, stampColor, stampAlpha,
+                        stampStrokeOn, stampStrokeColor, stampStrokeSize, stampStrokeAlpha,
+                        borderImg, borderColor, borderAlpha,
+                        borderStrokeOn, borderStrokeColor, borderStrokeSize, borderStrokeAlpha,
+                        fillCount) {
+      if (count <= 0) return;
+      const slotSize = Math.max(stampSize, borderSize);
+      const rowWidth = count * (slotSize + gap) - gap;
+      const offsetX  = (W - rowWidth) / 2 + offx;
+      const offsetY  = (H / 2) - (slotSize + gap) + offy;
+      const baseY    = offsetY + rowIndex * (slotSize + gap);
+      for (let i = 0; i < count; i++) {
+        const x = offsetX + i * (slotSize + gap);
+        const y = baseY;
+        if (borderImg) {
+          const tintedB = tintPatternBlend(borderImg, borderColor, borderSize, borderSize, borderAlpha);
+          ctx.drawImage(tintedB, x + (slotSize - borderSize) / 2, y + (slotSize - borderSize) / 2);
+          if (borderStrokeOn) {
+            const bcx = x + (slotSize - borderSize) / 2;
+            const bcy = y + (slotSize - borderSize) / 2;
+            ctx.save();
+            ctx.globalAlpha = borderStrokeAlpha / 100;
+            ctx.strokeStyle = borderStrokeColor;
+            ctx.lineWidth   = +borderStrokeSize || 2;
+            ctx.beginPath();
+            ctx.rect(bcx, bcy, borderSize, borderSize);
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+        if (i < fillCount && stampImg) {
+          const tintedS = tintPatternBlend(stampImg, stampColor, stampSize, stampSize, stampAlpha);
+          const sx = x + (slotSize - stampSize) / 2;
+          const sy = y + (slotSize - stampSize) / 2;
+          ctx.drawImage(tintedS, sx, sy);
+          if (stampStrokeOn) {
+            ctx.save();
+            ctx.globalAlpha = stampStrokeAlpha / 100;
+            ctx.strokeStyle = stampStrokeColor;
+            ctx.lineWidth   = +stampStrokeSize || 2;
+            ctx.beginPath();
+            ctx.rect(sx, sy, stampSize, stampSize);
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+      }
+    }
+    async function getStampParams() {
+      let stampImg   = null;
+      let stampColor = '#ffffff';
+      let stampAlpha = 0;
+      let stampSize  = +document.getElementById('stampSize').value || 80;
+      const stampStrokeOn    = document.getElementById('stampStrokeOn').checked;
+      const stampStrokeColor = document.getElementById('stampStrokeColor').value || '#000000';
+      const stampStrokeSize  = +document.getElementById('stampStrokeSize').value || 2;
+      const stampStrokeAlpha = +document.getElementById('stampStrokeAlpha').value || 100;
+      const isPredef = document.getElementById('stampPredef').checked;
+      const isCustom = document.getElementById('stampCustom').checked;
+      if (!isPredef && !isCustom) {
+        stampSelected = 'https://static.wixstatic.com/media/1cf87e_b902bf7ff01d45679dc1964eedc548d2~mv2.png';
+        document.getElementById('stampPredef').checked = true;
+      }
+      if (document.getElementById('stampPredef').checked) {
+        if (!stampSelected) {
+          stampSelected = 'https://static.wixstatic.com/media/1cf87e_b902bf7ff01d45679dc1964eedc548d2~mv2.png';
+        }
+        stampImg   = await loadImage(stampSelected);
+        stampColor = document.getElementById('stampColor').value || '#ffffff';
+        stampAlpha = +document.getElementById('stampAlpha').value || 0;
+      }
+      else if (document.getElementById('stampCustom').checked) {
+        const f = document.getElementById('stampFile').files && document.getElementById('stampFile').files[0];
+        if (f) {
+          stampImg   = await loadImage(URL.createObjectURL(f));
+          stampColor = document.getElementById('stampColor2').value || '#ffffff';
+          stampAlpha = +document.getElementById('stampAlpha2').value || 0;
+        }
+      }
+      return {
+        stampImg, stampColor, stampAlpha, stampSize,
+        stampStrokeOn, stampStrokeColor, stampStrokeSize, stampStrokeAlpha
+      };
+    }
+    async function getBorderParams() {
+      let borderImg   = null;
+      let borderColor = '#ffffff';
+      let borderAlpha = 0;
+      let borderSize  = +document.getElementById('borderSize').value || 80;
+      const borderStrokeOn    = document.getElementById('borderStrokeOn').checked;
+      const borderStrokeColor = document.getElementById('borderStrokeColor').value || '#000000';
+      const borderStrokeSize  = +document.getElementById('borderStrokeSize').value || 2;
+      const borderStrokeAlpha = +document.getElementById('borderStrokeAlpha').value || 100;
+      const isBPredef = document.getElementById('borderPredef').checked;
+      const isBCustom = document.getElementById('borderCustom').checked;
+      if (!isBPredef && !isBCustom) {
+        borderSelected = 'https://static.wixstatic.com/media/1cf87e_f9c1f6035fd14a6c87eb72e797edb4e1~mv2.png';
+        document.getElementById('borderPredef').checked = true;
+      }
+      if (document.getElementById('borderPredef').checked) {
+        if (!borderSelected) {
+          borderSelected = 'https://static.wixstatic.com/media/1cf87e_f9c1f6035fd14a6c87eb72e797edb4e1~mv2.png';
+        }
+        borderImg   = await loadImage(borderSelected);
+        borderColor = document.getElementById('borderColor').value || '#ffffff';
+        borderAlpha = +document.getElementById('borderAlpha').value || 0;
+      }
+      else if (document.getElementById('borderCustom').checked) {
+        const bf = document.getElementById('borderFile').files && document.getElementById('borderFile').files[0];
+        if (bf) {
+          borderImg   = await loadImage(URL.createObjectURL(bf));
+          borderColor = document.getElementById('borderColor2').value || '#ffffff';
+          borderAlpha = +document.getElementById('borderAlpha2').value || 0;
+        }
+      }
+      return {
+        borderImg, borderColor, borderAlpha, borderSize,
+        borderStrokeOn, borderStrokeColor, borderStrokeSize, borderStrokeAlpha
+      };
+    }
+    function tintPatternBlend(img, overlayColor, w, h, alphaPct) {
+      const off = document.createElement('canvas');
+      off.width  = w;
+      off.height = h;
+      const octx = off.getContext('2d');
+      octx.drawImage(img, 0, 0, w, h);
+      if (alphaPct > 0) {
+        octx.globalAlpha = alphaPct / 100;
+        octx.globalCompositeOperation = 'source-atop';
+        octx.fillStyle = overlayColor;
+        octx.fillRect(0, 0, w, h);
+      }
+      octx.globalAlpha = 1.0;
+      octx.globalCompositeOperation = 'source-over';
+      return off;
+    }
+    function loadImage(url) {
+      return new Promise((resolve, reject) => {
+        const i = new Image();
+        i.crossOrigin = 'Anonymous';
+        i.onload  = () => resolve(i);
+        i.onerror = e => reject(e);
+        i.src = url;
+      });
+    }
+    function hexToRgba(hex, alpha) {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+    function downloadStrip() {
+      if (!currentStripBlob) {
+        alert('Nejdříve vygenerujte strip, než ho budete stahovat.');
+        return;
+      }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(currentStripBlob);
+      a.download = 'strip.png';
+      a.click();
+    }
+    // --- NOVÉ FUNKCE PRO VYTVÁŘENÍ KARTY a ODESÍLÁNÍ DAT DO FIREBASE ---
+    // Inicializace Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyD3xCNBnyirGVKiynoCQW3UTKZQCDea0P8",
+      authDomain: "vernostkarty.firebaseapp.com",
+      projectId: "vernostkarty",
+      storageBucket: "vernostkarty-db.firebasestorage.app",
+      messagingSenderId: "450728233627",
+      appId: "1:450728233627:web:8d517b1f12de6462a8943e",
+      measurementId: "G-TGWEGK01JL"
+    };
+    // Inicializace Firebase pomocí kompatibilitních skriptů
+    firebase.initializeApp(firebaseConfig);
+    firebase.analytics();
+    const storage = firebase.storage();
+    // Globální proměnné pro podnik
+    let savedBusinessName = '';
+    let businessID = '';
+    let cardID = '';
+    async function saveBusinessName() {
+      const name = document.getElementById('businessNameInput').value.trim();
+      if (!name) {
+        alert("Prosím zadejte název podniku! 😊");
+        return;
+      }
+      savedBusinessName = name;
+      if (!businessID) {
+        businessID = generateUniqueID(8);
+      }
+      // persist business data
+      try {
+        const res = await fetch('https://us-central1-vernostkarty-db.cloudfunctions.net/updateUserData', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:fullId,data:{businessName:savedBusinessName,businessID}})});
+        if (!res.ok) console.error('Error updateUserData:', res.status, res.statusText);
+      } catch (e) {
+        console.error('Error saving business data:', e);
+      }
+      const bizDisplay = document.getElementById('businessInfoDisplay');
+      bizDisplay.textContent = 'ID kavárny: ' + businessID;
+      bizDisplay.style.display = 'block';
+      alert("Název podniku byl nastaven! 🚀");
+    }
+    async function createCardID() {
+      if(!savedBusinessName) {
+        alert("Nejdříve nastavte název vašeho podniku! 🏢");
+        return;
+      }
+      if (cardID) {
+        alert('Unikátní ID karty již existuje: ' + cardID);
+        return;
+      }
+      cardID = generateUniqueID(12);
+      document.getElementById('cardIDDisplay').textContent = "Unikátní ID karty: " + cardID;
+      const customerUrl = "https://onlineloyaltycards.com/cafe/?id=" + fullId.slice(-12);
+      document.getElementById('customerUrlDisplay').textContent = "Vaše URL pro vaše zákazníky ke stažení karty: " + customerUrl;
+      updateQRCode();
+      document.getElementById('qrCodeSection').style.display = 'block';
+      document.getElementById('createCardIDBtn').style.display = 'none';
+      const wixInd = document.getElementById('wixIdIndicator');
+      if (wixInd) wixInd.textContent = 'ID karty: ' + cardID;
+      // persist cardID
+      try {
+        const res = await fetch('https://us-central1-vernostkarty-db.cloudfunctions.net/updateUserData', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: fullId, data:{cardID}})});
+        if (!res.ok) console.error('updateUserData cardID:', res.status);
+      } catch(e) { console.error('Persist cardID error:', e); }
+      alert("ID karty bylo úspěšně vytvořeno! 🚀");
+    }
+    // --- FUNKCE PRO QR KÓD ---
+    function updateQRCode() {
+      var qrContainer = document.getElementById('qrCodeContainer');
+      qrContainer.innerHTML = "";
+      var customQRInput = document.getElementById('customQRCodeFile');
+      if(customQRInput.files && customQRInput.files[0]) {
+        var file = customQRInput.files[0];
+        var customImg = new Image();
+        customImg.onload = function() {
+          if(document.getElementById('qrLogoFile').files && document.getElementById('qrLogoFile').files[0]) {
+            var logoFile = document.getElementById('qrLogoFile').files[0];
+            var reader = new FileReader();
+            reader.onload = function(e) {
+              var logoImg = new Image();
+              logoImg.onload = function() {
+                var canvas = document.createElement('canvas');
+                canvas.width = customImg.width;
+                canvas.height = customImg.height;
+                var ctx = canvas.getContext('2d');
+                ctx.drawImage(customImg, 0, 0);
+                var logoSize = canvas.width * 0.2;
+                var x = (canvas.width - logoSize) / 2;
+                var y = (canvas.height - logoSize) / 2;
+                ctx.drawImage(logoImg, x, y, logoSize, logoSize);
+                qrContainer.innerHTML = "";
+                qrContainer.appendChild(canvas);
+              }
+              logoImg.src = e.target.result;
+            }
+            reader.readAsDataURL(logoFile);
+          } else {
+            customImg.style.width = "200px";
+            customImg.style.height = "200px";
+            qrContainer.appendChild(customImg);
+          }
+        }
+        customImg.src = URL.createObjectURL(file);
+        return;
+      }
+      var customerUrl = document.getElementById('customerUrlDisplay').textContent.replace("Vaše URL pro vaše zákazníky ke stažení karty: ", "");
+      if(!customerUrl) {
+        customerUrl = "https://onlineloyaltycards.com";
+      }
+      var qrColor = document.getElementById('qrColor').value;
+      var qrBgColor = document.getElementById('qrBgColor').value;
+      new QRCode(qrContainer, {
+        text: customerUrl,
+        width: 200,
+        height: 200,
+        colorDark: qrColor,
+        colorLight: qrBgColor,
+        correctLevel: QRCode.CorrectLevel.H
+      });
+      if(document.getElementById('qrLogoFile').files && document.getElementById('qrLogoFile').files[0]) {
+        var file = document.getElementById('qrLogoFile').files[0];
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          var logoImg = new Image();
+          logoImg.onload = function() {
+             var canvas = qrContainer.querySelector('canvas');
+             if(canvas) {
+               var ctx = canvas.getContext('2d');
+               var logoSize = canvas.width * 0.2;
+               var x = (canvas.width - logoSize) / 2;
+               var y = (canvas.height - logoSize) / 2;
+               ctx.drawImage(logoImg, x, y, logoSize, logoSize);
+             }
+          }
+          logoImg.src = e.target.result;
+        }
+        reader.readAsDataURL(file);
+      }
+    }
+    function downloadQRCode() {
+      var qrContainer = document.getElementById('qrCodeContainer');
+      var canvas = qrContainer.querySelector('canvas');
+      if(canvas) {
+        var link = document.createElement('a');
+        link.href = canvas.toDataURL("image/png");
+        link.download = "qrcode.png";
+        link.click();
+      } else {
+        var img = qrContainer.querySelector('img');
+        if(img) {
+          var link = document.createElement('a');
+          link.href = img.src;
+          link.download = "qrcode.png";
+          link.click();
+        } else {
+          alert("QR kód není k dispozici ke stažení.");
+        }
+      }
+    }
+    // --- NOVÁ FUNKCE: ODESLÁNÍ DAT DO FIREBASE ---
+    async function sendDataToFirebase() {
+      const btn = document.getElementById('sendToFirebaseBtn');
+      btn.disabled = true;
+      btn.textContent = "Odesílám...";
+      
+      const cardIDText = document.getElementById('cardIDDisplay').textContent;
+      if (!cardIDText) {
+        alert('Nejdříve vytvořte ID karty! 🚧');
+        btn.disabled = false;
+        btn.textContent = 'Poslat do Firebase 🚀';
+        return;
+      }
+      const cardID = cardIDText.replace('ID karty: ', '');
+      
+      // Sběr ne‑file dat
+      const data = {};
+      document.querySelectorAll('input:not([type="file"]), textarea, select').forEach(f => {
+        const key = f.id || f.name;
+        if (!key || key === 'cardType' || f.type === 'file') return;
+        let val = '';
+        if (f.type === 'checkbox' || f.type === 'radio') {
+          if (f.checked) val = f.value || 'on';
+        } else {
+          val = f.value;
+        }
+        data[key] = val;
+      });
+      document.querySelectorAll('img[id]').forEach(img => data[img.id] = img.src);
+      document.querySelectorAll('canvas[id]').forEach(c => data[c.id] = c.toDataURL());
+      data.cardID = cardID;
+      data.timestamp = new Date().toISOString();
+      // record selected card type
+      const sel = document.querySelector('.card.selected');
+      if (sel) data.cardType = sel.id;
+
+      // -- Validace a hashování hesla pro obsluhu --
+      const password = data.staffPassword;
+      const passwordConfirm = data.staffPasswordConfirm;
+
+      if (password || passwordConfirm) { // Zpracujeme heslo, jen pokud je zadáno
+          if (!validatePasswords(true)) { // Použijeme existující validaci
+              btn.disabled = false;
+              btn.textContent = 'Poslat do Firebase 🚀';
+              return; // Přerušíme odeslání, pokud hesla nesouhlasí
+          }
+
+          // Pokud je vše v pořádku, zahashujeme heslo
+          const staffPasswordHash = await hashPassword(password);
+          data.staffPasswordHash = staffPasswordHash; // Přidáme hash do dat k odeslání
+      }
+
+      // Smažeme původní textová hesla z dat, aby se neodeslala do Firebase
+      delete data.staffPassword;
+      delete data.staffPasswordConfirm;
+      // -- Konec validace a hashování --
+      
+      // Uložení ne‑file dat do Firestore
+      try {
+        const res = await fetch('https://us-central1-vernostkarty-db.cloudfunctions.net/updateUserData', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: cardID, data })
+        });
+        const j = await res.json();
+        let resultEl = document.getElementById('resultFirebase');
+        if (!resultEl) {
+          resultEl = document.createElement('p');
+          resultEl.id = 'resultFirebase';
+          resultEl.style.marginTop = '20px';
+          resultEl.style.fontWeight = 'bold';
+          document.getElementById('sendToFirebaseBtn').parentNode.insertBefore(resultEl, document.getElementById('sendToFirebaseBtn').nextSibling);
+        }
+        resultEl.textContent = j.success ? 'Úspěšně odesláno!' : 'Chyba: ' + j.error;
+      } catch (error) {
+        console.error('Chyba při zápisu dokumentu:', error);
+        alert('Chyba při odesílání dat do Firebase 😢');
+        btn.disabled = false;
+        btn.textContent = 'Poslat do Firebase 🚀';
+        return;
+      }
+      
+      // Nahrání souborů do Storage ve složce businessID/cardID
+      const bizText = document.getElementById('businessInfoDisplay')?.textContent.trim() || '';
+      const businessID = bizText.split('ID kavárny: ')[1] || '';
+      const fileInputs = ['logoFile','stripFile','stampFile','borderFile','customQRCodeFile','pbFile'];
+      const uploadPromises = fileInputs.map(id => {
+        const inp = document.getElementById(id);
+        return (inp?.files?.[0])
+          ? firebase.storage().ref(`${businessID}/${cardID}/${id.replace(/File$/, '')}.${inp.files[0].name.split('.').pop().toLowerCase()}`).put(inp.files[0])
+          : Promise.resolve();
+      });
+      const stripCanvas = document.getElementById('stripCanvas');
+      if (stripCanvas) {
+        uploadPromises.push(new Promise(resolve => {
+          stripCanvas.toBlob(blob => {
+            if (!blob) return resolve();
+            firebase.storage().ref(`${businessID}/${cardID}/finalStrip.png`)
+              .put(blob)
+              .then(() => resolve());
+          });
+        }));
+      }
+      // Vygenerovat PNG z loga (text nebo obrázek) zachovávající okraje
+      uploadPromises.push(new Promise(resolve => {
+        html2canvas(document.getElementById('logoSlot'), { backgroundColor: null })
+          .then(canvas => {
+            canvas.toBlob(blob => {
+              if (!blob) return resolve();
+              const ref = firebase.storage().ref(`${businessID}/${cardID}/logo.png`);
+              ref.put(blob)
+                .then(snapshot => snapshot.ref.getDownloadURL())
+                .then(url => {
+                  console.log('Logo URL:', url);
+                  let urlEl = document.getElementById('logoUrl');
+                  if (!urlEl) {
+                    urlEl = document.createElement('p');
+                    urlEl.id = 'logoUrl';
+                    urlEl.style.marginTop = '10px';
+                    document.getElementById('sendToFirebaseBtn').parentNode.appendChild(urlEl);
+                  }
+                  urlEl.textContent = url;
+                  resolve();
+                })
+                .catch(() => resolve());
+            });
+          })
+          .catch(() => resolve());
+      }));
+      await Promise.all(uploadPromises);
+      
+      const imgResEl = document.getElementById('resultImages');
+      if (imgResEl) imgResEl.textContent = 'Obrázky úspěšně nahrány';
+      
+      btn.disabled = false;
+      btn.textContent = 'Poslat do Firebase 🚀';
+    }
+    // --- FUNKCE PRO generování unikátního ID ---
+    function generateUniqueID(length) {
+      var result = '';
+      var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      var charactersLength = characters.length;
+      for ( var i = 0; i < length; i++ ) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+      }
+      return result;
+    }
+    // Pro ukázku: schováme jméno na úvod
+    document.getElementById('customerInfo').style.display = 'none';
+  </script>
+
+  <script>
+    document.getElementById('sendToFirebaseFromCollect').addEventListener('click', async () => {
+      // determine doc id: prefer fullId, fallback to cardID
+      const id = fullId || cardID;
+      if (!id) return alert('Nevím, jaké je ID karty…');
+      fullId = id;
+      const lines = document.getElementById('result').textContent.split('\n').filter(l => l);
+      const data = {};
+      lines.forEach(l => { const idx = l.indexOf(':'); if (idx > 0) data[l.slice(0, idx).trim()] = l.slice(idx+1).trim(); });
+      data.businessName = document.getElementById('businessNameInput').value.trim();
+      data.businessID = document.getElementById('businessInfoDisplay').textContent.replace('ID kavárny: ', '').trim();
+      data.customerUrl = document.getElementById('customerUrlDisplay').textContent.replace('Vaše URL pro vaše zákazníky ke stažení karty: ', '');
+      const sel = document.querySelector('.card.selected');
+      if (sel) data.cardType = sel.id;
+
+      // Zpracování a formátování dat o slevových úrovních podle pravidel (vždy 3 úrovně, fallbacky, formátování zůstatku)
+      let statuses = [], slevy = [], zustatky = [];
+      for (let i = 1; i <= 3; i++) {
+        statuses.push(data[`status${i}`] || '');
+        slevy.push(data[`sleva${i}`] || '');
+        // Ukládej vždy pouze číslo bez prefixu
+        let rawZustatek = data[`zustatek${i}`] || '';
+        if (typeof rawZustatek === 'string' && rawZustatek.startsWith('0 až ')) {
+          rawZustatek = rawZustatek.replace(/^0 až /, '');
+        }
+        zustatky.push(rawZustatek);
+      }
+      for (let i = 0; i < 3; i++) {
+        if (!statuses[i]) statuses[i] = statuses[i-1] || statuses[0] || '';
+        if (!slevy[i]) slevy[i] = slevy[i-1] || slevy[0] || '';
+        if (!zustatky[i]) zustatky[i] = zustatky[i-1] || zustatky[0] || '';
+      }
+      data.level1_status = statuses[0];
+      data.level1_sleva = slevy[0];
+      data.level1_zustatek = zustatky[0];
+      data.level2_status = statuses[1];
+      data.level2_sleva = slevy[1];
+      data.level2_zustatek = zustatky[1];
+      data.level3_status = statuses[2];
+      data.level3_sleva = slevy[2];
+      data.level3_zustatek = zustatky[2];
+      // smaž původní surová pole
+      for (let i = 1; i <= 3; i++) {
+        delete data[`status${i}`];
+        delete data[`sleva${i}`];
+        delete data[`zustatek${i}`];
+      }
+      
+      // upload files to Storage
+      const fileInputs = ['logoFile','stripFile','stampFile','borderFile','customQRCodeFile','pbFile'];
+      for (let key of fileInputs) {
+        const inputEl = document.getElementById(key);
+        if (inputEl?.files?.[0]) {
+          const file = inputEl.files[0];
+          const ext = file.name.split('.').pop().toLowerCase();
+          const ref = firebase.storage().ref(`cardzapier/${fullId}/${key.replace(/File$/, '')}.${ext}`);
+          const snap = await ref.put(file);
+          const url = await snap.ref.getDownloadURL();
+          document.getElementById('uploadStatus').innerHTML += `<strong>${key}</strong>: <a href="${url}" target="_blank">${url}</a><br/>`;
+        }
+      }
+      // upload strip z canvasu
+      const stripCanvas = document.getElementById('stripCanvas');
+      if (stripCanvas) {
+        const blob = await new Promise(resolve => stripCanvas.toBlob(resolve));
+        if (blob) {
+          const refStrip = firebase.storage().ref(`cardzapier/${fullId}/strip.png`);
+          const snapStrip = await refStrip.put(blob);
+          const urlStrip = await snapStrip.ref.getDownloadURL();
+          document.getElementById('uploadStatus').innerHTML += `<strong>strip</strong>: <a href="${urlStrip}" target="_blank">${urlStrip}</a><br/>`;
+        }
+      }
+      // upload logo slot as PNG
+      const logoSlotCanvas = await html2canvas(document.getElementById('logoSlot'), { backgroundColor: null });
+      const logoBlob = await new Promise(resolve => logoSlotCanvas.toBlob(resolve));
+      if (logoBlob) {
+        const refLogo = firebase.storage().ref(`cardzapier/${fullId}/logo.png`);
+        const snapLogo = await refLogo.put(logoBlob);
+        const urlLogo = await snapLogo.ref.getDownloadURL();
+        document.getElementById('uploadStatus').innerHTML += `<strong>logo</strong>: <a href="${urlLogo}" target="_blank">${urlLogo}</a><br/>`;
+      }
+      // -- Validace a hashování hesla před odesláním --
+      const password = document.getElementById('staffPassword').value;
+      const passwordConfirm = document.getElementById('staffPasswordConfirm').value;
+      const passwordErrorDiv = document.getElementById('passwordError');
+      let staffPasswordHash = null;
+
+      // Heslo je volitelné, ale pokud je zadáno, musí být validní
+      if (password || passwordConfirm) {
+          if (password.length < 8) {
+              passwordErrorDiv.textContent = 'Heslo musí mít alespoň 8 znaků.';
+              alert('Heslo pro obsluhu nesplňuje požadavky.');
+              return; // Zastaví odesílání
+          }
+          if (password !== passwordConfirm) {
+              passwordErrorDiv.textContent = 'Hesla se neshodují.';
+              alert('Hesla pro obsluhu se neshodují.');
+              return; // Zastaví odesílání
+          }
+          // Pokud je vše v pořádku, zahashujeme heslo
+          staffPasswordHash = await hashPassword(password);
+          data.staffPasswordHash = staffPasswordHash; // Přidáme hash do dat k odeslání
+
+          // Smažeme původní textová hesla z dat, aby se neodeslala do Firebase
+          delete data.staffPassword;
+          delete data.staffPasswordConfirm;
+      }
+      // -- Konec validace a hashování --
+
+      // send collected data to Firestore
+      try {
+        const res = await fetch('https://us-central1-vernostkarty-db.cloudfunctions.net/updateUserData', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, data })
+        });
+        const j = await res.json();
+        let resultEl = document.getElementById('resultFirebase');
+        if (!resultEl) {
+          resultEl = document.createElement('p');
+          resultEl.id = 'resultFirebase';
+          resultEl.style.marginTop = '20px';
+          resultEl.style.fontWeight = 'bold';
+          document.getElementById('sendToFirebaseFromCollect').parentNode.insertBefore(resultEl, document.getElementById('sendToFirebaseFromCollect').nextSibling);
+        }
+        resultEl.textContent = j.success ? 'Úspěšně odesláno!' : 'Chyba: ' + j.error;
+      } catch (error) {
+        console.error('Chyba při zápisu dokumentu:', error);
+        let resultEl = document.getElementById('resultFirebase');
+        if (!resultEl) {
+          resultEl = document.createElement('p');
+          resultEl.id = 'resultFirebase';
+          resultEl.style.marginTop = '20px';
+          resultEl.style.fontWeight = 'bold';
+          document.getElementById('sendToFirebaseFromCollect').parentNode.insertBefore(resultEl, document.getElementById('sendToFirebaseFromCollect').nextSibling);
+        }
+        resultEl.textContent = 'Komunikační chyba.';
+      }
+      document.getElementById('uploadStatus').innerHTML += 'Hotovo.';
+    });
+
+    // --- Funkce pro heslo obsluhy ---
+    function toggleStaffPasswordVisibility(fieldId, icon) {
+      const field = document.getElementById(fieldId);
+      if (field.type === 'password') {
+        field.type = 'text';
+        icon.textContent = '🙈';
+      } else {
+        field.type = 'password';
+        icon.textContent = '👁️';
+      }
+    }
+
+    // Asynchronní funkce pro hashování hesla
+    async function hashPassword(password) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer)); // převod na pole bajtů
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join(''); // převod na hex string
+      return hashHex;
+    }
+
+    // Validace hesel při psaní
+    const passInput = document.getElementById('staffPassword');
+    const confirmPassInput = document.getElementById('staffPasswordConfirm');
+    const errorDiv = document.getElementById('passwordError');
+
+    function validatePasswords() {
+        errorDiv.textContent = ''; // Reset chybové hlášky
+        if (passInput.value && confirmPassInput.value) { // Kontrolujeme jen když jsou obě pole vyplněna
+            if (passInput.value.length < 8) {
+                errorDiv.textContent = 'Heslo musí mít alespoň 8 znaků.';
+                return false;
+            }
+            if (passInput.value !== confirmPassInput.value) {
+                errorDiv.textContent = 'Hesla se neshodují.';
+                return false;
+            }
+        }
+        return true;
+    }
+
+    passInput.addEventListener('input', validatePasswords);
+    confirmPassInput.addEventListener('input', validatePasswords);
+  </script>
+  <script>
+    // Add test info UI
+    const testInfoContainer = document.createElement('div');
+    testInfoContainer.style.marginTop = '20px';
+    testInfoContainer.innerHTML = `
+      <h3>Test Info</h3>
+      <p>This is a test info section.</p>
+      <button id="testButton">Click me!</button>
+    `;
+    document.body.appendChild(testInfoContainer);
+
+    // Add test info script
+    document.getElementById('testButton').addEventListener('click', () => {
+      alert('Test button clicked!');
+    });
+  </script>
+</body>
+</html>

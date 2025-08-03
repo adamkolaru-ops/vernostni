@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>Info o Kavárně</title>
+  <style>
+    /* Styl pro lepší zalamování dlouhých URL adres */
+    li { word-wrap: break-word; }
+  </style>
+</head>
+<body>
+
+<h1>Informace o kavárně:</h1>
+<div id="cafe-details" style="margin-top:10px; font-family:sans-serif;">
+    <p>Načítám...</p>
+</div>
+
+<div id="client-form-container">
+    <div id="client-fields" style="margin-top:20px; display:none;">
+      <div id="clientName-field" style="display:none;"><label>Jméno *:</label><input type="text" id="clientName"></div>
+      <div id="clientSurname-field" style="display:none;"><label>Příjmení *:</label><input type="text" id="clientSurname"></div>
+      <div id="clientDob-field" style="display:none;"><label>Datum narození:</label><input type="date" id="clientDob"></div>
+      <div id="clientPhone-field" style="display:none;">
+        <label>Telefon:</label>
+        <div style="display:flex; gap:4px; align-items:center;">
+          <input type="text" id="clientPhonePrefix" value="+420" style="width:80px;">
+          <input type="tel" id="clientPhone" style="flex:1;">
+        </div>
+      </div>
+      <div id="clientEmail-field" style="display:none;"><label>Email *:</label><input type="email" id="clientEmail"></div>
+    </div>
+    
+    <button id="save-btn" style="margin-top:10px;">Uložit</button>
+    
+    <button id="generate-pass-btn" style="margin-top: 10px; padding: 10px 15px; font-size: 16px; display: none; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Generovat a stáhnout Pass</button>
+
+    <div id="error-msg" style="color:red; margin-top:10px;"></div>
+</div>
+
+
+<div id="pass-result" style="margin-top:10px;"></div>
+
+<div id="verification-container" style="display:none; margin-top:20px; border:1px solid #ccc; padding:10px;">
+  <p>Email je již registrován. Pro stažení karty prosím ověřte svůj e-mail.</p>
+  <button id="send-code-btn">Odeslat ověřovací kód</button>
+  <div id="code-entry" style="display:none; margin-top:10px;">
+    <input type="text" id="code-input" placeholder="Zadej kód" maxlength="6" style="width:100px;">
+    <button id="verify-code-btn">Ověřit kód</button>
+    <p id="verify-msg" style="color:red;"></p>
+  </div>
+</div>
+
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script type="text/javascript">
+  (function(){ emailjs.init("tvSN38_95vBxkKmhh"); })();
+
+  function showVerificationUI() {
+    document.getElementById('verification-container').style.display = 'block';
+  }
+
+  function sendVerificationCode() {
+    document.getElementById('code-entry').style.display = 'block';
+    const blockedUntil = parseInt(localStorage.getItem('verificationResendBlockedUntil')) || 0;
+    if (Date.now() < blockedUntil) {
+      alert('Zkus znovu odeslat za ' + Math.ceil((blockedUntil - Date.now())/1000) + ' sekund.');
+      return;
+    }
+    const email = document.getElementById('clientEmail').value.trim();
+    if (!email) {
+        alert('Prosím, zadejte e-mailovou adresu.');
+        return;
+    }
+    const code = Math.floor(100000 + Math.random()*900000).toString();
+    localStorage.setItem('verificationCode', code);
+    localStorage.setItem('verificationAttemptsCount', '0');
+    emailjs.send('service_bgezh6a', 'template_r6smsm2', { to_email: email, code: code })
+      .then(() => {
+        alert('Ověřovací e-mail byl úspěšně odeslán.');
+        localStorage.setItem('verificationResendBlockedUntil', Date.now() + 30000);
+      })
+      .catch(err => {
+          alert('Chyba při odesílání e-mailu: ' + JSON.stringify(err));
+          console.error('EmailJS error:', err);
+      });
+  }
+
+  function verifyCode() {
+    const enteredCode = document.getElementById('code-input').value.trim();
+    const email = document.getElementById('clientEmail').value;
+    const cafeId = cafeSettings.fullId;
+    const storedCode = localStorage.getItem('verificationCode');
+    const msg = document.getElementById('verify-msg');
+
+    // 1. Úspěšné ověření kódu
+    if (enteredCode === storedCode) {
+      msg.innerText = 'E-mail úspěšně ověřen! Načítám data...';
+      msg.style.color = 'green';
+
+      // Resetujeme počítadlo pokusů
+      localStorage.removeItem('verificationAttemptsCount');
+
+      // Zavoláme funkci pro načtení dat uživatele
+      fetch('https://us-central1-vernostkarty-db.cloudfunctions.net/getCafeUser', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cafeId, email })
+      })
+      .then(res => res.json())
+      .then(json => {
+        if (json.success) {
+          Object.assign(cafeSettings, json.data);
+          displayCafeDetails(cafeSettings);
+          document.getElementById('client-fields').style.display = 'none';
+          document.getElementById('save-btn').style.display = 'none';
+          document.getElementById('verification-container').style.display = 'none';
+          document.getElementById('generate-pass-btn').style.display = 'block';
+        } else {
+          msg.innerText = 'Chyba načítání dat: ' + json.error;
+          msg.style.color = 'red';
+        }
+      })
+      .catch(err => {
+        console.error('getCafeUser fetch error:', err);
+        msg.innerText = 'Chyba komunikace se serverem.';
+        msg.style.color = 'red';
+      });
+      return; // Ukončíme funkci
+    }
+
+    // 2. Neúspěšné ověření - logika pro počítání pokusů
+    let count = parseInt(localStorage.getItem('verificationAttemptsCount')) || 0;
+    count++;
+    localStorage.setItem('verificationAttemptsCount', count.toString());
+
+    if (count >= 5) {
+      let level = parseInt(localStorage.getItem('verificationAttemptsLevel')) || 1;
+      level++;
+      localStorage.setItem('verificationAttemptsLevel', level.toString());
+      const delay = level === 2 ? 30000 : 30 * 60000; // 30s, pak 30min
+      localStorage.setItem('verificationResendBlockedUntil', Date.now() + delay);
+      msg.innerText = `Příliš mnoho pokusů. Zkuste to znovu za ${delay / 60000} minut.`;
+      document.getElementById('send-code-btn').disabled = true;
+    } else {
+      msg.innerText = `Nesprávný kód. Počet zbývajících pokusů: ${5 - count}`;
+    }
+  }</script>
+
+
+<script>var cafeSettings = null;</script>
+
+<script>
+const SAVE_USER_URL = "https://savecafeuser-weeqy2w2la-uc.a.run.app";
+const SAVE_USER_BY_ID_URL = "https://saveuserbyid-weeqy2w2la-uc.a.run.app"; // POZOR: Tuto URL bude potřeba nahradit skutečnou URL po nasazení nové funkce.
+const SAVE_USER_TO_USERSID_URL = "https://us-central1-vernostkarty-db.cloudfunctions.net/saveUserToUsersId";
+
+document.addEventListener("DOMContentLoaded", function() {
+  document.getElementById('send-code-btn').addEventListener('click', sendVerificationCode);
+  document.getElementById('verify-code-btn').addEventListener('click', verifyCode);
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const cafeId = urlParams.get('id');
+
+  if (cafeId && cafeId.length >= 12) {
+    fetchCafeSettings(cafeId);
+  } else {
+    document.getElementById('cafe-details').innerHTML = "<p style='color:red;'>ID kavárny v URL nebylo nalezeno nebo je neplatné.</p>";
+  }
+  
+  document.getElementById('save-btn').addEventListener('click', function(e) {
+    e.preventDefault();
+    const out = document.getElementById('error-msg');
+    const name = document.getElementById('clientName').value.trim();
+    const surname = document.getElementById('clientSurname').value.trim();
+    const email = document.getElementById('clientEmail').value.trim();
+    // Validace e-mailu podle pravidel
+    var emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!name || !surname || !email) {
+      out.innerText = 'Vyplň prosím jméno, příjmení a email.';
+      return;
+    }
+    if (!emailRegex.test(email)) {
+      out.innerText = 'Zadej platný e-mail.';
+      return;
+    }
+    const dob = document.getElementById('clientDob').value;
+    const phone = document.getElementById('clientPhonePrefix').value + document.getElementById('clientPhone').value.trim();
+    const cardId = cafeSettings.cardID || '';
+    const cafeIdValue = cafeSettings.fullId || '';
+
+    // anonymousID: base36 string z hex kódů znaků e-mailu (krátké, jedinečné)
+    var hex = '';
+    for (var i = 0; i < email.length; i++) {
+      var h = email.charCodeAt(i).toString(16);
+      hex += h.length === 1 ? '0'+h : h.slice(-2);
+    }
+    var anonymousID = parseInt(hex, 16).toString(36);
+
+    const payload = {
+      // Původní klíče
+      cafeId: cafeIdValue,
+      email,
+      name,
+      surname,
+      dob,
+      phone,
+      cardId,
+      anonymousID,
+
+      // Nové klíče
+      businessName: cafeSettings.businessName || '',
+      cardColor: cafeSettings.cardColor || '',
+      textColor: cafeSettings.textColor || '',
+      logoURL: cafeSettings.logoURL || '',
+      stripImageURL: cafeSettings.stripImageURL || '',
+      fullId: cafeSettings.fullId || '',
+      cardType: cafeSettings.cardType || '',
+      stampCount: cafeSettings.stampCount || '',
+      stampValInput: cafeSettings.stampValInput || '',
+      bodyLabel1Input: cafeSettings.bodyLabel1Input || '',
+      bodyValInput: cafeSettings.bodyValInput || '',
+      bodyBottomTopInput: cafeSettings.bodyBottomTopInput || '',
+      bodyBottomBotInput: cafeSettings.bodyBottomBotInput || '',
+      bodyKonverze: cafeSettings.bodyKonverze || '',
+      level1_status: cafeSettings.level1_status || '',
+      level1_sleva: cafeSettings.level1_sleva || '',
+      level1_zustatek: cafeSettings.level1_zustatek || '',
+      level2_status: cafeSettings.level2_status || '',
+      level2_sleva: cafeSettings.level2_sleva || '',
+      level2_zustatek: cafeSettings.level2_zustatek || '',
+      level3_status: cafeSettings.level3_status || '',
+      level3_sleva: cafeSettings.level3_sleva || '',
+      level3_zustatek: cafeSettings.level3_zustatek || ''
+    };
+    const payloadForNewFunction = {
+      cafeId: cafeIdValue.slice(-12),
+      wixid: cafeIdValue,
+      userId: anonymousID,
+      email: email
+    };
+
+    fetch(SAVE_USER_BY_ID_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payloadForNewFunction)
+    })
+    .then(res => res.json())
+    .then(json => {
+      if (json.success) {
+        console.log("Email uživatele úspěšně uložen pod jeho ID.");
+      } else {
+        console.error("Chyba při ukládání emailu pod ID:", json.error);
+      }
+    })
+    .catch(err => {
+      console.error("Chyba při volání nové funkce saveUserById:", err);
+    });
+
+    fetch(SAVE_USER_TO_USERSID_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payloadForNewFunction)
+    })
+    .then(res => res.json())
+    .then(json => {
+      if (json.success) {
+        console.log("Email uživatele úspěšně uložen do usersid.");
+      } else {
+        console.error("Chyba při ukládání emailu do usersid:", json.error);
+      }
+    })
+    .catch(err => {
+      console.error("Chyba při volání nové funkce saveUserToUsersId:", err);
+    });
+
+    fetch(SAVE_USER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(json => {
+      if (json.success) {
+        out.style.color = 'green';
+        out.innerText = 'Uloženo!';
+
+        // Uložíme nově zadané údaje i do lokálního objektu cafeSettings
+        cafeSettings.name = name;
+        cafeSettings.surname = surname;
+        cafeSettings.email = email;
+        cafeSettings.dob = dob;
+        cafeSettings.phone = phone;
+        cafeSettings.anonymousId = anonymousID; // KLÍČOVÉ: Uložíme i anonymousId (s malým 'id' pro konzistenci s backendem)
+
+        // Zobrazíme tlačítko pro generování passu a skryjeme formulář
+        document.getElementById('client-fields').style.display = 'none';
+        document.getElementById('save-btn').style.display = 'none';
+        document.getElementById('generate-pass-btn').style.display = 'block';
+
+      } else if (json.error && json.error.includes('registrován')) {
+        showVerificationUI();
+      } else {
+        out.innerText = json.error || 'Neznámá chyba.';
+      }
+    })
+    .catch(err => {
+      console.error('saveCafeUser error:', err);
+      out.innerText = 'Chyba ukládání.';
+    });
+  });
+
+  document.getElementById('generate-pass-btn').addEventListener('click', async function() {
+    // KROK 1: Kritická kontrola, která brání pádu stránky.
+    if (!cafeSettings || !cafeSettings.fullId) {
+        const resultEl = document.getElementById('pass-result');
+        resultEl.textContent = 'Chyba: Data kavárny se nepodařilo načíst. Nelze generovat pass. Zkontrolujte, zda je v URL správné ID kavárny a obnovte stránku.';
+        resultEl.style.color = 'red';
+        return; // Zastavíme vykonávání, abychom předešli pádu.
+    }
+
+    // KROK 2: Sjednocené generování a ověření všech potřebných identifikátorů.
+    const fullId = cafeSettings.fullId;
+    let userId = cafeSettings.anonymousId;
+
+    // Pokud chybí userId, vygenerujeme ho z emailu (bez složitých DOM manipulací)
+    if (!userId) {
+        const emailField = document.getElementById('clientEmail');
+        if (!emailField || !emailField.value.trim()) {
+            alert('Chyba: Pro generování passu je potřeba zadat email.');
+            return;
+        }
+        const email = emailField.value.trim();
+        // Jednoduché generování anonymousId z emailu
+        userId = btoa(email).replace(/[^a-zA-Z0-9]/g, '').substring(0, 12);
+        cafeSettings.anonymousId = userId;
+    }
+
+    if (!fullId || !userId) {
+        alert('Chyba: Chybí ID kavárny nebo uživatele.');
+        return;
+    }
+
+    const qrText = `https://onlineloyaltycards.com/editor/?id=${fullId}/${userId}`;
+
+    // KROK 3: Vytvoření payloadu se všemi aliasy pro maximální kompatibilitu.
+    const payload = {
+        // Klíčové identifikátory (všechny aliasy)
+        cardType: cafeSettings.cardType,
+        cafeId: fullId.slice(-12), // Krátké ID (posledních 12 znaků)
+        fullId: fullId,           // Celé ID
+        wixid: fullId,            // Alias pro celé ID
+        userId: userId,           // ID uživatele
+        anonymousId: userId,      // Alias pro ID uživatele
+        qrText: qrText,
+
+        // Vizuální a datové vlastnosti karty
+        cardColor: cafeSettings.cardColor,
+        textColor: cafeSettings.textColor,
+        logoURL: cafeSettings.logoURL,
+        stripImageURL: cafeSettings.stripImageURL,
+        thumbnailURL: cafeSettings.thumbnailURL,
+
+        // Pole pro Apple Wallet pass - vždy nastavit základní hodnoty
+        primaryLabel: "VĚRNOSTNÍ KARTA",
+        primaryValue: cafeSettings.businessName || '',
+        discountLabel: "",
+        discountValue: "",
+        headerCenterLabel: "",
+        headerCenterValue: "",
+        auxiliary: [
+            { label: "", value: "" },
+            { label: "", value: "" }
+        ]
+    };
+
+    // Pokud je showNameChk zapnuto, vložíme jméno a příjmení do auxiliary pole
+    if (cafeSettings.showNameChk === 'on') {
+        const fullName = `${cafeSettings.name || ''} ${cafeSettings.surname || ''}`.trim();
+        if (fullName) {
+            payload.auxiliary[0] = {
+                label: "Zákazník:",
+                value: fullName
+            };
+        }
+    } else {
+        // Pokud showNameChk není 'on', nastavíme pole jako prázdné, aby se nezobrazilo
+        payload.auxiliary[0] = { label: "", value: "" };
+    }
+    // Nastavení specifických polí podle typu karty - podle skutečného zobrazení v Apple Wallet
+    switch (cafeSettings.cardType) {
+        case 'card-body':
+            // Primary field - hlavní název karty
+            payload.primaryLabel = "VĚRNOSTNÍ KARTA";
+            payload.primaryValue = cafeSettings.businessName || '';
+            
+            // Discount field - vpravo nahoře (bodyLabel1Input + bodyValInput)
+            payload.discountLabel = cafeSettings.bodyLabel1Input || 'BODY';
+            payload.discountValue = cafeSettings.bodyValInput || '0';
+            
+            // Header center field - uprostřed nahoře (prázdné pro card-body)
+            payload.headerCenterLabel = '';
+            payload.headerCenterValue = '';
+            
+            // Auxiliary field - vpravo dole (bodyBottomTopInput + bodyBottomBotInput)
+            payload.auxiliary[1] = {
+                label: cafeSettings.bodyBottomTopInput || '',
+                value: cafeSettings.bodyBottomBotInput || ''
+            };
+            break;
+
+        case 'card-razitka':
+            // Primary field - hlavní název karty
+            payload.primaryLabel = "VĚRNOSTNÍ KARTA";
+            payload.primaryValue = cafeSettings.businessName || '';
+            
+            // Discount field - vpravo nahoře (prázdné pro razítka)
+            payload.discountLabel = '';
+            payload.discountValue = '';
+            
+            // Header center field - uprostřed nahoře (prázdné pro razítka)
+            payload.headerCenterLabel = '';
+            payload.headerCenterValue = '';
+            
+            // Auxiliary field - vpravo dole (RAZÍTKA s počtem)
+            payload.auxiliary[1] = {
+                label: 'RAZÍTKA',
+                value: `${cafeSettings.stampValInput || '0'} / ${cafeSettings.stampCount || '0'}`
+            };
+            break;
+
+        case 'card-procentni':
+            // Primary field - hlavní název karty
+            payload.primaryLabel = "VĚRNOSTNÍ KARTA";
+            payload.primaryValue = cafeSettings.businessName || '';
+            
+            // Discount field - vpravo nahoře (SLEVA s procentem)
+            payload.discountLabel = 'SLEVA';
+            payload.discountValue = `${cafeSettings.level1_sleva || '0'} %`;
+            
+            // Header center field - uprostřed nahoře (STATUS)
+            payload.headerCenterLabel = 'STATUS';
+            payload.headerCenterValue = cafeSettings.level1_status || 'VIP';
+            
+            // Aktuální útrata pro procentní kartu
+            payload.aktualniUtrata = cafeSettings.aktualniUtrata || '0';
+            
+            // Auxiliary field - vpravo dole (UŠETŘENO - prázdné, doplňuje se později)
+            payload.auxiliary[1] = {
+                label: 'UŠETŘENO',
+                value: '' // Prázdná hodnota podle popisu
+            };
+            break;
+            
+        default:
+            // Fallback pro neznámé typy
+            payload.primaryLabel = "VĚRNOSTNÍ KARTA";
+            payload.primaryValue = cafeSettings.businessName || '';
+            payload.discountLabel = '';
+            payload.discountValue = '';
+            payload.headerCenterLabel = '';
+            payload.headerCenterValue = '';
+            break;
+    }
+
+    // konec payloadu, žádná další závorka zde nesmí být
+
+    const resultEl = document.getElementById('pass-result'); 
+    resultEl.textContent = 'Generuji pass...';
+    
+    this.style.display = 'none';
+    document.getElementById('error-msg').style.display = 'none';
+
+    try {
+      const resp = await fetch('https://createpass-2sun3frzja-uc.a.run.app', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+      const json = await resp.json();
+      if (resp.ok && json.downloadUrl) {
+          resultEl.innerHTML = `<a href="${json.downloadUrl}" download style="display: inline-block; font-size: 18px; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Stáhnout Pass</a>`;
+      } else {
+          resultEl.textContent = 'Chyba: ' + (json.error||JSON.stringify(json));
+      }
+    } catch(e) { resultEl.textContent = 'Chyba: ' + e.message; }
+  });
+});
+
+
+function fetchCafeSettings(cafeId) {
+  fetch(`https://us-central1-vernostkarty-db.cloudfunctions.net/getCafeSettings?id=${cafeId}`)
+    .then(res => {
+        if (!res.ok) throw new Error(`Chyba sítě nebo serveru: ${res.status}`);
+        return res.json();
+    })
+    .then(json => {
+      if (!json.success) throw new Error(json.error || 'Nepodařilo se načíst nastavení kavárny.');
+      
+      const s = json.settings;
+      s.logoURL = s['logo.pngURL'] || s.logoURL;
+      s.stripImageURL = s['strip.pngURL'] || s.stripImageURL;
+      s.thumbnailURL = s['thumbnail.pngURL'] || s.thumbnailURL;
+      s.fullId = json.id;
+      
+      cafeSettings = s;
+      
+      // Dynamické zobrazení pole pro jméno podle showNameChk
+      if (typeof s.showNameChk !== "undefined" && (s.showNameChk === false || s.showNameChk === 'off')) {
+        document.getElementById('clientName-field').style.display = 'none';
+      } else {
+        document.getElementById('clientName-field').style.display = 'block';
+      }
+      displayCafeDetails(cafeSettings);
+      document.getElementById('client-fields').style.display = 'block';
+      // Viditelně zobrazíme hodnotu showNameChk (pro kontrolu)
+      if (typeof s.showNameChk !== "undefined") {
+        document.getElementById('cafe-details').innerHTML += `<p><strong>showNameChk:</strong> ${s.showNameChk}</p>`;
+      }
+      
+      ['clientSurname','clientEmail'].forEach(f => document.getElementById(f+'-field').style.display='block');
+      if (s.clientDob==='on') {
+        const d=document.getElementById('clientDob-field'); d.style.display='block';
+        d.querySelector('label').textContent='Datum narození'+(s.clientDobRequired==='on'?' *':' (Nepovinné)');
+      }
+      if (s.clientPhone==='on') {
+        const p=document.getElementById('clientPhone-field'); p.style.display='block';
+        p.querySelector('label').textContent='Telefon'+(s.clientPhoneRequired==='on'?' *':' (Nepovinné)');
+      }
+    })
+    .catch(err => {
+        console.error('fetchCafeSettings error:', err);
+        document.getElementById('cafe-details').innerHTML = `<p style="color:red;">Došlo k chybě při načítání dat: ${err.message}</p>`;
+    });
+}
+
+// Tato funkce nyní zobrazuje VŠECHNY statické informace o kavárně
+function displayCafeDetails(settings) {
+    // Osobní údaje uživatele (pokud jsou k dispozici)
+    const userName = settings.name || '';
+    const userSurname = settings.surname || '';
+    const userDob = settings.dob || '';
+    const userPhone = settings.phone || '';
+    const userEmail = settings.email || '';
+
+    // Předvyplnění formuláře, pokud existuje
+    if(document.getElementById('clientName')) {
+        document.getElementById('clientName').value = userName;
+        document.getElementById('clientSurname').value = userSurname;
+        document.getElementById('clientDob').value = userDob;
+        document.getElementById('clientEmail').value = userEmail;
+        // Telefon je složený, musíme ho rozdělit
+        if (userPhone.startsWith('+420')) {
+            document.getElementById('clientPhonePrefix').value = '+420';
+            document.getElementById('clientPhone').value = userPhone.substring(4);
+        } else {
+            document.getElementById('clientPhone').value = userPhone;
+        }
+    }
+
+    const businessName = settings.businessName || 'Název není k dispozici';
+
+    // Kompletní HTML výpis všech relevantních údajů z Firebase
+    const detailsHtml = `
+      <p><strong>Jméno:</strong> ${userName}</p>
+      <p><strong>Příjmení:</strong> ${userSurname}</p>
+      <p><strong>Datum narození:</strong> ${userDob}</p>
+      <p><strong>Telefon:</strong> ${userPhone}</p>
+      <p><strong>Email:</strong> ${userEmail}</p>
+      <hr>
+      <p><strong>Název podniku:</strong> ${businessName}</p>
+      <p><strong>Barva karty:</strong> ${settings.cardColor || 'N/A'}</p>
+      <p><strong>Barva textu:</strong> ${settings.textColor || 'N/A'}</p>
+      <p><strong>URL loga:</strong> ${settings.logoURL || 'N/A'}</p>
+      <p><strong>URL obrázku proužku:</strong> ${settings.stripImageURL || 'N/A'}</p>
+      <p><strong>Celé ID:</strong> ${settings.fullId || 'N/A'}</p>
+      <p><strong>Typ karty:</strong> ${settings.cardType || 'N/A'}</p>
+      <p><strong>Počet razítek:</strong> ${settings.stampCount || 'N/A'}</p>
+      <p><strong>Hodnota razítka:</strong> ${settings.stampValInput || 'N/A'}</p>
+      <p><strong>Popisek těla 1:</strong> ${settings.bodyLabel1Input || 'N/A'}</p>
+      <p><strong>Hodnota těla:</strong> ${settings.bodyValInput || 'N/A'}</p>
+      <p><strong>Horní část dolního textu:</strong> ${settings.bodyBottomTopInput || 'N/A'}</p>
+      <p><strong>Dolní část dolního textu:</strong> ${settings.bodyBottomBotInput || 'N/A'}</p>
+      <p><strong>Konverze:</strong> ${settings.bodyKonverze || 'N/A'}</p>
+      <p><strong>Stav úrovně 1:</strong> ${settings.level1_status || 'N/A'}</p>
+      <p><strong>Sleva úrovně 1:</strong> ${settings.level1_sleva || 'N/A'}</p>
+      <p><strong>Zůstatek úrovně 1:</strong> ${settings.level1_zustatek || 'N/A'}</p>
+      <p><strong>Stav úrovně 2:</strong> ${settings.level2_status || 'N/A'}</p>
+      <p><strong>Sleva úrovně 2:</strong> ${settings.level2_sleva || 'N/A'}</p>
+      <p><strong>Zůstatek úrovně 2:</strong> ${settings.level2_zustatek || 'N/A'}</p>
+      <p><strong>Stav úrovně 3:</strong> ${settings.level3_status || 'N/A'}</p>
+      <p><strong>Sleva úrovně 3:</strong> ${settings.level3_sleva || 'N/A'}</p>
+      <p><strong>Zůstatek úrovně 3:</strong> ${settings.level3_zustatek || 'N/A'}</p>
+    `;
+    document.getElementById('cafe-details').innerHTML = detailsHtml;
+  }
+
+function generateUniqueID(len) {
+  let result = '';
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  for (let i = 0; i < len; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+  return result;
+}
+
+</script>
+
+</body>
+</html>

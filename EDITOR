@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor Karty Zákazníka</title>
+  <style>
+    body { font-family: sans-serif; margin: 2em; background-color: #f4f4f4; }
+    .container { max-width: 700px; margin: auto; background: white; padding: 2em; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    h1 { text-align: center; color: #333; }
+    .form-group { margin-bottom: 1em; }
+    label { display: block; margin-bottom: .5em; color: #555; font-weight: bold; }
+    input, select { width: 100%; padding: .5em; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+    button { width: 100%; padding: .7em; background-color: #007bff; color: white; border: none; border-radius: 4px; font-size: 1em; cursor: pointer; }
+    button:hover { background-color: #0056b3; }
+    .card-type-section { background-color: #f8f9fa; padding: 1em; border-radius: 6px; margin-bottom: 1.5em; border-left: 4px solid #007bff; }
+    .dynamic-fields { background-color: #fff; border: 1px solid #e9ecef; padding: 1em; border-radius: 6px; }
+    .field-description { font-size: 0.9em; color: #666; margin-top: 0.3em; }
+    #status { text-align: center; margin-top: 1em; font-weight: bold; }
+    .info-section { background-color: #e9ecef; padding: 1em; border-radius: 6px; margin-bottom: 1em; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Editor Věrnostní Karty</h1>
+  <div id="loader">Načítám...</div>
+  <div id="password-prompt" style="display: none;">
+    <h2>Ověření obsluhy</h2>
+    <p>Pro zobrazení a úpravu dat zákazníka zadejte heslo pro obsluhu.</p>
+    <div class="form-group">
+        <label for="staff-password">Heslo:</label>
+        <input type="password" id="staff-password">
+    </div>
+    <button id="verify-password-btn">Ověřit</button>
+    <p id="password-error" style="color: red; margin-top: 1em;"></p>
+  </div>
+  <div id="info" style="display: none;"></div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // URLs
+    const GET_USER_DATA_URL = 'https://us-central1-vernostkarty-db.cloudfunctions.net/getUserDataForEditor';
+    const VERIFY_PASSWORD_URL = 'https://us-central1-vernostkarty-db.cloudfunctions.net/verifyStaffPassword';
+    const VERIFY_SESSION_URL = 'https://us-central1-vernostkarty-db.cloudfunctions.net/verifySessionToken';
+    const UPDATE_USER_DATA_URL = 'https://us-central1-vernostkarty-db.cloudfunctions.net/updateUserDataFromEditor';
+
+    // DOM Elements
+    const infoDiv = document.getElementById('info');
+    const loaderDiv = document.getElementById('loader');
+    const passwordPrompt = document.getElementById('password-prompt');
+    const passwordInput = document.getElementById('staff-password');
+    const verifyBtn = document.getElementById('verify-password-btn');
+    const errorP = document.getElementById('password-error');
+
+    // Constants
+    const TWENTY_MINUTES_MS = 20 * 60 * 1000;
+    const MAX_ATTEMPTS = 10;
+
+    let originalUserData = {}; // Store original data from server
+    let currentFormData = {}; // Store current state of the form, including unsaved changes
+    let initialCardType = ''; // Store the very first card type to detect changes for saving
+    let currentCardType = ''; // Current selected card type
+
+    // Card type configurations based on CAFEHTML logic
+    const cardTypeConfigs = {
+      'card-body': {
+        name: 'Bodová karta',
+        fields: [
+          { key: 'bodyLabel1Input', label: 'Název bodů (např. BODY)', description: 'Zobrazí se vpravo nahoře na kartě' },
+          { key: 'bodyValInput', label: 'Počet bodů', description: 'Aktuální počet bodů zákazníka' },
+          { key: 'bodyBottomTopInput', label: 'Spodní popisek', description: 'Popisek ve spodní části karty' },
+          { key: 'bodyBottomBotInput', label: 'Spodní hodnota', description: 'Hodnota ve spodní části karty' }
+        ]
+      },
+      'card-razitka': {
+        name: 'Razítková karta',
+        fields: [
+          { key: 'stampValInput', label: 'Aktuální počet razítek', description: 'Kolik razítek zákazník má' },
+          { key: 'stampCount', label: 'Celkový počet razítek', description: 'Kolik razítek je potřeba celkem' }
+        ]
+      },
+      'card-procentni': {
+        name: 'Procentní karta',
+        fields: [
+          { key: 'level1_sleva', label: 'Sleva (%)', description: 'Procentní sleva zákazníka' },
+          { key: 'level1_status', label: 'Status zákazníka', description: 'VIP status (např. VIP, GOLD, atd.)' }
+        ]
+      }
+    };
+
+    // --- Helper Functions ---
+
+    function renderDynamicFields(cardType, userData) {
+      const config = cardTypeConfigs[cardType];
+      if (!config) return '';
+
+      let fieldsHtml = `
+        <div class="dynamic-fields">
+          <h4>Editovatelná pole pro ${config.name}:</h4>`;
+
+      config.fields.forEach(field => {
+        const value = userData[field.key] || '';
+        fieldsHtml += `
+          <div class="form-group">
+            <label for="${field.key}">${field.label}:</label>
+            <input type="text" id="${field.key}" value="${value}">
+            <div class="field-description">${field.description}</div>
+          </div>`;
+      });
+
+      fieldsHtml += '</div>';
+      return fieldsHtml;
+    }
+
+    function updateDynamicFields() {
+      const selectedCardType = document.getElementById('cardType').value;
+      const dynamicFieldsContainer = document.getElementById('dynamic-fields-container');
+
+      if (selectedCardType === currentCardType) return; // No change needed
+
+      // Save current values from the form into our temporary state object
+      const previousConfig = cardTypeConfigs[currentCardType];
+      if (previousConfig) {
+        previousConfig.fields.forEach(field => {
+          const inputEl = document.getElementById(field.key);
+          if (inputEl) {
+            currentFormData[field.key] = inputEl.value;
+          }
+        });
+      }
+
+      currentCardType = selectedCardType;
+      // Render new fields using the temporary state, so unsaved changes are preserved
+      dynamicFieldsContainer.innerHTML = renderDynamicFields(selectedCardType, currentFormData);
+    }
+
+    function renderUserData(data, cafeId, userId) {
+      loaderDiv.style.display = 'none';
+      passwordPrompt.style.display = 'none';
+      infoDiv.style.display = 'block';
+      const { email, wixid, ...userData } = data;
+      originalUserData = { ...userData }; // Save the initial state
+      currentFormData = JSON.parse(JSON.stringify(originalUserData)); // Deep copy for form data
+      
+      // Determine current card type from data or default
+      currentCardType = userData.cardType || 'card-body';
+      initialCardType = currentCardType; // Store the initial type for change detection
+
+      let formHtml = `
+        <div class="info-section">
+          <h2>Informace o zákazníkovi</h2>
+          <p><strong>Email:</strong> ${email || 'N/A'}</p>
+          <p><strong>ID podniku (wixid):</strong> ${wixid || 'N/A'}</p>
+          <p><strong>ID uživatele:</strong> ${userId || 'N/A'}</p>
+        </div>
+        
+        <div class="card-type-section">
+          <h3>Typ věrnostní karty</h3>
+          <div class="form-group">
+            <label for="cardType">Typ karty:</label>
+            <select id="cardType">
+              <option value="card-body" ${currentCardType === 'card-body' ? 'selected' : ''}>Bodová karta</option>
+              <option value="card-razitka" ${currentCardType === 'card-razitka' ? 'selected' : ''}>Razítková karta</option>
+              <option value="card-procentni" ${currentCardType === 'card-procentni' ? 'selected' : ''}>Procentní karta</option>
+            </select>
+            <div class="field-description">Změna typu karty ovlivní, která pole se zobrazí níže</div>
+          </div>
+        </div>
+        
+        <div id="dynamic-fields-container">
+          ${renderDynamicFields(currentCardType, userData)}
+        </div>
+        
+        <button id="save-changes-btn">Uložit změny</button>
+        <p id="save-status" style="margin-top: 1em;"></p>`;
+      
+      infoDiv.innerHTML = formHtml;
+
+      // Add event listener for card type change
+      document.getElementById('cardType').addEventListener('change', updateDynamicFields);
+
+      // Add save functionality
+      document.getElementById('save-changes-btn').addEventListener('click', async () => {
+        const saveStatusP = document.getElementById('save-status');
+        const updatedData = {};
+        let hasChanges = false;
+
+        // Check cardType change
+        const newCardType = document.getElementById('cardType').value;
+        if (newCardType !== initialCardType) {
+          updatedData.cardType = newCardType;
+          hasChanges = true;
+        }
+
+        // Check ALL possible fields from ALL card types, not just the current one
+        // This ensures we can save any field that exists in the form
+        Object.values(cardTypeConfigs).forEach(config => {
+          config.fields.forEach(field => {
+            const inputEl = document.getElementById(field.key);
+            if (inputEl) {
+              const newValue = inputEl.value;
+              // Compare with the original data
+              if (newValue !== (originalUserData[field.key] || '')) {
+                updatedData[field.key] = newValue;
+                hasChanges = true;
+              }
+            }
+          });
+        });
+        
+        // Also check for any other input fields that might exist but aren't in configs
+        const allInputs = document.querySelectorAll('input[type="text"], input[type="number"], textarea, select');
+        allInputs.forEach(input => {
+          if (input.id && input.id !== 'cardType') { // Skip cardType as it's handled separately
+            const newValue = input.value;
+            if (newValue !== (originalUserData[input.id] || '')) {
+              updatedData[input.id] = newValue;
+              hasChanges = true;
+            }
+          }
+        });
+
+        if (!hasChanges) {
+          saveStatusP.textContent = 'Žádné změny k uložení.';
+          saveStatusP.style.color = 'orange';
+          return;
+        }
+
+        saveStatusP.textContent = 'Ukládám...';
+        saveStatusP.style.color = 'blue';
+
+        const tokenKey = `session_token_${wixid}`;
+        const token = localStorage.getItem(tokenKey);
+        if (!token) {
+          saveStatusP.textContent = 'Chyba: Chybí ověřovací token. Obnovte stránku.';
+          saveStatusP.style.color = 'red';
+          return;
+        }
+
+        try {
+          const updateResponse = await fetch(UPDATE_USER_DATA_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ wixid, userId, email, token, updatedData })
+          });
+          const updateResult = await updateResponse.json();
+
+          if (updateResult.success) {
+            saveStatusP.textContent = 'Změny úspěšně uloženy!';
+            saveStatusP.style.color = 'green';
+            // Update original data and current form data after successful save
+            originalUserData = { ...originalUserData, ...updatedData };
+            currentFormData = JSON.parse(JSON.stringify(originalUserData));
+            // IMPORTANT: Update the initialCardType to the newly saved type
+            if (updatedData.cardType) {
+              initialCardType = updatedData.cardType;
+            }
+            
+            console.log('✅ Successfully saved data:', updatedData);
+          } else {
+            saveStatusP.textContent = `Chyba při ukládání: ${updateResult.error}`;
+            saveStatusP.style.color = 'red';
+          }
+        } catch (err) {
+          saveStatusP.textContent = `Chyba při ukládání: ${err.message}`;
+          saveStatusP.style.color = 'red';
+        }
+      });
+    }
+
+    function handleLockout(lockoutKey) {
+      const lockoutInfo = JSON.parse(localStorage.getItem(lockoutKey)) || { attempts: 0, lockoutUntil: null };
+      if (lockoutInfo.lockoutUntil && new Date().getTime() < lockoutInfo.lockoutUntil) {
+        const remainingTime = Math.ceil((lockoutInfo.lockoutUntil - new Date().getTime()) / 60000);
+        errorP.textContent = `Příliš mnoho neúspěšných pokusů. Zkuste to znovu za ${remainingTime} minut.`;
+        passwordInput.disabled = true;
+        verifyBtn.disabled = true;
+        return true;
+      }
+      return false;
+    }
+
+    function showPasswordPrompt(userData, cafeId, userId) {
+      const wixid = userData.wixid;
+      const lockoutKey = `lockout_${wixid}`;
+      const tokenKey = `session_token_${wixid}`;
+
+      loaderDiv.style.display = 'none';
+      passwordPrompt.style.display = 'block';
+      
+      if (handleLockout(lockoutKey)) return;
+
+      if (verifyBtn.dataset.listenerAttached) return;
+      verifyBtn.dataset.listenerAttached = 'true';
+
+      verifyBtn.addEventListener('click', async () => {
+        if (handleLockout(lockoutKey)) return;
+
+        const password = passwordInput.value;
+        if (!password) {
+          errorP.textContent = 'Zadejte prosím heslo.';
+          return;
+        }
+
+        const verifyResponse = await fetch(VERIFY_PASSWORD_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wixid, password })
+        });
+        const result = await verifyResponse.json();
+
+        if (result.success && result.token) {
+          localStorage.setItem(tokenKey, result.token);
+          localStorage.removeItem(lockoutKey);
+          renderUserData(userData, cafeId, userId);
+        } else {
+          let lockoutInfo = JSON.parse(localStorage.getItem(lockoutKey)) || { attempts: 0, lockoutUntil: null };
+          lockoutInfo.attempts++;
+          if (lockoutInfo.attempts >= MAX_ATTEMPTS) {
+            lockoutInfo.lockoutUntil = new Date().getTime() + TWENTY_MINUTES_MS;
+          }
+          localStorage.setItem(lockoutKey, JSON.stringify(lockoutInfo));
+          errorP.textContent = result.error || 'Neznámá chyba při ověřování.';
+          handleLockout(lockoutKey);
+        }
+      });
+    }
+
+    // --- Main Initialization ---
+    async function initializePage() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const idParam = urlParams.get('id');
+        if (!idParam || !idParam.includes('/')) throw new Error('V URL chybí ID kavárny a uživatele.');
+        const [cafeId, userId] = idParam.split('/');
+        if (!cafeId || !userId) throw new Error('URL má neplatný formát.');
+
+        const userResponse = await fetch(`${GET_USER_DATA_URL}?cafeId=${cafeId}&userId=${userId}`);
+        const userDataPayload = await userResponse.json();
+        if (!userDataPayload.success) throw new Error(userDataPayload.error);
+        
+        const userData = userDataPayload.data;
+        const wixid = userData.wixid;
+        const tokenKey = `session_token_${wixid}`;
+        const savedToken = localStorage.getItem(tokenKey);
+
+        if (savedToken) {
+          const sessionResponse = await fetch(VERIFY_SESSION_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ wixid, token: savedToken })
+          });
+          const sessionResult = await sessionResponse.json();
+
+          if (sessionResult.success) {
+            renderUserData(userData, cafeId, userId);
+          } else {
+            localStorage.removeItem(tokenKey);
+            showPasswordPrompt(userData, cafeId, userId);
+          }
+        } else {
+          showPasswordPrompt(userData, cafeId, userId);
+        }
+
+      } catch (err) {
+        loaderDiv.style.display = 'none';
+        infoDiv.style.display = 'block';
+        infoDiv.innerHTML = `<p style="color: red;">Chyba: ${err.message}</p>`;
+      }
+    }
+
+    initializePage();
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>Ověření vašeho ID</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 40px; }
+    input, button { font-size: 16px; padding: 6px; margin: 4px; }
+    #result { margin-top: 20px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <p>Opíšete prvních 8 znaků svého ID (z Wixu)</p>
+  <input id="idInput" type="text" maxlength="8" placeholder="Zadej 8 znaků…" />
+  <button id="verifyBtn">Ověřit</button>
+  <p id="result"></p>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const VERIFY_URL = "https://verifyid-weeqy2w2la-uc.a.run.app";
+      const ENSURE_URL = "https://ensureuser-weeqy2w2la-uc.a.run.app";
+      const channel    = new BroadcastChannel('id-channel');
+
+      document.getElementById('verifyBtn').onclick = async () => {
+        const input = document.getElementById('idInput').value.trim();
+        const res    = document.getElementById('result');
+        if (input.length !== 8) {
+          return res.textContent = '❌ Zadejte přesně 8 znaků.';
+        }
+        res.textContent = '⏳ Ověřuji…';
+        try {
+          const r = await fetch(VERIFY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prefix: input })
+          });
+          const j = await r.json();
+          if (j.success) {
+            res.textContent = '✅ ID ověřeno';
+            channel.postMessage({ fullId: j.fullId });
+            fetch(ENSURE_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ fullId: j.fullId })
+            }).catch(err => console.error('ensureUser error:', err));
+          } else {
+            res.textContent = '❌ Chybně opsáno.';
+          }
+        } catch (e) {
+          console.error(e);
+          res.textContent = '❌ Chyba komunikace.';
+        }
+      };
+    });
+  </script>
+</body>
+</html>
