@@ -8,9 +8,13 @@ const axios = require("axios");
 const cors = require("cors")({ origin: true });
 const { Datastore } = require('@google-cloud/datastore');
 const path = require("path");
+const certificateHelper = require('./certificateHelperV2');
+const { auditUserDeviceInfo } = require('./auditUserDeviceInfo');
+const { detailedAudit } = require('./detailedAudit');
+const { cleanupUserDeviceInfo } = require('./cleanupUserDeviceInfo');
 const datastore = new Datastore();
 
-// Inicializace Firebase Admin
+// Inicializace Firebase Admin pro deployment
 admin.initializeApp({
   credential: admin.credential.cert(require("./certificates/vernostkarty-firebase-adminsdk-2j135-d46f086885.json")),
   storageBucket: "vernostkarty.appspot.com"
@@ -72,6 +76,8 @@ exports.createPass = functions.https.onRequest((req, res) => {
         wixid: body.wixid,
         userId: body.userId,
         anonymousId: body.anonymousId,
+        serialNumber: body.email, // NOVÉ: Email jako serialNumber
+        email: body.email, // NOVÉ: Email uživatele
         qrText: body.qrText,
         
         // Design
@@ -98,6 +104,8 @@ exports.createPass = functions.https.onRequest((req, res) => {
       console.log("🔍 CRITICAL: Všechny identifikátory z body:");
       console.log("  - cafeId:", body.cafeId, "(typ:", typeof body.cafeId, ")");
       console.log("  - fullId:", body.fullId, "(typ:", typeof body.fullId, ")");
+      console.log("  - serialNumber:", body.serialNumber, "(typ:", typeof body.serialNumber, ")");
+      console.log("  - email:", body.email, "(typ:", typeof body.email, ")");
       console.log("  - wixid:", body.wixid, "(typ:", typeof body.wixid, ")");
       console.log("  - userId:", body.userId, "(typ:", typeof body.userId, ")");
       console.log("  - anonymousId:", body.anonymousId, "(typ:", typeof body.anonymousId, ")");
@@ -133,41 +141,85 @@ exports.createPass = functions.https.onRequest((req, res) => {
       }
       console.log("✅ Pass template found");
       
-      // 5) KONTROLA CERTIFIKÁTŮ - PODLE STARÉHO FUNKČNÍHO KÓDU
-      console.log("🔐 Checking certificates...");
-      const certPaths = {
-        wwdr: "./certificates/AppleWWDRCAG4.pem",
-        signerCert: "./certificates/passCert.pem",
-        signerKey: "./certificates/privatekey.key"
-      };
+      // 5) DYNAMICKÉ NAČÍTÁNÍ CERTIFIKÁTŮ A PASSTYPEIDENTIFIER Z FIRESTORE
+      console.log("VERIFICATION: Checking for certificate paths in request body...");
+      console.log(`VERIFICATION: Received pempath from CAFEHTML: ${body.pempath}`);
+      console.log(`VERIFICATION: Received keypath from CAFEHTML: ${body.keypath}`);
+      console.log(`VERIFICATION: Received passTypeIdentifier from CAFEHTML: ${body.passTypeIdentifier}`);
       
-      for (const [name, certPath] of Object.entries(certPaths)) {
-        if (!fs.existsSync(certPath)) {
-          throw new Error(`Certificate ${name} not found at: ${certPath}`);
-        }
-        console.log(`✅ Certificate ${name} found`);
+      // Získání fullId pro načtení z Firestore
+      const fullId = body.fullId || body.cafeId || body.wixid;
+      if (!fullId) {
+        console.error('❌ CRITICAL: fullId, cafeId ani wixid nejsou k dispozici v požadavku.');
+        throw new Error('Missing fullId/cafeId/wixid in request body');
       }
       
-      // 6) GENEROVÁNÍ PKPASS - PODLE STARÉHO FUNKČNÍHO KÓDU
+      console.log(`⚙️ Fetching certificate paths and passTypeIdentifier from 'cardzapier/${fullId}'...`);
+      
+      // Inicializace Firestore pro vernostkarty-db
+      const serviceAccountDb = require('./certificates/vernostkarty-db-service-account.json');
+      let dbApp;
+      try {
+        dbApp = admin.app('dbAdmin');
+      } catch (e) {
+        dbApp = admin.initializeApp({
+          credential: admin.credential.cert(serviceAccountDb)
+        }, 'dbAdmin');
+      }
+      const firestoreDb = dbApp.firestore();
+      
+      // Načtení dat z Firestore
+      const zapierDocRef = firestoreDb.collection('cardzapier').doc(fullId);
+      const zapierDoc = await zapierDocRef.get();
+      
+      if (!zapierDoc.exists) {
+        console.error(`❌ CRITICAL: Certificate paths not found in 'cardzapier/${fullId}'`);
+        throw new Error(`Certificate paths not found in 'cardzapier/${fullId}'`);
+      }
+      
+      const zapierData = zapierDoc.data();
+      const pemPath = zapierData.pempath || body.pempath;
+      const keyPath = zapierData.keypath || body.keypath;
+      const passTypeIdentifier = zapierData.passTypeIdentifier || body.passTypeIdentifier || 'pass.pass.com.example.vernostkarty';
+      
+      // VERIFIKACE: Logování cest načtených z databáze
+      console.log(`VERIFICATION: Loaded pempath from cardzapier: ${pemPath}`);
+      console.log(`VERIFICATION: Loaded keypath from cardzapier: ${keyPath}`);
+      console.log(`VERIFICATION: Loaded passTypeIdentifier from cardzapier: ${passTypeIdentifier}`);
+      
+      console.log(`✅ Using passTypeIdentifier: ${passTypeIdentifier}`);
+
+      if (!pemPath || !keyPath) {
+        console.error('❌ CRITICAL: Certificate paths (pempath or keypath) are missing in the request body.');
+        // Vracíme status 400 Bad Request, protože klient poslal neúplná data
+        return res.status(400).json({ error: 'Certificate paths (pempath or keypath) are missing in the request body.' });
+      }
+      
+      console.log(`🔐 Using final GCS paths for download: PEM='${pemPath}', KEY='${keyPath}'`);
+
+      const certificates = await certificateHelper.getAppleCertificateBuffers(pemPath, keyPath);
+      console.log(`✅ Certificate buffers loaded successfully.`);
+
+      // 6) GENEROVÁNÍ PKPASS S DYNAMICKÝMI CERTIFIKÁTY
       console.log("🎫 Generating PKPass...");
       
       const newPass = await PKPass.from({
           model: templatePath,
           certificates: {
-            wwdr: fs.readFileSync(certPaths.wwdr),
-            signerCert: fs.readFileSync(certPaths.signerCert),
-            signerKey: fs.readFileSync(certPaths.signerKey),
-            signerKeyPassphrase: "KEcTO078"
+            wwdr: certificates.wwdrBuffer,
+            signerCert: certificates.signerCert,
+            signerKey: certificates.signerKey
           }
         },
         {
           authenticationToken: "a7d8g9h2j4k5l6m7n8b9v0c1x2z3",
           webServiceURL: "https://applewalletwebhook-2sun3frzja-uc.a.run.app",
-          serialNumber: String(cardKey.id),
+          serialNumber: passData.serialNumber || passData.email || passData.userId || String(cardKey.id),
           description: "Popis tvého pasu",
           foregroundColor: hexToRgb(passData.textColor || "#000000"),
           labelColor: hexToRgb(passData.textColor || "#000000"),
-          backgroundColor: hexToRgb(passData.cardColor || "#FFFFFF")
+          backgroundColor: hexToRgb(passData.cardColor || "#FFFFFF"),
+          passTypeIdentifier: passTypeIdentifier
         }
       );
       
@@ -329,7 +381,7 @@ exports.createPass = functions.https.onRequest((req, res) => {
       
       // Merge - zachováme původní data a přidáme nová pole
       const updatedData = {
-        ...existingCard,  // Zachová všechny původní identifikátory
+        ...existingCard,  // Zachová všechna původní identifikátory
         passDownloadUrl: signedUrl, 
         passStatus: 'uploaded', 
         dateUpdated: new Date().toISOString() 
@@ -384,8 +436,11 @@ const appleWalletWebhookModule = require("./appleWalletWebhook");
 const testPassModule = require("./testPass");
 
 exports.createCard = functions.https.onRequest(createCardModule.createCard);
-exports.appleWalletWebhook = appleWalletWebhookModule.appleWalletWebhook;
 exports.testPass = testPassModule.testPass;
+exports.appleWalletWebhook = appleWalletWebhookModule.appleWalletWebhook;
+exports.auditUserDeviceInfo = auditUserDeviceInfo;
+exports.detailedAudit = detailedAudit;
+exports.cleanupUserDeviceInfo = cleanupUserDeviceInfo;
 
 // =========================
 // HTTP endpoint pro aktualizaci dateUpdated v kartách
@@ -407,11 +462,14 @@ exports.updateCardsTimestamp = functions.https.onRequest(async (req, res) => {
   }
   
   try {
-    const { deviceLibraryIdentifier } = req.body;
+    const { deviceLibraryIdentifier, emailId } = req.body;
     
     if (!deviceLibraryIdentifier) {
       return res.status(400).json({ error: 'deviceLibraryIdentifier is required' });
     }
+    
+    console.log(`📧 Received emailId: ${emailId || 'not provided'}`);
+    // emailId není povinné, ale pokud je poskytnuto, použijeme ho pro filtrování karet
     
     console.log(`🔍 Hledám karty pro deviceLibraryIdentifier: ${deviceLibraryIdentifier}`);
     
@@ -427,33 +485,144 @@ exports.updateCardsTimestamp = functions.https.onRequest(async (req, res) => {
     }
     
     // Aktualizovat dateUpdated pro všechny karty tohoto zařízení
-    const updatePromises = [];
     const currentTime = new Date().toISOString();
     let updatedCount = 0;
     
     for (const info of deviceInfos) {
-      const serialNumber = info.serialNumber;
+      let serialNumber = info.serialNumber;
       if (serialNumber) {
-        const cardKey = datastore.key(['cards', datastore.int(serialNumber)]);
+        console.log(`🔍 Zpracovávám serialNumber: ${serialNumber} (typ: ${typeof serialNumber})`);
         
-        // Načteme kartu a aktualizujeme dateUpdated
-        const updatePromise = datastore.get(cardKey).then(([card]) => {
-          if (card) {
-            const updatedCard = {
-              ...card,
-              dateUpdated: currentTime
-            };
-            updatedCount++;
-            console.log(`✅ Aktualizuji dateUpdated pro kartu ${serialNumber}`);
-            return datastore.save({ key: cardKey, data: updatedCard });
+        // Normalizace emailId - odstranění prefixu "ID=" pokud existuje
+        let normalizedEmailId = info.emailId;
+        if (normalizedEmailId && normalizedEmailId.startsWith('ID=')) {
+          normalizedEmailId = normalizedEmailId.substring(3);
+          console.log(`🔍 Normalizován emailId z ${info.emailId} na ${normalizedEmailId}`);
+        }
+        
+        // Pokud máme emailId, zkontrolujeme, zda tento serialNumber odpovídá danému emailId
+        if (emailId) {
+          // Normalizace emailId parametru - odstranění prefixu "ID=" pokud existuje
+          let normalizedParamEmailId = emailId;
+          if (normalizedParamEmailId && normalizedParamEmailId.startsWith('ID=')) {
+            normalizedParamEmailId = normalizedParamEmailId.substring(3);
+            console.log(`🔍 Normalizován parametr emailId z ${emailId} na ${normalizedParamEmailId}`);
           }
-        });
+          
+          // Porovnání emailId s/bez prefixu "ID="
+          const emailIdMatches = 
+            info.emailId === emailId || 
+            normalizedEmailId === normalizedParamEmailId ||
+            info.emailId === `ID=${normalizedParamEmailId}` ||
+            `ID=${info.emailId}` === emailId;
+          
+          if (!emailIdMatches) {
+            console.log(`⏭️ Přeskakuji serialNumber ${serialNumber}, protože neodpovídá emailId ${emailId}`);
+            console.log(`  - info.emailId: ${info.emailId}`);
+            console.log(`  - normalizedEmailId: ${normalizedEmailId}`);
+            console.log(`  - emailId parametr: ${emailId}`);
+            console.log(`  - normalizedParamEmailId: ${normalizedParamEmailId}`);
+            continue;
+          } else {
+            console.log(`✅ EmailId odpovídá (s/bez prefixu ID=): ${info.emailId} ~ ${emailId}`);
+          }
+        }
         
-        updatePromises.push(updatePromise);
+        let card = null;
+        let cardKey = null;
+        
+        // Normalizace serialNumber - odstranění prefixu "ID=" pokud existuje
+        let normalizedSerialNumber = serialNumber;
+        if (normalizedSerialNumber && normalizedSerialNumber.startsWith('ID=')) {
+          normalizedSerialNumber = normalizedSerialNumber.substring(3);
+          console.log(`🔍 Normalizován serialNumber z ${serialNumber} na ${normalizedSerialNumber}`);
+        }
+        
+        // Strategie 1: Zkusit najít kartu podle userId (s normalizací)
+        try {
+          // Nejprve zkusíme bez prefixu
+          const userIdQuery = datastore.createQuery('cards')
+            .filter('userId', '=', normalizedSerialNumber)
+            .limit(1);
+          const [userIdResults] = await datastore.runQuery(userIdQuery);
+          card = userIdResults[0];
+          if (card) {
+            console.log(`🔍 Karta nalezena podle userId (bez prefixu): ${normalizedSerialNumber}`);
+            cardKey = card[datastore.KEY];
+          } else {
+            // Pokud nenajdeme bez prefixu, zkusíme s prefixem
+            const prefixedSerialNumber = `ID=${normalizedSerialNumber}`;
+            const prefixedUserIdQuery = datastore.createQuery('cards')
+              .filter('userId', '=', prefixedSerialNumber)
+              .limit(1);
+            const [prefixedUserIdResults] = await datastore.runQuery(prefixedUserIdQuery);
+            card = prefixedUserIdResults[0];
+            if (card) {
+              console.log(`🔍 Karta nalezena podle userId (s prefixem): ${prefixedSerialNumber}`);
+              cardKey = card[datastore.KEY];
+            }
+          }
+        } catch (err) {
+          console.error(`Chyba při hledání podle userId: ${err.message}`);
+        }
+        
+        // Strategie 2: Zkusit najít kartu podle anonymousId (s normalizací)
+        if (!card) {
+          try {
+            // Nejprve zkusíme bez prefixu
+            const anonymousIdQuery = datastore.createQuery('cards')
+              .filter('anonymousId', '=', normalizedSerialNumber)
+              .limit(1);
+            const [anonymousIdResults] = await datastore.runQuery(anonymousIdQuery);
+            card = anonymousIdResults[0];
+            if (card) {
+              console.log(`🔍 Karta nalezena podle anonymousId (bez prefixu): ${normalizedSerialNumber}`);
+              cardKey = card[datastore.KEY];
+            } else {
+              // Pokud nenajdeme bez prefixu, zkusíme s prefixem
+              const prefixedSerialNumber = `ID=${normalizedSerialNumber}`;
+              const prefixedAnonymousIdQuery = datastore.createQuery('cards')
+                .filter('anonymousId', '=', prefixedSerialNumber)
+                .limit(1);
+              const [prefixedAnonymousIdResults] = await datastore.runQuery(prefixedAnonymousIdQuery);
+              card = prefixedAnonymousIdResults[0];
+              if (card) {
+                console.log(`🔍 Karta nalezena podle anonymousId (s prefixem): ${prefixedSerialNumber}`);
+                cardKey = card[datastore.KEY];
+              }
+            }
+          } catch (err) {
+            console.error(`Chyba při hledání podle anonymousId: ${err.message}`);
+          }
+        }
+        
+        // Strategie 3: Fallback na numerické ID (původní způsob)
+        if (!card && !isNaN(parseInt(serialNumber))) {
+          try {
+            cardKey = datastore.key(['cards', datastore.int(serialNumber)]);
+            const [legacyCard] = await datastore.get(cardKey);
+            card = legacyCard;
+            if (card) {
+              console.log(`🔍 Karta nalezena podle numerického ID: ${serialNumber}`);
+            }
+          } catch (err) {
+            console.error(`Chyba při hledání podle numerického ID: ${err.message}`);
+          }
+        }
+        
+        if (card && cardKey) {
+          const updatedCard = {
+            ...card,
+            dateUpdated: currentTime
+          };
+          updatedCount++;
+          console.log(`✅ Aktualizuji dateUpdated pro kartu ${serialNumber}`);
+          await datastore.save({ key: cardKey, data: updatedCard });
+        } else {
+          console.log(`❌ Karta s identifikátorem ${serialNumber} nebyla nalezena žádnou strategií.`);
+        }
       }
     }
-    
-    await Promise.all(updatePromises);
     
     const response = {
       success: true,
@@ -578,17 +747,22 @@ exports.generateUpdatedPass = functions.https.onRequest(async (req, res) => {
     
     console.log('📋 Generated payload:', JSON.stringify(payload, null, 2));
     
-    // 5. Generování PKPass s aktuálními daty (logika z createPass)
+    // 5. Dynamické načítání certifikátů podle cafeId
+    console.log(`🔐 Loading certificates for cafeId: ${originalCard.cafeId}...`);
+    const certificates = await certificateHelper.getAppleCertificatesByCafeId(originalCard.cafeId);
+    console.log(`✅ Certificates loaded from: ${certificates.p12Path}, ${certificates.wwdrPath}`);
+    
+    // 6. Generování PKPass s dynamickými certifikáty
     console.log("🎫 Generating PKPass with current data...");
     
     const newPass = await PKPass.from(
       {
         model: "./myFirstModel.pass",
         certificates: {
-          wwdr: fs.readFileSync("./certificates/wwdr.pem"),
-          signerCert: fs.readFileSync("./certificates/signerCert.pem"),
-          signerKey: fs.readFileSync("./certificates/signerKey.pem"),
-          signerKeyPassphrase: "test"
+          wwdr: certificates.wwdrBuffer,
+          signerCert: certificates.p12Buffer,
+          signerKey: certificates.p12Buffer,
+          signerKeyPassphrase: ""
         }
       },
       {

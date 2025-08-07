@@ -1,15 +1,19 @@
-const { onRequest } = require("firebase-functions/v2/https");
-const { onObjectFinalized } = require("firebase-functions/v2/storage");
-const admin = require("firebase-admin");
-const crypto = require("crypto");
+const functions = require('firebase-functions');
+const admin = require('firebase-admin');
+const { Datastore } = require('@google-cloud/datastore');
 
+// Inicializace Firebase Admin pro deployment
 admin.initializeApp({
-  credential: admin.credential.cert(
-    require("./certificates/vernostkarty-db-firebase-adminsdk-fbsvc-0585ca91cb.json")
-  )
+  credential: admin.credential.cert(require("./certificates/vernostkarty-db-firebase-adminsdk-fbsvc-0585ca91cb.json")),
+  databaseURL: "https://vernostkarty-db-default-rtdb.europe-west1.firebasedatabase.app"
 });
 
 const db = admin.firestore();
+const datastore = new Datastore({ projectId: 'vernostkarty-db' });
+
+const { onRequest } = require("firebase-functions/v2/https");
+const { onObjectFinalized } = require("firebase-functions/v2/storage");
+const crypto = require("crypto");
 
 exports.createPass = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
   if (req.method !== "POST") {
@@ -157,7 +161,7 @@ exports.getCafeSettings = onRequest({ cors: true, cpu: 0.5 }, async (req, res) =
     return res.status(405).send('Method Not Allowed');
   }
   const cafeId = req.query.id;
-  if (!cafeId || cafeId.length !== 12) {
+  if (!cafeId || cafeId.length < 12) {
     return res.status(400).json({ success: false, error: 'Invalid or missing cafeId' });
   }
   try {
@@ -173,16 +177,10 @@ exports.getCafeSettings = onRequest({ cors: true, cpu: 0.5 }, async (req, res) =
     if (!settings) {
       return res.status(404).json({ success: false, error: 'Settings not found' });
     }
-    const keys = [
-      'level1_status','level1_sleva','level1_zustatek',
-      'level2_status','level2_sleva','level2_zustatek',
-      'level3_status','level3_sleva','level3_zustatek',
-      'stampCount','StampCount'
-    ];
-    keys.forEach(key => {
-      if (typeof settings[key] === 'undefined') settings[key] = '';
-    });
-    return res.json({ success: true, id: matchedFullId, settings });
+    // Vracíme nastavení přesně tak, jak je v databázi, bez doplňování chybějících hodnot.
+    // Klient (CAFEHTML) je zodpovědný za zobrazení chyby, pokud cesty chybí.
+    console.log(`✅ Raw settings from DB:`, JSON.stringify(settings, null, 2));
+    return res.json({ success: true, id: matchedFullId, settings: settings });
   } catch (err) {
     console.error('getCafeSettings error:', err);
     return res.status(500).json({ success: false, error: err.message });
@@ -330,46 +328,108 @@ exports.getUserDataForEditor = onRequest({ cors: true, cpu: 0.5 }, async (req, r
   }
 
   try {
-    // Krok 1: Získání emailu a wixid z 'usersid'
-    const userRefStep1 = db.collection('usersid').doc(cafeId).collection('users').doc(userId);
-    const userDocStep1 = await userRefStep1.get();
-
-    if (!userDocStep1.exists) {
-      return res.status(404).json({ success: false, error: 'Uživatel nenalezen v usersid.' });
-    }
-    const { email, wixid } = userDocStep1.data();
-
-    if (!email || !wixid) {
+    console.log(`getUserDataForEditor: Hledám uživatele s cafeId=${cafeId} a userId=${userId} z URL`);
+    
+    // Strategie 1: Přesné hledání podle userId z URL
+    const userRefExact = db.collection('usersid').doc(cafeId).collection('users').doc(userId);
+    const userDocExact = await userRefExact.get();
+    
+    if (userDocExact.exists) {
+      console.log(`getUserDataForEditor: Nalezen přesný záznam pro userId=${userId}`);
+      const { email, wixid } = userDocExact.data();
+      
+      if (!email || !wixid) {
         return res.status(404).json({ success: false, error: 'V záznamu chybí email nebo wixid.' });
-    }
-
-    // Krok 2: Získání kompletních dat z 'users'
-    const userRefStep2 = db.collection('users').doc(wixid).collection('emails').doc(email);
-    const userDocStep2 = await userRefStep2.get();
-
-    if (!userDocStep2.exists) {
+      }
+      
+      // Krok 2: Získání kompletních dat z 'users'
+      const userRefStep2 = db.collection('users').doc(wixid).collection('emails').doc(email);
+      const userDocStep2 = await userRefStep2.get();
+      
+      if (!userDocStep2.exists) {
         // Zkusíme najít uživatele i pod jiným formátem, pokud by byl problém s lomítkem
         const alternativeEmail = email.replace(/\//g, '_');
         const alternativeUserRef = db.collection('users').doc(wixid).collection('emails').doc(alternativeEmail);
         const alternativeUserDoc = await alternativeUserRef.get();
+        
         if (!alternativeUserDoc.exists) {
-            return res.status(404).json({ success: false, error: `Hlavní záznam uživatele nenalezen pro email: ${email}` });
+          return res.status(404).json({ success: false, error: `Hlavní záznam uživatele nenalezen pro email: ${email}` });
         }
+        
         const finalUserData = {
-            email: email,
-            wixid: wixid,
-            ...alternativeUserDoc.data()
+          email: email,
+          wixid: wixid,
+          anonymousId: userId, // Přidáme anonymousId z URL do výsledku
+          ...alternativeUserDoc.data()
         };
+        
         return res.json({ success: true, data: finalUserData });
-    }
-    
-    const finalUserData = {
+      }
+      
+      const finalUserData = {
         email: email,
         wixid: wixid,
+        anonymousId: userId, // Přidáme anonymousId z URL do výsledku
         ...userDocStep2.data()
-    };
-
-    res.json({ success: true, data: finalUserData });
+      };
+      
+      return res.json({ success: true, data: finalUserData });
+    }
+    
+    // Strategie 2: Hledání podle anonymousId v celé kolekci
+    console.log(`getUserDataForEditor: Přesný záznam nenalezen, hledám podle anonymousId v celé kolekci`);
+    const usersRef = db.collection('usersid').doc(cafeId).collection('users');
+    const usersSnapshot = await usersRef.where('anonymousId', '==', userId).get();
+    
+    if (!usersSnapshot.empty) {
+      const userDoc = usersSnapshot.docs[0];
+      console.log(`getUserDataForEditor: Nalezen záznam podle anonymousId=${userId}`);
+      const { email, wixid } = userDoc.data();
+      
+      if (!email || !wixid) {
+        return res.status(404).json({ success: false, error: 'V záznamu chybí email nebo wixid.' });
+      }
+      
+      // Krok 2: Získání kompletních dat z 'users'
+      const userRefStep2 = db.collection('users').doc(wixid).collection('emails').doc(email);
+      const userDocStep2 = await userRefStep2.get();
+      
+      if (!userDocStep2.exists) {
+        // Zkusíme najít uživatele i pod jiným formátem, pokud by byl problém s lomítkem
+        const alternativeEmail = email.replace(/\//g, '_');
+        const alternativeUserRef = db.collection('users').doc(wixid).collection('emails').doc(alternativeEmail);
+        const alternativeUserDoc = await alternativeUserRef.get();
+        
+        if (!alternativeUserDoc.exists) {
+          return res.status(404).json({ success: false, error: `Hlavní záznam uživatele nenalezen pro email: ${email}` });
+        }
+        
+        const finalUserData = {
+          email: email,
+          wixid: wixid,
+          anonymousId: userId, // Přidáme anonymousId z URL do výsledku
+          ...alternativeUserDoc.data()
+        };
+        
+        return res.json({ success: true, data: finalUserData });
+      }
+      
+      const finalUserData = {
+        email: email,
+        wixid: wixid,
+        anonymousId: userId, // Přidáme anonymousId z URL do výsledku
+        ...userDocStep2.data()
+      };
+      
+      return res.json({ success: true, data: finalUserData });
+    }
+    
+    // Pokud jsme nenašli uživatele ani jednou strategií
+    console.log(`getUserDataForEditor: Uživatel nenalezen ani jednou strategií`);
+    return res.status(404).json({ 
+      success: false, 
+      error: `Uživatel s ID ${userId} nebyl nalezen. Zkontrolujte, zda je ID správné.` 
+    });
 
   } catch (err) {
     console.error('getUserDataForEditor error:', err);
@@ -408,6 +468,8 @@ exports.updateUserDataFromEditor = onRequest({ cors: true, cpu: 0.5 }, async (re
             level3_status: updatedData.level3_status,
             level3_sleva: updatedData.level3_sleva,
             level3_zustatek: updatedData.level3_zustatek,
+            pempath: updatedData.pempath, // Přidáno
+            keypath: updatedData.keypath, // Přidáno
             // DŮLEŽITÉ: Přidáváme cardType a další chybějící pole z editoru
             cardType: updatedData.cardType,
             bodyValInput: updatedData.bodyValInput,
@@ -429,7 +491,17 @@ exports.updateUserDataFromEditor = onRequest({ cors: true, cpu: 0.5 }, async (re
 
         await userRef.set(cleanUpdates, { merge: true });
 
-        res.json({ success: true, message: 'Data uživatele úspěšně aktualizována.' });
+        const data = await userRef.get();
+        const responseData = { ...data.data() };
+
+        if (data.data().pempath) {
+          responseData.pempath = data.data().pempath;
+        }
+        if (data.data().keypath) {
+          responseData.keypath = data.data().keypath;
+        }
+
+        res.json({ success: true, settings: responseData });
 
     } catch (err) {
         console.error('updateUserDataFromEditor error:', err);
@@ -522,6 +594,162 @@ exports.verifySessionToken = onRequest({ cors: true, cpu: 0.5 }, async (req, res
   } catch (err) {
     console.error("verifySessionToken error:", err);
     return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// assignCertificate funkce - přiřazení certifikátu k účtu
+exports.assignCertificate = onRequest({ cors: true, cpu: 0.5, invoker: 'public' }, async (req, res) => {
+  if (req.method !== 'POST') {
+    return res.status(405).send('Method Not Allowed');
+  }
+
+  try {
+    console.log('🚀 Začínám přiřazování certifikátu...');
+    
+    const { fullId } = req.body;
+    
+    if (!fullId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Chybí parametr fullId'
+      });
+    }
+
+    // Ověření formátu fullId (36 znaků UUID)
+    if (!fullId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Neplatný formát fullId'
+      });
+    }
+
+    console.log(`📋 Hledám volný certifikát pro fullId: ${fullId}`);
+
+    // 0. Nejprve zkontrolujeme, zda uživatel už nemá přiřazený certifikát
+    // Použijeme alternativní přístup bez indexu - načteme všechny certifikáty a filtrujeme v kódu
+    try {
+      const allCertificatesQuery = datastore.createQuery('certificates');
+      const [allCertificates] = await allCertificatesQuery.run();
+      
+      // Najdeme existující certifikát pro dané fullId
+      const existingCertificate = allCertificates.find(cert => cert.fullId === fullId);
+      
+      if (existingCertificate) {
+        console.log(`🔍 Uživatel s fullId ${fullId} již má přiřazený certifikát: ${existingCertificate.name}`);
+        
+        // Získat hodnoty z existujícího záznamu
+        const keypath = existingCertificate.keypath || null;
+        const pempath = existingCertificate.pempath || null;
+        const passTypeIdentifier = existingCertificate.passTypeIdentifier || null;
+        
+        return res.status(200).json({
+          success: true,
+          certificateName: existingCertificate.name,
+          fullId,
+          data: {
+            keypath,
+            pempath,
+            passTypeIdentifier
+          },
+          message: 'Certifikát již byl přiřazen dříve'
+        });
+      }
+      
+      console.log(`🆕 Uživatel s fullId ${fullId} nemá ještě přiřazený žádný certifikát`);
+      
+    } catch (error) {
+      console.error('⚠️ Chyba při kontrole existujících certifikátů:', error);
+      // Pokračujeme dál, i když se kontrola nezdařila
+    }
+
+    // 1. Najít první volný záznam v tabulce certificates (fullId == null)
+    // Použijeme alternativní přístup bez indexu - načteme všechny a filtrujeme v kódu
+    const allQuery = datastore.createQuery('certificates');
+    const [allResults] = await allQuery.run();
+    
+    // Najdeme první volný certifikát (fullId == null nebo undefined)
+    const availableCertificates = allResults.filter(cert => !cert.fullId || cert.fullId === null);
+    availableCertificates.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    
+    const results = availableCertificates.slice(0, 1);
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Žádný volný certifikát nebyl nalezen'
+      });
+    }
+
+    const certificate = results[0];
+    const certificateName = certificate.name;
+    
+    console.log(`✅ Nalezen volný certifikát: ${certificateName}`);
+
+    // 2. Aktualizovat záznam - nastavit fullId
+    const key = datastore.key(['certificates', certificateName]);
+    const updatedCertificate = {
+      ...certificate,
+      fullId: fullId
+    };
+
+    await datastore.save({
+      key,
+      data: updatedCertificate
+    });
+
+    console.log(`💾 Certifikát ${certificateName} přiřazen k fullId: ${fullId}`);
+
+    // 3. Získat hodnoty keypath, pempath a passTypeIdentifier z aktualizovaného záznamu
+    const keypath = certificate.keypath || null;
+    const pempath = certificate.pempath || null;
+    const passTypeIdentifier = certificate.passTypeIdentifier || null;
+
+    console.log(`📝 Hodnoty k uložení do Firebase:`, {
+      keypath,
+      pempath,
+      passTypeIdentifier
+    });
+
+    // 4. Zapsat hodnoty do Firebase cardzapier/{fullId}
+    const cardzapierRef = db.collection('cardzapier').doc(fullId);
+    
+    // Nejprve zkontrolujeme, zda dokument existuje
+    const docSnapshot = await cardzapierRef.get();
+    
+    const updateData = {};
+    if (keypath !== null) updateData.keypath = keypath;
+    if (pempath !== null) updateData.pempath = pempath;
+    if (passTypeIdentifier !== null) updateData.passTypeIdentifier = passTypeIdentifier;
+
+    if (docSnapshot.exists) {
+      // Dokument existuje - aktualizujeme ho
+      await cardzapierRef.update(updateData);
+      console.log(`🔄 Aktualizován existující dokument cardzapier/${fullId}`);
+    } else {
+      // Dokument neexistuje - vytvoříme ho
+      await cardzapierRef.set(updateData);
+      console.log(`📄 Vytvořen nový dokument cardzapier/${fullId}`);
+    }
+
+    console.log('🎉 Přiřazení certifikátu dokončeno úspěšně!');
+
+    return res.status(200).json({
+      success: true,
+      certificateName,
+      fullId,
+      data: {
+        keypath,
+        pempath,
+        passTypeIdentifier
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Chyba při přiřazování certifikátu:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 });
 

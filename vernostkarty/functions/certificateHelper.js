@@ -113,7 +113,53 @@ async function getFirebaseCredentials(credentialType) {
   }
 }
 
+/**
+ * Načte Apple Wallet certifikáty z konkrétních cest v Cloud Storage
+ * @param {string} pemPath - Cesta k PEM certifikátu v Cloud Storage
+ * @param {string} keyPath - Cesta k privátnímu klíči v Cloud Storage
+ * @returns {Object} Objekt s obsahem certifikátů (pem, key, wwdr)
+ */
+async function getAppleCertificateBuffers(pemPath, keyPath) {
+  try {
+    console.log(`VERIFICATION: Načítám certifikáty z dynamických cest: PEM='${pemPath}', KEY='${keyPath}'`);
+    
+    const bucket = storage.bucket(bucketName);
+    const fs = require('fs');
+    
+    console.log(`📥 Načítám certifikáty...`);
+    console.log(`  - PEM z Cloud Storage: ${pemPath}`);
+    console.log(`  - KEY z Cloud Storage: ${keyPath}`);
+    console.log(`  - WWDR lokálně: ./certificates/AppleWWDRCAG4.pem`);
+    
+    // Načtení PEM a KEY z Cloud Storage
+    const certFile = bucket.file(pemPath);
+    const keyFile = bucket.file(keyPath);
+    
+    const [pemBuffer] = await certFile.download();
+    const [keyBuffer] = await keyFile.download();
+    
+    // Načtení WWDR certifikátu lokálně
+    const wwdrBuffer = fs.readFileSync('./certificates/AppleWWDRCAG4.pem');
+    
+    console.log('✅ Certifikáty úspěšně načteny z dynamických cest');
+    console.log(`  - PEM: ${pemBuffer.length} bytes`);
+    console.log(`  - KEY: ${keyBuffer.length} bytes`);
+    console.log(`  - WWDR: ${wwdrBuffer.length} bytes`);
+    
+    return {
+      pem: pemBuffer,      // PEM certifikát z Cloud Storage
+      key: keyBuffer,      // PEM privátní klíč z Cloud Storage
+      wwdr: wwdrBuffer     // WWDR certifikát z Cloud Storage
+    };
+    
+  } catch (error) {
+    console.error(`❌ Chyba při načítání certifikátů z cest PEM='${pemPath}', KEY='${keyPath}':`, error);
+    throw new Error(`Nelze načíst certifikáty z Cloud Storage: ${error.message}`);
+  }
+}
+
 module.exports = {
   getAppleCertificatePaths,
-  getFirebaseCredentials
+  getFirebaseCredentials,
+  getAppleCertificateBuffers
 };

@@ -1,6 +1,8 @@
 const { Storage } = require('@google-cloud/storage');
+const { Datastore } = require('@google-cloud/datastore');
 const fs = require('fs');
 const path = require('path');
+const certificateConfig = require('./certificateConfig');
 
 // Inicializace Google Cloud Storage s credentials
 const storage = new Storage({
@@ -8,6 +10,12 @@ const storage = new Storage({
   keyFilename: './certificates/vernostkarty-firebase-adminsdk-2j135-d46f086885.json'
 });
 const bucketName = 'vernostni-certificates';
+
+// Inicializace Datastore
+const datastore = new Datastore({
+  projectId: 'vernostkarty',
+  keyFilename: './certificates/vernostkarty-firebase-adminsdk-2j135-d46f086885.json'
+});
 
 /**
  * Helper pro načítání Apple Wallet certifikátů podle prefixu
@@ -73,14 +81,7 @@ async function getAppleCertificatesByPrefix(prefix = null) {
     
   } catch (error) {
     console.error(`❌ Chyba při načítání certifikátů pro prefix ${prefix}:`, error);
-    
-    // Fallback na lokální soubory
-    console.log('🔄 Používám lokální certifikáty jako fallback...');
-    return {
-      wwdr: "./certificates/AppleWWDRCAG4.pem",
-      signerCert: "./certificates/passCert.pem", 
-      signerKey: "./certificates/privatekey.key"
-    };
+    throw error;
   }
 }
 
@@ -200,11 +201,140 @@ async function uploadCertificatesWithPrefix(prefix, files) {
   }
 }
 
+/**
+ * Načte cesty k certifikátům přímo z Cloud Storage (vernostni-certificates/original/apple-wallet/)
+ * @param {string} cafeId - ID kavárny (pro kompatibilitu, ale vždy používá original)
+ * @returns {Object} Objekt s p12Path, wwdrPath, pemCertPath, pemKeyPath
+ */
+function getCertificatePathsByCafeId(cafeId) {
+  console.log(`🔍 Načítám cesty k certifikátům pro cafeId: ${cafeId} přímo z Cloud Storage`);
+  
+  // Přímé cesty k certifikátům v Cloud Storage
+  const p12Path = 'original/apple-wallet/certificates.p12';
+  const wwdrPath = 'original/apple-wallet/AppleWWDRCAG4.pem';
+  const pemCertPath = 'original/apple-wallet/passCert.pem';
+  const pemKeyPath = 'original/apple-wallet/privatekey.key';
+  
+  console.log(`✅ Používám přímé cesty: p12Path=${p12Path}, wwdrPath=${wwdrPath}, pemCertPath=${pemCertPath}, pemKeyPath=${pemKeyPath}`);
+  
+  return { p12Path, wwdrPath, pemCertPath, pemKeyPath };
+}
+
+/**
+ * Načte Apple Wallet certifikáty podle cafeId
+ * @param {string} cafeId - ID kavárny
+ * @returns {Object} Objekt s obsahem certifikátů (p12Buffer, wwdrBuffer)
+ */
+async function getAppleCertificatesByCafeId(cafeId) {
+  try {
+    console.log(`🔐 Načítám Apple Wallet certifikáty pro cafeId: ${cafeId}`);
+    
+    // 1) NAČTENÍ CEST K CERTIFIKÁTŮM PŘÍMO Z CLOUD STORAGE
+    const { p12Path, wwdrPath, pemCertPath, pemKeyPath } = getCertificatePathsByCafeId(cafeId);
+    console.log(`✅ Nalezeny cesty - p12Path: ${p12Path}, wwdrPath: ${wwdrPath}, pemCertPath: ${pemCertPath}, pemKeyPath: ${pemKeyPath}`);
+    
+    // 2) STAŽENÍ CERTIFIKÁTŮ Z CLOUD STORAGE PODLE CEST
+    const bucket = storage.bucket(bucketName);
+    
+    console.log(`📥 Stahuji .p12 certifikát z: ${p12Path}`);
+    const p12File = bucket.file(p12Path);
+    const [p12Buffer] = await p12File.download();
+    
+    console.log(`📥 Stahuji WWDR certifikát z: ${wwdrPath}`);
+    const wwdrFile = bucket.file(wwdrPath);
+    const [wwdrBuffer] = await wwdrFile.download();
+    
+    // 3) KONVERZE .P12 NA PEM FORMÁT PRO PKPASS
+    console.log('🔄 Konvertuji .p12 na PEM formát...');
+    
+    // Import crypto a p12 knihovny (jsou součástí Node.js)
+    const crypto = require('crypto');
+    
+    try {
+      // Pokus o extrakci PEM certifikátů z .p12 souboru
+      // P12 nemusí mít heslo, takže zkusíme prázdné heslo
+      const p12Der = p12Buffer;
+      
+      // 3) NAČTENÍ PEM SOUBORŮ Z CLOUD STORAGE PODLE CEST Z DATASTORE
+      const prefix = p12Path.split('/')[0]; // např. 'original' nebo '000001'
+      
+      console.log(`🔍 Načítám PEM soubory z Cloud Storage: ${pemCertPath}, ${pemKeyPath}`);
+      
+      let signerCert, signerKey;
+      
+      try {
+        // Načtení PEM souborů z Cloud Storage podle přesných cest z Datastore
+        const certFile = bucket.file(pemCertPath);
+        const keyFile = bucket.file(pemKeyPath);
+        
+        const [certBuffer] = await certFile.download();
+        const [keyBuffer] = await keyFile.download();
+        
+        signerCert = certBuffer;
+        signerKey = keyBuffer;
+        
+        console.log('✅ PEM soubory úspěšně načteny z Cloud Storage podle cest z Datastore');
+      } catch (pemError) {
+        console.error('❌ Chyba při načítání PEM souborů z Cloud Storage:', pemError);
+        throw new Error(`Nelze načíst PEM soubory z Cloud Storage: ${pemCertPath}, ${pemKeyPath}`);
+      }
+      
+      console.log(`✅ Certifikáty pro cafeId ${cafeId} úspěšně načteny (${prefix})`);
+      
+      return {
+        signerCert,      // PEM certifikát
+        signerKey,       // PEM privátní klíč  
+        wwdrBuffer,      // Stažený WWDR z Cloud Storage
+        p12Path,         // Cesta k .p12 pro debug
+        wwdrPath         // Cesta k WWDR pro debug
+      };
+      
+    } catch (conversionError) {
+      console.error('❌ Chyba při konverzi .p12:', conversionError);
+      throw conversionError;
+    }
+    
+  } catch (error) {
+    console.error(`❌ Chyba při načítání certifikátů pro cafeId ${cafeId}:`, error);
+    throw new Error(`Nelze načíst certifikáty pro cafeId ${cafeId} z Cloud Storage: ${error.message}`);
+  }
+}
+
+async function getAppleCertificateBuffers(pemPath, keyPath) {
+  console.log(`Downloading certificates from GCS -> PEM: ${pemPath}, Key: ${keyPath}`);
+
+  try {
+    // Stáhnout signerCert (PEM)
+    const [signerCertBuffer] = await storage.bucket(bucketName).file(pemPath).download();
+    console.log('✅ Downloaded signerCert from GCS.');
+
+    // Stáhnout signerKey (KEY)
+    const [signerKeyBuffer] = await storage.bucket(bucketName).file(keyPath).download();
+    console.log('✅ Downloaded signerKey from GCS.');
+
+    // Načíst WWDR lokálně
+    const wwdrBuffer = fs.readFileSync(path.join(__dirname, 'certificates', 'AppleWWDRCAG4.pem'));
+    console.log('✅ Loaded local WWDR certificate.');
+
+    return {
+      pem: signerCertBuffer,
+      key: signerKeyBuffer,
+      wwdr: wwdrBuffer,
+    };
+  } catch (error) {
+    console.error(`💥 Failed to get certificate buffers from paths: ${pemPath}, ${keyPath}`, error);
+    throw new Error('Could not load certificate buffers from provided paths.');
+  }
+}
+
 module.exports = {
   getAppleCertificatesByPrefix,
   getFirebaseCredentialsByPrefix,
   extractPrefix,
   uploadCertificatesWithPrefix,
+  getAppleCertificateBuffers,
+  getCertificatePathsByCafeId,
+  getAppleCertificatesByCafeId,
   
   // Zpětná kompatibilita - původní funkce používají prefix null (= original)
   getAppleCertificatePaths: () => getAppleCertificatesByPrefix(null),

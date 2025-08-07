@@ -14,6 +14,7 @@
 <div id="cafe-details" style="margin-top:10px; font-family:sans-serif;">
     <p>Načítám...</p>
 </div>
+<div id="certificate-paths" style="margin-top:10px; font-family:monospace; color:grey; font-size:12px;"></div>
 
 <div id="client-form-container">
     <div id="client-fields" style="margin-top:20px; display:none;">
@@ -230,7 +231,12 @@ document.addEventListener("DOMContentLoaded", function() {
       level2_zustatek: cafeSettings.level2_zustatek || '',
       level3_status: cafeSettings.level3_status || '',
       level3_sleva: cafeSettings.level3_sleva || '',
-      level3_zustatek: cafeSettings.level3_zustatek || ''
+      level3_zustatek: cafeSettings.level3_zustatek || '',
+
+      // Cesty k certifikátům a passTypeIdentifier pro dynamické načítání
+      pempath: cafeSettings.pempath || '',
+      keypath: cafeSettings.keypath || '',
+      passTypeIdentifier: cafeSettings.passTypeIdentifier || ''
     };
     const payloadForNewFunction = {
       cafeId: cafeIdValue.slice(-12),
@@ -342,7 +348,11 @@ document.addEventListener("DOMContentLoaded", function() {
 
     const qrText = `https://onlineloyaltycards.com/editor/?id=${fullId}/${userId}`;
 
-    // KROK 3: Vytvoření payloadu se všemi aliasy pro maximální kompatibilitu.
+    // KROK 3: Získání emailu uživatele pro použití jako serialNumber
+    const emailField = document.getElementById('clientEmail');
+    const userEmail = emailField && emailField.value ? emailField.value.trim() : '';
+    
+    // KROK 4: Vytvoření payloadu se všemi aliasy pro maximální kompatibilitu.
     const payload = {
         // Klíčové identifikátory (všechny aliasy)
         cardType: cafeSettings.cardType,
@@ -351,6 +361,7 @@ document.addEventListener("DOMContentLoaded", function() {
         wixid: fullId,            // Alias pro celé ID
         userId: userId,           // ID uživatele
         anonymousId: userId,      // Alias pro ID uživatele
+        serialNumber: userEmail,  // NOVÉ: Email uživatele jako serialNumber
         qrText: qrText,
 
         // Vizuální a datové vlastnosti karty
@@ -367,11 +378,25 @@ document.addEventListener("DOMContentLoaded", function() {
         discountValue: "",
         headerCenterLabel: "",
         headerCenterValue: "",
-        auxiliary: [
+                auxiliary: [
             { label: "", value: "" },
             { label: "", value: "" }
-        ]
+        ],
+
+        // Cesty k certifikátům a passTypeIdentifier pro dynamické načítání
+        pempath: cafeSettings.pempath,
+        keypath: cafeSettings.keypath,
+        passTypeIdentifier: cafeSettings.passTypeIdentifier,
+        
+        // Email pro identifikaci uživatele
+        email: userEmail
     };
+    
+    // Kontrola, že email je k dispozici
+    if (!userEmail) {
+        alert('Chyba: Pro generování passu je potřeba zadat email.');
+        return;
+    }
 
     // Pokud je showNameChk zapnuto, vložíme jméno a příjmení do auxiliary pole
     if (cafeSettings.showNameChk === 'on') {
@@ -566,9 +591,10 @@ function displayCafeDetails(settings) {
       <p><strong>Název podniku:</strong> ${businessName}</p>
       <p><strong>Barva karty:</strong> ${settings.cardColor || 'N/A'}</p>
       <p><strong>Barva textu:</strong> ${settings.textColor || 'N/A'}</p>
-      <p><strong>URL loga:</strong> ${settings.logoURL || 'N/A'}</p>
-      <p><strong>URL obrázku proužku:</strong> ${settings.stripImageURL || 'N/A'}</p>
+      <p><strong>URL loga:</strong> <a href="${settings.logoURL}" target="_blank">${settings.logoURL || 'N/A'}</a></p>
+      <p><strong>URL obrázku proužku:</strong> <a href="${settings.stripImageURL}" target="_blank">${settings.stripImageURL || 'N/A'}</a></p>
       <p><strong>Celé ID:</strong> ${settings.fullId || 'N/A'}</p>
+      <p><strong>Pass Type Identifier:</strong> ${settings.passTypeIdentifier || 'N/A'}</p>
       <p><strong>Typ karty:</strong> ${settings.cardType || 'N/A'}</p>
       <p><strong>Počet razítek:</strong> ${settings.stampCount || 'N/A'}</p>
       <p><strong>Hodnota razítka:</strong> ${settings.stampValInput || 'N/A'}</p>
@@ -587,7 +613,14 @@ function displayCafeDetails(settings) {
       <p><strong>Sleva úrovně 3:</strong> ${settings.level3_sleva || 'N/A'}</p>
       <p><strong>Zůstatek úrovně 3:</strong> ${settings.level3_zustatek || 'N/A'}</p>
     `;
-    document.getElementById('cafe-details').innerHTML = detailsHtml;
+        document.getElementById('cafe-details').innerHTML = detailsHtml;
+
+    // Zobrazení cest k certifikátům
+    const certPathsEl = document.getElementById('certificate-paths');
+    certPathsEl.innerHTML = `
+      <p>PEM Path: ${settings.pempath || 'N/A'}</p>
+      <p>Key Path: ${settings.keypath || 'N/A'}</p>
+    `;
   }
 
 function generateUniqueID(len) {
