@@ -11,6 +11,7 @@
 <body>
 
 <h1>Informace o kavárně:</h1>
+<div id="device-info" style="margin-top:10px; font-family:sans-serif; color:#333;">Zjišťuji zařízení...</div>
 <div id="cafe-details" style="margin-top:10px; font-family:sans-serif;">
     <p>Načítám...</p>
 </div>
@@ -29,6 +30,7 @@
         </div>
       </div>
       <div id="clientEmail-field" style="display:none;"><label>Email *:</label><input type="email" id="clientEmail"></div>
+      <div id="classId-field" style="display:block;"><label>Class ID:</label><input type="text" id="classIdInput" placeholder="issuerId.classId or fullId"></div>
     </div>
     
     <button id="save-btn" style="margin-top:10px;">Uložit</button>
@@ -155,9 +157,25 @@ const SAVE_USER_URL = "https://savecafeuser-weeqy2w2la-uc.a.run.app";
 const SAVE_USER_BY_ID_URL = "https://saveuserbyid-weeqy2w2la-uc.a.run.app"; // POZOR: Tuto URL bude potřeba nahradit skutečnou URL po nasazení nové funkce.
 const SAVE_USER_TO_USERSID_URL = "https://us-central1-vernostkarty-db.cloudfunctions.net/saveUserToUsersId";
 
+ // Jednoduchá detekce zařízení: iOS / Android / PC
+ function detectDevice() {
+   const ua = navigator.userAgent || navigator.vendor || window.opera || "";
+   const isAndroid = /Android/i.test(ua);
+   // iOS detekce včetně iPadOS, který se může tvářit jako Mac
+   const isiOS = /iPad|iPhone|iPod/i.test(ua) || (ua.includes('Mac') && 'ontouchend' in document);
+   if (isiOS) return 'iOS';
+   if (isAndroid) return 'Android';
+   return 'PC';
+ }
+
 document.addEventListener("DOMContentLoaded", function() {
   document.getElementById('send-code-btn').addEventListener('click', sendVerificationCode);
   document.getElementById('verify-code-btn').addEventListener('click', verifyCode);
+
+  // Zobrazení typu zařízení uživateli
+  const device = detectDevice();
+  const devEl = document.getElementById('device-info');
+  if (devEl) devEl.textContent = 'Zařízení: ' + device;
 
   const urlParams = new URLSearchParams(window.location.search);
   const cafeId = urlParams.get('id');
@@ -231,6 +249,9 @@ document.addEventListener("DOMContentLoaded", function() {
       level2_zustatek: cafeSettings.level2_zustatek || '',
       level3_status: cafeSettings.level3_status || '',
       level3_sleva: cafeSettings.level3_sleva || '',
+      
+      // Uložení typu zařízení (iOS/Android/PC) pro analytiku a větvení
+      deviceType: detectDevice(),
       level3_zustatek: cafeSettings.level3_zustatek || '',
 
       // Cesty k certifikátům a passTypeIdentifier pro dynamické načítání
@@ -302,6 +323,17 @@ document.addEventListener("DOMContentLoaded", function() {
         document.getElementById('client-fields').style.display = 'none';
         document.getElementById('save-btn').style.display = 'none';
         document.getElementById('generate-pass-btn').style.display = 'block';
+
+        // Pokud je zařízení Android, po uložení rovnou spustíme generování Google Wallet karty
+        try {
+          const deviceAfterSave = detectDevice();
+          if (deviceAfterSave === 'Android') {
+            setTimeout(() => {
+              const genBtn = document.getElementById('generate-pass-btn');
+              if (genBtn) genBtn.click();
+            }, 200);
+          }
+        } catch (_) {}
 
       } else if (json.error && json.error.includes('registrován')) {
         showVerificationUI();
@@ -496,14 +528,131 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('error-msg').style.display = 'none';
 
     try {
-      const resp = await fetch('https://createpass-2sun3frzja-uc.a.run.app', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
-      const json = await resp.json();
-      if (resp.ok && json.downloadUrl) {
+      const device = detectDevice();
+      if (device === 'Android') {
+        // Google Wallet flow
+        const phonePrefixEl = document.getElementById('clientPhonePrefix');
+        const phoneEl = document.getElementById('clientPhone');
+        const phoneCombined = (phonePrefixEl ? phonePrefixEl.value : '') + (phoneEl && phoneEl.value ? phoneEl.value.trim() : '');
+        const classIdEl = document.getElementById('classIdInput');
+        const selectedClassId = (classIdEl && classIdEl.value.trim()) ? classIdEl.value.trim() : cafeSettings.fullId;
+        const googlePayload = {
+          classId: selectedClassId,
+          objectData: {
+            userId: userId,
+            givenName: cafeSettings.name || '',
+            familyName: cafeSettings.surname || '',
+            email: userEmail,
+            phone: phoneCombined,
+            stampCount: cafeSettings.stampValInput || 0,
+            barcodeValue: qrText
+          }
+        };
+        const resp = await fetch('https://creategooglewalletpass-weeqy2w2la-uc.a.run.app', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(googlePayload)
+        });
+        const json = await resp.json();
+        if (!resp.ok) {
+          resultEl.textContent = 'Chyba: ' + (json.error || JSON.stringify(json));
+        } else if (json.saveUrl) {
+          // Zobraz tlačítko a zároveň automaticky otevři uložit-flow na Androidu
+          resultEl.innerHTML = `
+            <a href="${json.saveUrl}" style="display: inline-block; font-size: 18px; padding: 10px 20px; background-color: #1a73e8; color: white; text-decoration: none; border-radius: 5px;">Uložit do Google Peněženky</a>
+          `;
+          try { setTimeout(() => { window.location.href = json.saveUrl; }, 50); } catch (e) {}
+        } else if (json.success) {
+          resultEl.textContent = 'Karta byla vytvořena.';
+        } else {
+          resultEl.textContent = 'Chyba: ' + (json.error || JSON.stringify(json));
+        }
+      } else if (device === 'iOS') {
+        // Apple Wallet flow (stávající)
+        const resp = await fetch('https://createpass-2sun3frzja-uc.a.run.app', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const json = await resp.json();
+        if (resp.ok && json.downloadUrl) {
           resultEl.innerHTML = `<a href="${json.downloadUrl}" download style="display: inline-block; font-size: 18px; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Stáhnout Pass</a>`;
-      } else {
+        } else {
           resultEl.textContent = 'Chyba: ' + (json.error||JSON.stringify(json));
+        }
+      } else {
+        // PC – nabídnout instrukce + tlačítko pro vytvoření Google Wallet karty
+        resultEl.innerHTML = `
+          <div style="color:#555; margin-bottom:10px;">
+            Pro uložení karty použijte prosím mobilní zařízení (iOS/Android). Na PC není přímé uložení podporováno.
+          </div>
+          <button id="create-google-pass-btn" style="display: inline-block; font-size: 16px; padding: 8px 14px; background-color: #1a73e8; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            Vytvořit Google Wallet kartu
+          </button>
+          <div id="google-pass-save-link" style="margin-top:10px;"></div>
+        `;
+
+        const pcBtn = document.getElementById('create-google-pass-btn');
+        const saveLinkEl = document.getElementById('google-pass-save-link');
+        pcBtn.addEventListener('click', async () => {
+          pcBtn.disabled = true;
+          const originalText = pcBtn.textContent;
+          pcBtn.textContent = 'Vytvářím...';
+          try {
+            const phonePrefixEl = document.getElementById('clientPhonePrefix');
+            const phoneEl = document.getElementById('clientPhone');
+            const phoneCombined = (phonePrefixEl ? phonePrefixEl.value : '') + (phoneEl && phoneEl.value ? phoneEl.value.trim() : '');
+            const classIdEl = document.getElementById('classIdInput');
+            const selectedClassId = (classIdEl && classIdEl.value.trim()) ? classIdEl.value.trim() : cafeSettings.fullId;
+            const googlePayload = {
+              classId: selectedClassId,
+              objectData: {
+                userId: userId,
+                givenName: cafeSettings.name || '',
+                familyName: cafeSettings.surname || '',
+                email: userEmail,
+                phone: phoneCombined,
+                stampCount: cafeSettings.stampValInput || 0,
+                barcodeValue: qrText
+              }
+            };
+            const resp = await fetch('https://creategooglewalletpass-weeqy2w2la-uc.a.run.app', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(googlePayload)
+            });
+            const json = await resp.json();
+            if (!resp.ok) {
+              saveLinkEl.textContent = 'Chyba: ' + (json.error || JSON.stringify(json));
+              saveLinkEl.style.color = 'red';
+            } else if (json.saveUrl) {
+              saveLinkEl.innerHTML = `
+                <div style="margin-top:8px;">
+                  <button id="open-google-save" style="display:inline-block; font-size:16px; padding:8px 14px; background-color:#1a73e8; color:#fff; border:none; border-radius:5px; cursor:pointer;">Uložit do Google Peněženky</button>
+                  <div style="margin-top:8px; color:#555;">Případně zkopírujte odkaz a otevřete na Android zařízení:</div>
+                  <a href="${json.saveUrl}" target="_blank" style="word-break: break-all;">${json.saveUrl}</a>
+                </div>
+              `;
+              const openBtn = document.getElementById('open-google-save');
+              if (openBtn) openBtn.addEventListener('click', () => window.open(json.saveUrl, '_blank'));
+            } else if (json.success) {
+              saveLinkEl.textContent = 'Karta byla vytvořena.';
+            } else {
+              saveLinkEl.textContent = 'Chyba: ' + (json.error || JSON.stringify(json));
+              saveLinkEl.style.color = 'red';
+            }
+          } catch (e) {
+            saveLinkEl.textContent = 'Chyba: ' + e.message;
+            saveLinkEl.style.color = 'red';
+          } finally {
+            pcBtn.disabled = false;
+            pcBtn.textContent = originalText;
+          }
+        });
       }
-    } catch(e) { resultEl.textContent = 'Chyba: ' + e.message; }
+    } catch(e) { 
+      resultEl.textContent = 'Chyba: ' + e.message; 
+    }
   });
 });
 
@@ -547,6 +696,8 @@ function fetchCafeSettings(cafeId) {
         const p=document.getElementById('clientPhone-field'); p.style.display='block';
         p.querySelector('label').textContent='Telefon'+(s.clientPhoneRequired==='on'?' *':' (Nepovinné)');
       }
+      const classIdEl = document.getElementById('classIdInput');
+      if (classIdEl) { classIdEl.value = s.fullId || ''; }
     })
     .catch(err => {
         console.error('fetchCafeSettings error:', err);
@@ -574,9 +725,11 @@ function displayCafeDetails(settings) {
             document.getElementById('clientPhonePrefix').value = '+420';
             document.getElementById('clientPhone').value = userPhone.substring(4);
         } else {
-            document.getElementById('clientPhone').value = userPhone;
+          document.getElementById('clientPhone').value = userPhone;
         }
     }
+    const classIdEl = document.getElementById('classIdInput');
+    if (classIdEl) { classIdEl.value = settings.fullId || ''; }
 
     const businessName = settings.businessName || 'Název není k dispozici';
 

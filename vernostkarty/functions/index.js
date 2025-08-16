@@ -35,7 +35,7 @@ function hexToRgb(hex) {
 // =========================
 // Funkce createPass – KOMPLETNĚ OPRAVENÁ S DETAILNÍM LOGOVÁNÍM
 // =========================
-exports.createPass = functions.https.onRequest((req, res) => {
+exports.createPass = functions.https.onRequest({invoker: 'public'}, (req, res) => {
   cors(req, res, async () => {
     console.log("🚀 createPass started");
     
@@ -445,7 +445,7 @@ exports.cleanupUserDeviceInfo = cleanupUserDeviceInfo;
 // =========================
 // HTTP endpoint pro aktualizaci dateUpdated v kartách
 // =========================
-exports.updateCardsTimestamp = functions.https.onRequest(async (req, res) => {
+exports.updateCardsTimestamp = functions.https.onRequest({invoker: 'public'}, async (req, res) => {
   console.log('🔄 updateCardsTimestamp endpoint called');
   
   // CORS headers
@@ -644,7 +644,7 @@ exports.updateCardsTimestamp = functions.https.onRequest(async (req, res) => {
 });
 
 // Nová funkce pro generování aktualizovaných passů s daty z Firestore
-exports.generateUpdatedPass = functions.https.onRequest(async (req, res) => {
+exports.generateUpdatedPass = functions.https.onRequest({invoker: 'public'}, async (req, res) => {
   try {
     console.log('🔄 generateUpdatedPass endpoint called');
     console.log('Request body:', JSON.stringify(req.body, null, 2));

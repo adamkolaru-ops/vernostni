@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Wallet - Vytvoření šablony věrnostní karty</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      background: #f5f5f5;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #4285f4, #34a853);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+    
+    .header p {
+      opacity: 0.9;
+      font-size: 16px;
+    }
+    
+    .form-container {
+      padding: 40px;
+    }
+    
+    .form-group {
+      margin-bottom: 25px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+    }
+    
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e1e5e9;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.3s ease;
+      font-family: inherit;
+    }
+    
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #4285f4;
+      box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.1);
+    }
+    
+    .form-group textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    
+    .color-input {
+      height: 50px !important;
+      cursor: pointer;
+    }
+    
+    .submit-btn {
+      background: linear-gradient(135deg, #4285f4, #34a853);
+      color: white;
+      padding: 16px 32px;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      width: 100%;
+      margin-top: 20px;
+    }
+    
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(66, 133, 244, 0.3);
+    }
+    
+    .submit-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .status-message {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      font-weight: 500;
+      text-align: center;
+      display: none;
+    }
+    
+    .status-success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .status-error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    
+    .status-loading {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+    
+    .help-text {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+      font-style: italic;
+    }
+    
+    @media (max-width: 768px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+      
+      .container {
+        margin: 10px;
+      }
+      
+      .form-container {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎯 Google Wallet</h1>
+      <p>Vytvoření šablony věrnostní karty</p>
+    </div>
+    
+    <div class="form-container">
+      <form id="googleWalletForm">
+        <div class="form-group">
+          <label for="classId">ID šablony (Class ID) *</label>
+          <input type="text" id="classId" name="classId" required 
+                 placeholder="např. loyalty_class_001">
+          <div class="help-text">Unikátní identifikátor šablony (pouze písmena, čísla a podtržítka)</div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="issuerName">Název vydavatele *</label>
+            <input type="text" id="issuerName" name="issuerName" required 
+                   placeholder="Název vaší firmy">
+          </div>
+          
+          <div class="form-group">
+            <label for="programName">Název programu *</label>
+            <input type="text" id="programName" name="programName" required 
+                   placeholder="Věrnostní program">
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="programDescription">Popis programu</label>
+          <textarea id="programDescription" name="programDescription" 
+                    placeholder="Krátký popis vašeho věrnostního programu..."></textarea>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="programLogo">URL loga programu</label>
+            <input type="url" id="programLogo" name="programLogo" 
+                   placeholder="https://example.com/logo.png">
+            <div class="help-text">Doporučená velikost: 640x246px</div>
+          </div>
+          
+          <div class="form-group">
+            <label for="hexBackgroundColor">Barva pozadí</label>
+            <input type="color" id="hexBackgroundColor" name="hexBackgroundColor" 
+                   value="#4285f4" class="color-input">
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="localizedIssuerName">Lokalizovaný název vydavatele (CS)</label>
+            <input type="text" id="localizedIssuerName" name="localizedIssuerName" 
+                   placeholder="Český název firmy">
+          </div>
+          
+          <div class="form-group">
+            <label for="localizedProgramName">Lokalizovaný název programu (CS)</label>
+            <input type="text" id="localizedProgramName" name="localizedProgramName" 
+                   placeholder="Český název programu">
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="rewardsTier">Úroveň odměn</label>
+          <select id="rewardsTier" name="rewardsTier">
+            <option value="">Vyberte úroveň...</option>
+            <option value="BRONZE">Bronzová</option>
+            <option value="SILVER">Stříbrná</option>
+            <option value="GOLD">Zlatá</option>
+            <option value="PLATINUM">Platinová</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="businessId">ID podniku (volitelné)</label>
+          <input type="text" id="businessId" name="businessId" 
+                 placeholder="např. cafe_001">
+          <div class="help-text">Pro propojení s existujícím podnikem v systému</div>
+        </div>
+        
+        <button type="submit" class="submit-btn" id="submitBtn">
+          Vytvořit Google Wallet šablonu
+        </button>
+        
+        <div id="statusMessage" class="status-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('googleWalletForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const statusMessage = document.getElementById('statusMessage');
+    
+    // Firebase Cloud Function URL - změň na správnou URL po nasazení
+    const CLOUD_FUNCTION_URL = 'https://creategooglewallettemplate-weeqy2w2la-uc.a.run.app';
+    
+    function showStatus(message, type) {
+      statusMessage.textContent = message;
+      statusMessage.className = `status-message status-${type}`;
+      statusMessage.style.display = 'block';
+      
+      if (type === 'success' || type === 'error') {
+        setTimeout(() => {
+          statusMessage.style.display = 'none';
+        }, 5000);
+      }
+    }
+    
+    function validateClassId(classId) {
+      const regex = /^[a-zA-Z0-9_]+$/;
+      return regex.test(classId);
+    }
+    
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+      
+      // Validace Class ID
+      if (!validateClassId(data.classId)) {
+        showStatus('Class ID může obsahovat pouze písmena, čísla a podtržítka!', 'error');
+        return;
+      }
+      
+      // Příprava dat podle updateUserData patternu
+      const templateData = {
+        classId: data.classId,
+        issuerName: data.issuerName,
+        programName: data.programName,
+        programDescription: data.programDescription || null,
+        programLogo: data.programLogo || null,
+        hexBackgroundColor: data.hexBackgroundColor || '#4285f4',
+        localizedIssuerName: data.localizedIssuerName || data.issuerName,
+        localizedProgramName: data.localizedProgramName || data.programName,
+        rewardsTier: data.rewardsTier || null,
+        businessId: data.businessId || null,
+        timestamp: new Date().toISOString(),
+        issuerId: '3388000000022981331',
+        fullClassId: `3388000000022981331.${data.classId}`,
+        status: 'created'
+      };
+      
+      // Payload podle updateUserData patternu: { id, data }
+      const payload = {
+        id: data.classId,
+        data: templateData
+      };
+      
+      // UI feedback
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Vytváření šablony...';
+      showStatus('Odesílání dat na server...', 'loading');
+      
+      try {
+        const response = await fetch(CLOUD_FUNCTION_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          showStatus(`✅ Šablona úspěšně vytvořena! Class ID: ${result.classId}`, 'success');
+          form.reset();
+          document.getElementById('hexBackgroundColor').value = '#4285f4';
+        } else {
+          throw new Error(result.error || 'Neznámá chyba serveru');
+        }
+        
+      } catch (error) {
+        console.error('Error:', error);
+        showStatus(`❌ Chyba: ${error.message}`, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Vytvořit Google Wallet šablonu';
+      }
+    });
+    
+    // Real-time validace Class ID
+    document.getElementById('classId').addEventListener('input', (e) => {
+      const value = e.target.value;
+      if (value && !validateClassId(value)) {
+        e.target.style.borderColor = '#dc3545';
+      } else {
+        e.target.style.borderColor = '#e1e5e9';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Wallet Test - Šablony a Passy</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #4285f4;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #3367d6;
+    }
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 4px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .success {
+      background-color: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+    .error {
+      background-color: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+    }
+    .section-title {
+      color: #4285f4;
+      border-bottom: 2px solid #4285f4;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Google Wallet API Test</h1>
+
+<!-- Sekce pro vytváření šablon -->
+<div class="container">
+  <h2 class="section-title">1. Vytvoření Google Wallet Šablony (Class)</h2>
+  
+  <div class="form-group">
+    <label for="template-id">Class ID (suffix):</label>
+    <input type="text" id="template-id" placeholder="např. test-template-123" value="test-template-123">
+  </div>
+  
+  <div class="form-group">
+    <label for="issuer-name">Název vydavatele:</label>
+    <input type="text" id="issuer-name" placeholder="např. Moje Kavárna" value="Test Kavárna">
+  </div>
+  
+  <div class="form-group">
+    <label for="program-name">Název programu:</label>
+    <input type="text" id="program-name" placeholder="např. Věrnostní program" value="Testovací věrnostní program">
+  </div>
+  
+  <div class="form-group">
+    <label for="background-color">Barva pozadí (hex):</label>
+    <input type="text" id="background-color" placeholder="#4285f4" value="#4285f4">
+  </div>
+  
+  <div class="form-group">
+    <label for="program-logo">URL loga (volitelné):</label>
+    <input type="text" id="program-logo" placeholder="https://example.com/logo.png">
+  </div>
+  
+  <button id="create-template-btn">Vytvořit šablonu</button>
+  
+  <div id="template-result"></div>
+</div>
+
+<!-- Sekce pro vytváření passů -->
+<div class="container">
+  <h2 class="section-title">2. Vytvoření Google Wallet Pasu (Object)</h2>
+  
+  <div class="form-group">
+    <label for="pass-class-id">Class ID (z předchozího kroku):</label>
+    <input type="text" id="pass-class-id" placeholder="test-template-123" value="test-template-123">
+  </div>
+  
+  <div class="form-group">
+    <label for="user-email">Email uživatele:</label>
+    <input type="email" id="user-email" placeholder="uzivatel@example.com" value="test@example.com">
+  </div>
+  
+  <div class="form-group">
+    <label for="user-given-name">Jméno:</label>
+    <input type="text" id="user-given-name" placeholder="Jan" value="Jan">
+  </div>
+  
+  <div class="form-group">
+    <label for="user-family-name">Příjmení:</label>
+    <input type="text" id="user-family-name" placeholder="Novák" value="Novák">
+  </div>
+  
+  <div class="form-group">
+    <label for="user-phone">Telefon (volitelné):</label>
+    <input type="text" id="user-phone" placeholder="+420123456789" value="+420123456789">
+  </div>
+  
+  <div class="form-group">
+    <label for="user-points">Počet bodů:</label>
+    <input type="number" id="user-points" placeholder="100" value="100">
+  </div>
+  
+  <div class="form-group">
+    <label for="user-stamps">Počet razítek:</label>
+    <input type="number" id="user-stamps" placeholder="5" value="5">
+  </div>
+  
+  <div class="form-group">
+    <label for="barcode-value">Hodnota QR kódu (volitelné):</label>
+    <input type="text" id="barcode-value" placeholder="USER123456" value="USER123456">
+  </div>
+  
+  <button id="create-pass-btn">Vytvořit pass</button>
+  
+  <div id="pass-result"></div>
+</div>
+
+<script>
+// URL endpointů - aktuální nasazené adresy
+const TEMPLATE_ENDPOINT = 'https://creategooglewallettemplate-weeqy2w2la-uc.a.run.app';
+const PASS_ENDPOINT = 'https://us-central1-vernostkarty-db.cloudfunctions.net/createGoogleWalletPass';
+
+// Funkce pro vytvoření šablony
+async function createTemplate() {
+  const btn = document.getElementById('create-template-btn');
+  const resultDiv = document.getElementById('template-result');
+  
+  btn.disabled = true;
+  btn.textContent = 'Vytváří se...';
+  resultDiv.innerHTML = '';
+  
+  try {
+    const templateData = {
+      id: document.getElementById('template-id').value.trim(),
+      data: {
+        issuerName: document.getElementById('issuer-name').value.trim(),
+        programName: document.getElementById('program-name').value.trim(),
+        hexBackgroundColor: document.getElementById('background-color').value.trim(),
+        programLogo: document.getElementById('program-logo').value.trim()
+      }
+    };
+    
+    console.log('Odesílám data pro šablonu:', templateData);
+    
+    const response = await fetch(TEMPLATE_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(templateData)
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok && result.success) {
+      resultDiv.className = 'result success';
+      resultDiv.textContent = `✅ Šablona úspěšně vytvořena!\n\nClass ID: ${result.classId}\n\nOdpověď Google API:\n${JSON.stringify(result.googleWalletClass, null, 2)}`;
+      
+      // Automaticky vyplnit Class ID do sekce passů
+      document.getElementById('pass-class-id').value = result.classId;
+    } else {
+      resultDiv.className = 'result error';
+      resultDiv.textContent = `❌ Chyba při vytváření šablony:\n${result.error || 'Neznámá chyba'}`;
+    }
+  } catch (error) {
+    resultDiv.className = 'result error';
+    resultDiv.textContent = `❌ Chyba komunikace:\n${error.message}`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Vytvořit šablonu';
+  }
+}
+
+// Funkce pro vytvoření pasu
+async function createPass() {
+  const btn = document.getElementById('create-pass-btn');
+  const resultDiv = document.getElementById('pass-result');
+  
+  btn.disabled = true;
+  btn.textContent = 'Vytváří se...';
+  resultDiv.innerHTML = '';
+  
+  try {
+    const passData = {
+      classId: document.getElementById('pass-class-id').value.trim(),
+      objectData: {
+        email: document.getElementById('user-email').value.trim(),
+        givenName: document.getElementById('user-given-name').value.trim(),
+        familyName: document.getElementById('user-family-name').value.trim(),
+        phone: document.getElementById('user-phone').value.trim(),
+        points: parseInt(document.getElementById('user-points').value) || 0,
+        stampCount: parseInt(document.getElementById('user-stamps').value) || 0,
+        barcodeValue: document.getElementById('barcode-value').value.trim()
+      }
+    };
+    
+    console.log('Odesílám data pro pass:', passData);
+    
+    const response = await fetch(PASS_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(passData)
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok && result.success) {
+      resultDiv.className = 'result success';
+      resultDiv.textContent = `✅ Pass úspěšně vytvořen!\n\nClass ID: ${result.classId}\nObject ID: ${result.objectId}\n\nOdpověď Google API:\n${JSON.stringify(result.googleWalletObject, null, 2)}`;
+    } else {
+      resultDiv.className = 'result error';
+      resultDiv.textContent = `❌ Chyba při vytváření pasu:\n${result.error || 'Neznámá chyba'}`;
+    }
+  } catch (error) {
+    resultDiv.className = 'result error';
+    resultDiv.textContent = `❌ Chyba komunikace:\n${error.message}`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Vytvořit pass';
+  }
+}
+
+// Event listenery
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('create-template-btn').addEventListener('click', createTemplate);
+  document.getElementById('create-pass-btn').addEventListener('click', createPass);
+});
+</script>
+
+</body>
+</html>

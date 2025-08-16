@@ -1,0 +1,204 @@
+const admin = require('firebase-admin');
+const GoogleWalletHelper = require('./googleWalletHelper');
+
+// Inicializace Firestore
+const db = admin.firestore();
+
+/**
+ * Cloud Function pro vytvoření Google Wallet šablony
+ * Přijímá data z HTML formuláře, ukládá do Firestore a vytváří šablonu v Google API
+ */
+module.exports = async (req, res) => {
+  // Explicitní CORS headers - stejně jako v assignCertificate.js
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Origin, Accept');
+  res.set('Access-Control-Max-Age', '3600');
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).send('');
+    return;
+  }
+
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'Method not allowed. Use POST.' });
+    return;
+  }
+
+  try {
+    const googleWallet = new GoogleWalletHelper();
+
+    // Validace vstupních dat
+    const {
+      classId,
+      issuerName,
+      programName,
+      programDescription,
+      programLogo,
+      hexBackgroundColor,
+      localizedIssuerName,
+      localizedProgramName,
+      rewardsTier,
+      businessId,
+      timestamp,
+      issuerId,
+      fullClassId
+    } = req.body;
+
+    // Povinná pole
+    if (!classId || !issuerName || !programName) {
+      res.status(400).json({ 
+        error: 'Chybí povinná pole: classId, issuerName, programName' 
+      });
+      return;
+    }
+
+    // Validace Class ID formátu
+    const classIdRegex = /^[a-zA-Z0-9_]+$/;
+    if (!classIdRegex.test(classId)) {
+      res.status(400).json({ 
+        error: 'Class ID může obsahovat pouze písmena, čísla a podtržítka' 
+      });
+      return;
+    }
+
+    console.log(`🚀 Processing Google Wallet template creation for: ${classId}`);
+
+    // Příprava dat pro uložení do Firestore
+    const firestoreData = {
+      classId,
+      fullClassId: fullClassId || `3388000000022981331.${classId}`,
+      issuerName,
+      programName,
+      programDescription: programDescription || null,
+      programLogo: programLogo || null,
+      hexBackgroundColor: hexBackgroundColor || '#4285f4',
+      localizedIssuerName: localizedIssuerName || issuerName,
+      localizedProgramName: localizedProgramName || programName,
+      rewardsTier: rewardsTier || null,
+      businessId: businessId || null,
+      issuerId: issuerId || '3388000000022981331',
+      createdAt: timestamp || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      status: 'creating',
+      googleApiResponse: null,
+      errors: []
+    };
+
+    // 1. Uložení do Firestore kolekce 'test-sablona'
+    console.log('💾 Saving to Firestore collection: test-sablona');
+    const docRef = db.collection('test-sablona').doc(classId);
+    
+    // Kontrola, zda už dokument existuje
+    const existingDoc = await docRef.get();
+    if (existingDoc.exists) {
+      res.status(409).json({ 
+        error: `Šablona s ID '${classId}' již existuje. Použijte jiné ID.` 
+      });
+      return;
+    }
+
+    await docRef.set(firestoreData);
+    console.log('✅ Data saved to Firestore');
+
+    // 2. Kontrola, zda třída už existuje v Google API
+    console.log('🔍 Checking if Google Wallet class already exists');
+    try {
+      const existingClass = await googleWallet.getLoyaltyClass(classId);
+      
+      if (existingClass.exists) {
+        // Aktualizace existující třídy
+        console.log('🔄 Class exists, updating...');
+        const updateResult = await googleWallet.updateLoyaltyClass(classId, req.body);
+        
+        // Aktualizace Firestore s výsledkem
+        await docRef.update({
+          status: 'updated',
+          updatedAt: new Date().toISOString(),
+          googleApiResponse: updateResult.data
+        });
+
+        res.status(200).json({
+          success: true,
+          message: 'Šablona byla úspěšně aktualizována',
+          classId: updateResult.classId,
+          action: 'updated',
+          firestoreId: classId
+        });
+        return;
+      }
+    } catch (checkError) {
+      console.warn('⚠️ Error checking existing class (will proceed with creation):', checkError.message);
+    }
+
+    // 3. Vytvoření nové třídy v Google Wallet API
+    console.log('🆕 Creating new Google Wallet class');
+    try {
+      const createResult = await googleWallet.createLoyaltyClass(req.body);
+      
+      // Aktualizace Firestore s úspěšným výsledkem
+      await docRef.update({
+        status: 'created',
+        updatedAt: new Date().toISOString(),
+        googleApiResponse: createResult.data
+      });
+
+      console.log('✅ Google Wallet template created successfully');
+
+      res.status(201).json({
+        success: true,
+        message: 'Šablona byla úspěšně vytvořena',
+        classId: createResult.classId,
+        action: 'created',
+        firestoreId: classId
+      });
+
+    } catch (googleError) {
+      console.error('❌ Google API Error:', googleError);
+      
+      // Aktualizace Firestore s chybou
+      await docRef.update({
+        status: 'error',
+        updatedAt: new Date().toISOString(),
+        errors: [googleError.message]
+      });
+
+      // Pokud je to chyba duplikátu, zkusíme aktualizaci
+      if (googleError.message.includes('already exists') || googleError.message.includes('duplicate')) {
+        try {
+          console.log('🔄 Class seems to exist, trying update...');
+          const updateResult = await googleWallet.updateLoyaltyClass(classId, req.body);
+          
+          await docRef.update({
+            status: 'updated',
+            updatedAt: new Date().toISOString(),
+            googleApiResponse: updateResult.data,
+            errors: []
+          });
+
+          res.status(200).json({
+            success: true,
+            message: 'Šablona byla úspěšně aktualizována (existovala v Google)',
+            classId: updateResult.classId,
+            action: 'updated',
+            firestoreId: classId
+          });
+          return;
+        } catch (updateError) {
+          console.error('❌ Update also failed:', updateError);
+        }
+      }
+
+      res.status(500).json({
+        error: `Chyba při vytváření Google Wallet šablony: ${googleError.message}`,
+        firestoreId: classId
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Unexpected error in createGoogleWalletTemplate:', error);
+    res.status(500).json({
+      error: `Neočekávaná chyba: ${error.message}`
+    });
+  }
+};

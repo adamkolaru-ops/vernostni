@@ -15,7 +15,7 @@ const { onRequest } = require("firebase-functions/v2/https");
 const { onObjectFinalized } = require("firebase-functions/v2/storage");
 const crypto = require("crypto");
 
-exports.createPass = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
+exports.createPass = onRequest({ cors: true, cpu: 0.5, invoker: 'public' }, async (req, res) => {
   if (req.method !== "POST") {
     return res.status(405).send("Method Not Allowed");
   }
@@ -33,7 +33,7 @@ exports.createPass = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
   }
 });
 
-exports.verifyId = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
+exports.verifyId = onRequest({ cors: true, cpu: 0.5, invoker: 'public' }, async (req, res) => {
   if (req.method !== "POST") {
     return res.status(405).send("Method Not Allowed");
   }
@@ -58,7 +58,7 @@ exports.verifyId = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
   }
 });
 
-exports.addTestInfo = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
+exports.addTestInfo = onRequest({ cors: true, cpu: 0.5, invoker: 'public' }, async (req, res) => {
   if (req.method !== "POST") {
     return res.status(405).send("Method Not Allowed");
   }
@@ -75,7 +75,7 @@ exports.addTestInfo = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
   }
 });
 
-exports.createBusinessRecord = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
+exports.createBusinessRecord = onRequest({ cors: true, cpu: 0.5, invoker: 'public' }, async (req, res) => {
   if (req.method !== "POST") {
     return res.status(405).send("Method Not Allowed");
   }
@@ -99,7 +99,7 @@ exports.createBusinessRecord = onRequest({ cors: true, cpu: 0.5 }, async (req, r
   }
 });
 
-exports.updateUserData = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
+exports.updateUserData = onRequest({ cors: true, cpu: 0.5, invoker: 'public' }, async (req, res) => {
   if (req.method !== "POST") {
     return res.status(405).send("Method Not Allowed");
   }
@@ -116,7 +116,7 @@ exports.updateUserData = onRequest({ cors: true, cpu: 0.5 }, async (req, res) =>
   }
 });
 
-exports.getBusinessName = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
+exports.getBusinessName = onRequest({ cors: true, cpu: 0.5, invoker: 'public' }, async (req, res) => {
   if (req.method !== 'GET') {
     return res.status(405).send('Method Not Allowed');
   }
@@ -136,7 +136,7 @@ exports.getBusinessName = onRequest({ cors: true, cpu: 0.5 }, async (req, res) =
   }
 });
 
-exports.getCardData = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
+exports.getCardData = onRequest({ cors: true, cpu: 0.5, invoker: 'public' }, async (req, res) => {
   if (req.method !== 'GET') {
     return res.status(405).send('Method Not Allowed');
   }
@@ -156,7 +156,7 @@ exports.getCardData = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
   }
 });
 
-exports.getCafeSettings = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
+exports.getCafeSettings = onRequest({ cors: true, cpu: 0.5, invoker: 'public' }, async (req, res) => {
   if (req.method !== 'GET') {
     return res.status(405).send('Method Not Allowed');
   }
@@ -187,7 +187,7 @@ exports.getCafeSettings = onRequest({ cors: true, cpu: 0.5 }, async (req, res) =
   }
 });
 
-exports.ensureUser = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
+exports.ensureUser = onRequest({ cors: true, cpu: 0.5, invoker: 'public' }, async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).send('Method Not Allowed');
   }
@@ -208,7 +208,7 @@ exports.ensureUser = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
   }
 });
 
-exports.getCafeUser = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
+exports.getCafeUser = onRequest({ cors: true, cpu: 0.5, invoker: 'public' }, async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).send('Method Not Allowed');
   }
@@ -232,7 +232,7 @@ exports.getCafeUser = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
   }
 });
 
-exports.saveCafeUser = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
+exports.saveCafeUser = onRequest({ cors: true, cpu: 0.5, invoker: 'public' }, async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).send('Method Not Allowed');
   }
@@ -256,7 +256,7 @@ exports.saveCafeUser = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
   }
 });
 
-exports.saveUserById = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
+exports.saveUserById = onRequest({ cors: true, cpu: 0.5, invoker: 'public' }, async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).send('Method Not Allowed');
   }
@@ -297,7 +297,7 @@ exports.storageTest = onObjectFinalized({ region: 'us-central1', cpu: 0.5 }, asy
   }
 });
 
-exports.saveUserToUsersId = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
+exports.saveUserToUsersId = onRequest({ cors: true, cpu: 0.5, invoker: 'public' }, async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).send('Method Not Allowed');
   }
@@ -318,7 +318,7 @@ exports.saveUserToUsersId = onRequest({ cors: true, cpu: 0.5 }, async (req, res)
   }
 });
 
-exports.getUserDataForEditor = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
+exports.getUserDataForEditor = onRequest({ cors: true, cpu: 0.5, invoker: 'public' }, async (req, res) => {
   if (req.method !== 'GET') {
     return res.status(405).send('Method Not Allowed');
   }
@@ -437,7 +437,7 @@ exports.getUserDataForEditor = onRequest({ cors: true, cpu: 0.5 }, async (req, r
   }
 });
 
-exports.updateUserDataFromEditor = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
+exports.updateUserDataFromEditor = onRequest({ cors: true, cpu: 0.5, invoker: 'public' }, async (req, res) => {
     if (req.method !== 'POST') {
         return res.status(405).send('Method Not Allowed');
     }
@@ -509,7 +509,7 @@ exports.updateUserDataFromEditor = onRequest({ cors: true, cpu: 0.5 }, async (re
     }
 });
 
-exports.verifyStaffPassword = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
+exports.verifyStaffPassword = onRequest({ cors: true, cpu: 0.5, invoker: 'public' }, async (req, res) => {
     if (req.method !== 'POST') {
         return res.status(405).send('Method Not Allowed');
     }
@@ -557,7 +557,7 @@ exports.verifyStaffPassword = onRequest({ cors: true, cpu: 0.5 }, async (req, re
     }
 });
 
-exports.verifySessionToken = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
+exports.verifySessionToken = onRequest({ cors: true, cpu: 0.5, invoker: 'public' }, async (req, res) => {
   if (req.method !== "POST") {
     return res.status(405).send("Method Not Allowed");
   }
@@ -755,3 +755,325 @@ exports.assignCertificate = onRequest({ cors: true, cpu: 0.5, invoker: 'public' 
 
 // Načtení a export triggeru pro aktualizaci passu
 Object.assign(exports, require('./newPassUpdateTrigger'));
+
+// Google Wallet Template Creation - with Google API integration
+exports.createGoogleWalletTemplate = onRequest({ cors: true, cpu: 0.5 }, async (req, res) => {
+  if (req.method !== "POST") {
+    return res.status(405).send("Method Not Allowed");
+  }
+  const { id, data } = req.body;
+  if (!id) {
+    return res.status(400).json({ success: false, error: "Missing ID" });
+  }
+  
+  try {
+    // 1. Uložit data do Firestore
+    console.log(`Saving data to Firestore for ID: ${id}`);
+    await db.collection("test-sablona").doc(id).set(data, { merge: true });
+    console.log('Data saved to Firestore successfully');
+    
+    // 2. Vytvořit Google Wallet šablonu
+    console.log('Creating Google Wallet template...');
+    const googleWalletResult = await createGoogleWalletClass(id, data);
+    console.log('Google Wallet template created:', googleWalletResult);
+    
+    return res.json({ 
+      success: true, 
+      classId: id,
+      googleWalletClass: googleWalletResult
+    });
+  } catch (err) {
+    console.error("createGoogleWalletTemplate error:", err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Google Wallet Pass Creation - with Google API integration
+exports.createGoogleWalletPass = onRequest({ cors: true, cpu: 0.5, invoker: 'public' }, async (req, res) => {
+  if (req.method !== "POST") {
+    return res.status(405).send("Method Not Allowed");
+  }
+  const { classId, objectData } = req.body;
+  if (!classId || !objectData) {
+    return res.status(400).json({ success: false, error: "Missing classId or objectData" });
+  }
+  
+  try {
+    // 1. Uložit data do Firestore (volitelně)
+    console.log(`Creating Google Wallet pass for classId: ${classId}`);
+    
+    // 2. Vytvořit Google Wallet pass
+    console.log('Creating Google Wallet pass object...');
+    const googleWalletResult = await createGoogleWalletObject(classId, objectData);
+    console.log('Google Wallet pass created:', googleWalletResult);
+    
+     // 3. Vygenerovat Save to Google Wallet URL (saveUrl) pomocí podepsaného JWT
+     let saveUrl = null;
+     try {
+       const fs = require('fs');
+       const path = require('path');
+       const jwt = require('jsonwebtoken');
+       const keyFilePath = path.join(__dirname, './vernostkarty-8dfab1a54234.json');
+       const keyJson = JSON.parse(fs.readFileSync(keyFilePath, 'utf8'));
+       const serviceAccountEmail = keyJson.client_email;
+       const privateKey = keyJson.private_key;
+       
+       const now = Math.floor(Date.now() / 1000);
+       const claims = {
+         iss: serviceAccountEmail,
+         aud: 'google',
+         typ: 'savetowallet',
+         iat: now,
+         payload: {
+           loyaltyObjects: [ { id: googleWalletResult.id } ]
+         }
+       };
+       const token = jwt.sign(claims, privateKey, { algorithm: 'RS256' });
+       saveUrl = `https://pay.google.com/gp/v/save/${token}`;
+     } catch (e) {
+       console.error('Failed to generate Save to Google Wallet URL:', e);
+     }
+    
+     return res.json({ 
+       success: true, 
+       classId: classId,
+       objectId: googleWalletResult.id,
+       saveUrl,
+       googleWalletObject: googleWalletResult
+     });
+  } catch (err) {
+    console.error("createGoogleWalletPass error:", err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Helper funkce pro vytvoření Google Wallet pasu (objektu)
+async function createGoogleWalletObject(classId, objectData) {
+  const { GoogleAuth } = require('google-auth-library');
+  const path = require('path');
+  
+  const ISSUER_ID = '3388000000022981331';
+  const keyFilePath = path.join(__dirname, './vernostkarty-8dfab1a54234.json');
+  
+  try {
+    // Autentifikace s Google
+    const auth = new GoogleAuth({
+      keyFile: keyFilePath,
+      scopes: ['https://www.googleapis.com/auth/wallet_object.issuer']
+    });
+    
+    const authClient = await auth.getClient();
+    const accessToken = await authClient.getAccessToken();
+    
+    // Vytvoření objectId z emailu nebo fallback
+    const normalize = (s) => (s || '').toString().toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    const emailSlug = objectData.email ? normalize(objectData.email) : null;
+    const fallbackSuffix = `${normalize(classId)}-${Date.now()}`;
+    const objectSuffix = objectData.objectSuffix || emailSlug || fallbackSuffix;
+    const fullObjectId = `${ISSUER_ID}.${objectSuffix}`;
+    const fullClassId = classId.includes('.') ? classId : `${ISSUER_ID}.${classId}`;
+    
+    // Vytvoření loyalty object pro Google Wallet
+    const loyaltyObject = {
+      id: fullObjectId,
+      classId: fullClassId,
+      state: 'ACTIVE'
+    };
+    
+    // accountId/accountName
+    const accountName = [objectData.givenName || '', objectData.familyName || ''].join(' ').trim();
+    if (objectData.email) loyaltyObject.accountId = String(objectData.email);
+    if (accountName) loyaltyObject.accountName = accountName;
+    
+    // Loyalty points (volitelně)
+    const pointsInt = Number.isFinite(Number(objectData.points)) ? parseInt(objectData.points, 10) : null;
+    if (!Number.isNaN(pointsInt) && pointsInt !== null) {
+      loyaltyObject.loyaltyPoints = {
+        label: 'Body',
+        balance: { int: pointsInt }
+      };
+    }
+    
+    // Textové moduly – email/telefon
+    const textModulesData = [];
+    if (objectData.email) textModulesData.push({ header: 'E-mail', body: String(objectData.email) });
+    if (objectData.phone) textModulesData.push({ header: 'Telefon', body: String(objectData.phone) });
+    if (textModulesData.length) loyaltyObject.textModulesData = textModulesData;
+    
+    // Info řádky – jméno/příjmení, razítka
+    const infoRows = [];
+    const nameColumns = [];
+    if (objectData.givenName) nameColumns.push({ label: 'Jméno', value: String(objectData.givenName) });
+    if (objectData.familyName) nameColumns.push({ label: 'Příjmení', value: String(objectData.familyName) });
+    if (nameColumns.length) infoRows.push({ columns: nameColumns });
+    if (Number.isFinite(Number(objectData.stampCount))) {
+      infoRows.push({ columns: [{ label: 'Razítka', value: String(objectData.stampCount) }] });
+    }
+    if (infoRows.length) loyaltyObject.infoModuleData = { labelValueRows: infoRows };
+    
+    // Barcode – pokud je k dispozici
+    if (objectData.barcodeValue) {
+      loyaltyObject.barcode = {
+        type: 'QR_CODE',
+        value: String(objectData.barcodeValue),
+        alternateText: String(objectData.barcodeValue)
+      };
+    }
+    
+    // API volání na Google Wallet
+    const https = require('https');
+    const apiUrl = `https://walletobjects.googleapis.com/walletobjects/v1/loyaltyObject`;
+    
+    return new Promise((resolve, reject) => {
+      const postData = JSON.stringify(loyaltyObject);
+      
+      const options = {
+        hostname: 'walletobjects.googleapis.com',
+        port: 443,
+        path: '/walletobjects/v1/loyaltyObject',
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken.token}`,
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData)
+        }
+      };
+      
+      const req = https.request(options, (res) => {
+        let responseData = '';
+        
+        res.on('data', (chunk) => {
+          responseData += chunk;
+        });
+        
+        res.on('end', () => {
+          try {
+            const result = JSON.parse(responseData);
+            if (res.statusCode >= 200 && res.statusCode < 300) {
+              resolve(result);
+            } else {
+              reject(new Error(`Google API error: ${res.statusCode} - ${responseData}`));
+            }
+          } catch (parseError) {
+            reject(new Error(`Failed to parse Google API response: ${parseError.message}`));
+          }
+        });
+      });
+      
+      req.on('error', (error) => {
+        reject(new Error(`Google API request failed: ${error.message}`));
+      });
+      
+      req.write(postData);
+      req.end();
+    });
+    
+  } catch (error) {
+    console.error('Google Wallet API error:', error);
+    throw new Error(`Failed to create Google Wallet object: ${error.message}`);
+  }
+}
+
+// Helper funkce pro vytvoření Google Wallet šablony
+async function createGoogleWalletClass(classId, templateData) {
+  const { GoogleAuth } = require('google-auth-library');
+  const path = require('path');
+  
+  const ISSUER_ID = '3388000000022981331';
+  const keyFilePath = path.join(__dirname, './vernostkarty-8dfab1a54234.json');
+  
+  try {
+    // Autentifikace s Google
+    const auth = new GoogleAuth({
+      keyFile: keyFilePath,
+      scopes: ['https://www.googleapis.com/auth/wallet_object.issuer']
+    });
+    
+    const authClient = await auth.getClient();
+    const accessToken = await authClient.getAccessToken();
+    
+    // Vytvoření loyalty class pro Google Wallet
+    const loyaltyClass = {
+      id: `${ISSUER_ID}.${classId}`,
+      issuerName: templateData.issuerName || 'Vernostní karty',
+      programName: templateData.programName || 'Věrnostní program',
+      hexBackgroundColor: templateData.hexBackgroundColor || '#4285f4',
+      localizedIssuerName: {
+        defaultValue: {
+          language: 'cs',
+          value: templateData.issuerName || 'Vernostní karty'
+        }
+      },
+      localizedProgramName: {
+        defaultValue: {
+          language: 'cs', 
+          value: templateData.programName || 'Věrnostní program'
+        }
+      },
+      reviewStatus: 'UNDER_REVIEW'
+    };
+    
+    // Přidat logo pouze pokud je zadáno
+    if (templateData.programLogo && templateData.programLogo.trim() !== '') {
+      loyaltyClass.programLogo = {
+        sourceUri: {
+          uri: templateData.programLogo
+        }
+      };
+    }
+    
+    // API volání na Google Wallet
+    const https = require('https');
+    const apiUrl = `https://walletobjects.googleapis.com/walletobjects/v1/loyaltyClass`;
+    
+    return new Promise((resolve, reject) => {
+      const postData = JSON.stringify(loyaltyClass);
+      
+      const options = {
+        hostname: 'walletobjects.googleapis.com',
+        port: 443,
+        path: '/walletobjects/v1/loyaltyClass',
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken.token}`,
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData)
+        }
+      };
+      
+      const req = https.request(options, (res) => {
+        let responseData = '';
+        
+        res.on('data', (chunk) => {
+          responseData += chunk;
+        });
+        
+        res.on('end', () => {
+          try {
+            const result = JSON.parse(responseData);
+            if (res.statusCode >= 200 && res.statusCode < 300) {
+              resolve(result);
+            } else {
+              reject(new Error(`Google API error: ${res.statusCode} - ${responseData}`));
+            }
+          } catch (parseError) {
+            reject(new Error(`Failed to parse Google API response: ${parseError.message}`));
+          }
+        });
+      });
+      
+      req.on('error', (error) => {
+        reject(new Error(`Google API request failed: ${error.message}`));
+      });
+      
+      req.write(postData);
+      req.end();
+    });
+    
+  } catch (error) {
+    console.error('Google Wallet API error:', error);
+    throw new Error(`Failed to create Google Wallet class: ${error.message}`);
+  }
+}

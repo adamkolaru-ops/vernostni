@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Věrnostní karta – Nastavení (krok: barva)</title>
+  <style>
+    /* RESET */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: transparent;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+    }
+
+    /* WRAPPER */
+    :root { --ui-scale: 1; }
+    /* Scaled root wraps the whole builder so we can scale everything at once */
+    #scaleRoot {
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+      width: 340px; /* base width of builder */
+      margin: 0 auto;
+    }
+    .builder-wrap {
+      width: 340px; /* kompaktní mobilní šířka, cca jako WIX layout */
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Ovládání měřítka */
+    .scale-control { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 0 0 4px 0; }
+    .scale-control label { font-size: 12px; color: #374151; }
+    .scale-control input { width: 80px; padding: 6px 8px; border: 1px solid #e5e7eb; border-radius: 8px; font-weight: 600; text-align: center; }
+
+    /* TELEFON + FAKE CARD (1:1 dle WIX.txt) */
+    .phone-container {
+      position: relative;
+      width: 300px; /* shodné s šířkou obrázku telefonu, kvůli centrování overlaye */
+      margin: 0 auto; /* centrovat kontejner v builderu */
+      margin-bottom: 0; /* držet kartu co nejblíž k otázkám */
+    }
+    .phone-image {
+      width: 300px;
+      display: block;
+      margin: 0 auto; /* centrovat telefon v builderu */
+    }
+    .fake-card {
+      position: absolute;
+      top: 76px;
+      left: 50%;
+      transform: translateX(-50%); /* centrovat overlay na střed telefonu */
+      width: 257px;
+      height: 363px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 0 2px rgba(0,0,0,0.3);
+      pointer-events: none;
+      overflow: hidden;
+    }
+    /* Ukázkový rotující náhled před zahájením tvorby */
+    .example-preview {
+      position: absolute;
+      top: 76px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 257px;
+      height: 363px;
+      object-fit: cover;
+      border-radius: 8px;
+      box-shadow: 0 0 2px rgba(0,0,0,0.3);
+    }
+    /* LOGO-SLOT */
+    .logo-slot {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 120px;
+      height: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      overflow: hidden;
+      padding-left: 2px;
+    }
+    .logo-img { max-width: 100%; max-height: 100%; object-fit: contain; object-position: left center; }
+    .logo-text { white-space: pre-wrap; font-weight: bold; margin: 0; padding: 0; overflow: hidden; text-align: left; }
+
+    /* Dočasný náhled v kroku 2 (překryv přes slot) */
+    .top-mode-preview {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: none;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* STRIP => #stripResultImg */
+    #stripResultImg {
+      position: absolute;
+      left: 0;
+      top: 61px; /* fallback mid-band between logo and bottom area */
+      width: 100%;
+      height: 90px; /* fallback band height; final height is set dynamically */
+      object-fit: cover;
+      object-position: center;
+      display: none;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* menší QR kód */
+    .qr-code {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 96px;
+      z-index: 2;
+    }
+
+    /* UŠETŘIL (vpravo) */
+    .saved-amount {
+      position: absolute;
+      top: 157px;
+      right: 10px;
+      text-align: right;
+      display: none;
+      font-family: sans-serif;
+      color: var(--discountColor, #000);
+      z-index: 2;
+    }
+    .saved-amount .saved-label { font-size: 12px; font-weight: 600; }
+    .saved-amount .saved-value { display: block; margin-top: 2px; font-size: 18px; font-weight: 700; }
+
+    /* DISCOUNT LEVEL (vpravo nahoře) */
+    .discount-level {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 95px;
+      text-align: right;
+      display: none;
+      color: var(--discountColor, #000);
+      z-index: 2;
+    }
+    .discount-level-rows { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; }
+    .discount-level-values { display: flex; justify-content: space-between; font-size: 14px; margin-top: 2px; font-weight: 600; }
+
+    /* RAZÍTKA (vpravo dole) */
+    .stamp-counter {
+      position: absolute;
+      top: 157px;
+      right: 10px;
+      text-align: right;
+      display: none;
+      font-family: sans-serif;
+      color: var(--discountColor, #000);
+      z-index: 2;
+    }
+    .stamp-counter .saved-label { font-size: 12px; font-weight: 600; }
+    .stamp-counter .saved-value { display: block; margin-top: 2px; font-size: 18px; font-weight: 700; }
+
+    /* BODY (vpravo nahoře) */
+    .body-level {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 95px;
+      text-align: right;
+      display: none;
+      color: var(--discountColor, #000);
+      z-index: 2;
+    }
+    .body-level-rows { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; }
+    .body-level-values { display: flex; justify-content: space-between; font-size: 14px; margin-top: 2px; font-weight: 600; }
+
+    /* BODY dole (vpravo) */
+    .body-bottom {
+      position: absolute;
+      top: 157px;
+      right: 10px;
+      text-align: right;
+      display: none;
+      font-family: sans-serif;
+      color: var(--discountColor, #000);
+      z-index: 2;
+    }
+    .body-bottom .top-line { font-size: 12px; font-weight: 600; }
+    .body-bottom .bottom-line { display: block; margin-top: 2px; font-size: 18px; font-weight: 700; }
+
+    /* ZÁKAZNÍK (vlevo) */
+    .customer-info {
+      position: absolute;
+      top: 157px;
+      left: 10px;
+      text-align: left;
+      display: none;
+      font-family: sans-serif;
+      color: var(--discountColor, #000);
+      z-index: 2;
+    }
+    .customer-info .cust-label { font-size: 12px; font-weight: 600; }
+    .customer-info .cust-value { display: block; margin-top: 2px; font-size: 18px; font-weight: 700; }
+
+    /* Text na stripu */
+    .strip-text {
+      position: absolute;
+      display: none;
+      top: 61px; /* fallback to align over the strip image */
+      left: 0;
+      width: 100%;
+      height: 90px;
+      line-height: 90px; /* vertical centering for single-line text */
+      text-align: center;
+      transform: none;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    /* --- OTÁZKOVÝ PANEL (jedno pole) --- */
+    .question-panel {
+      width: 100%;
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      position: relative;
+      z-index: 2;
+      margin-top: -20px; /* posun panelu nahoru, může mírně překrývat telefon */
+      border: 2px solid #d1d5db; /* výraznější ohraničení */
+      padding: 6px 14px 14px; /* menší horní odsazení pro nadpis a popis */
+    }
+    .q-title { font-size: 16px; font-weight: 700; text-align: center; margin-bottom: 10px; }
+    .q-sub { font-size: 12px; color: #6b7280; text-align: center; margin-bottom: 12px; }
+
+    .color-row { display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: nowrap; }
+
+    .swatch {
+      width: 36px; height: 36px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: transform .18s, border-color .18s;
+    }
+    .swatch:hover { transform: translateY(-2px); }
+    .swatch.selected { border-color: #4f46e5; }
+
+    .custom-color {
+      display: flex; align-items: center; gap: 6px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 6px 8px;
+    }
+    .custom-color label { font-size: 12px; color: #374151; }
+    .custom-color input[type="color"] { width: 28px; height: 28px; border: none; background: transparent; padding: 0; }
+
+    .q-actions { display: flex; justify-content: center; margin-top: 12px; }
+    .q-actions { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .btn {
+      appearance: none; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 700; font-size: 14px;
+    }
+    .btn-next { background: #4f46e5; color: #fff; box-shadow: 0 4px 10px rgba(79,70,229,.25); }
+    .btn-next:disabled { opacity: .6; }
+    .btn-back { background: #e5e7eb; color: #111827; }
+
+    .options-row { display: flex; justify-content: center; gap: 10px; }
+    .option { padding: 10px 14px; border-radius: 10px; background: #f3f4f6; border: 1px solid #e5e7eb; cursor: pointer; font-weight: 700; color: #111827; }
+    .option.selected { outline: 2px solid #4f46e5; outline-offset: 0; }
+    /* Typ karty – grid a tlačítka s obrázky */
+    .type-grid { display: flex; justify-content: center; align-items: center; gap: 10px; }
+    .type-card {
+      width: 90px; height: 90px; border-radius: 12px; border: 2px solid #e5e7eb; background: #f9fafb; overflow: hidden;
+      padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .type-card img { width: 100%; height: 100%; object-fit: cover; }
+    .type-card.selected { border-color: #4f46e5; box-shadow: 0 0 0 2px rgba(79,70,229,0.15) inset; }
+    .type-item { display:flex; flex-direction:column; align-items:center; gap:6px; }
+    .type-name { font-size:12px; font-weight:700; color:#374151; }
+  </style>
+</head>
+<body>
+  <div id="scaleRoot">
+    <div class="builder-wrap">
+      <div class="scale-control">
+        <label for="scaleInput">Velikost</label>
+        <input type="number" id="scaleInput" min="0.3" max="2" step="0.05" value="1.00" />
+      </div>
+    <!-- Telefon + 1:1 fake card -->
+    <div class="phone-container">
+      <img 
+        src="https://static.wixstatic.com/media/1cf87e_7d2b3744c04f4bf6af84a1b9868ea0b2~mv2.png"
+        alt="Telefon"
+        class="phone-image"
+      >
+      <img id="examplePreview" class="example-preview" alt="Ukázková karta">
+      <div class="fake-card" id="fakeCard" style="display:none;">
+        <!-- STRIP => #stripResultImg -->
+        <img id="stripResultImg" alt="Strip náhled">
+
+        <!-- DISCOUNT LEVEL -->
+        <div class="discount-level" id="discountLevelDisplay">
+          <div class="discount-level-rows">
+            <div id="discountLabel1">STATUS</div>
+            <div id="discountLabel2">SLEVA</div>
+          </div>
+          <div class="discount-level-values">
+            <div id="statusVal">VIP</div>
+            <div id="discountVal">10%</div>
+          </div>
+        </div>
+
+        <!-- UŠETŘIL (vpravo) -->
+        <div class="saved-amount" id="savedAmountDisplay">
+          <span class="saved-label">Ušetřil</span>
+          <span class="saved-value" id="savedVal">378 Kč</span>
+        </div>
+
+        <!-- RAZÍTKA (vpravo dole) -->
+        <div class="stamp-counter" id="stampCounterDisplay">
+          <span class="saved-label" id="stampLabel">Razítka</span>
+          <span class="saved-value" id="stampVal">0 / 10</span>
+        </div>
+
+        <!-- BODY (vpravo nahoře) -->
+        <div class="body-level" id="bodyLevelDisplay">
+          <div class="body-level-rows">
+            <div id="bodyLabel1">BODY</div>
+          </div>
+          <div class="body-level-values">
+            <div id="bodyVal">0</div>
+          </div>
+        </div>
+
+        <!-- BODY dole (vpravo) -->
+        <div class="body-bottom" id="bodyBottomDisplay">
+          <span class="top-line" id="bodyBottomTop">ZA 100B KÁVA ZDARMA</span>
+          <span class="bottom-line" id="bodyBottomBot">10Kč=1BOD</span>
+        </div>
+
+        <!-- Menší QR kód (URL zachována) -->
+        <img 
+          src="https://static.wixstatic.com/media/1cf87e_9b1be513b4124062be87f14644f4c7db~mv2.png"
+          alt="QR kód"
+          class="qr-code"
+        >
+
+        <!-- Zákazník (vlevo) -->
+        <div class="customer-info" id="customerInfo">
+          <span class="cust-label">Zákazník:</span>
+          <span class="cust-value" id="custName">Jan Novák</span>
+        </div>
+
+        <!-- Logo / Nápis -->
+        <div class="logo-slot" id="logoSlot"></div>
+
+        <!-- Dočasný překryv pro krok 2 (náhled nápis/logo) -->
+        <img id="topModePreview" class="top-mode-preview" alt="Preview">
+
+        <!-- Text na stripu -->
+        <div class="strip-text" id="stripTextElem"></div>
+      </div>
+    </div>
+
+    <!-- INTRO: Start wizard -->
+    <div class="question-panel" id="intro-panel">
+      <div class="q-title">Jak může vaše karta vypadat</div>
+      <div class="q-sub">Ukázkové příklady se mění každou vteřinu. Až budete připraveni, začněte vytvářet svou kartu.</div>
+      <div class="q-actions">
+        <button class="btn btn-next" onclick="startWizard()">Začít vytvářet</button>
+      </div>
+    </div>
+
+    <!-- KROK 1: Barva karty -->
+    <div class="question-panel" data-step="1" id="step-1" style="display:none;">
+      <div class="q-title">Nastavte barvu vaší karty</div>
+      <div class="q-sub">Vyberte jednu z předvoleb nebo zvolte vlastní barvu</div>
+      <div class="color-row">
+        <div class="swatch" style="background:#EF4444" onclick="pickPresetColor('#EF4444', this)"></div>
+        <div class="swatch" style="background:#3B82F6" onclick="pickPresetColor('#3B82F6', this)"></div>
+        <div class="swatch" style="background:#10B981" onclick="pickPresetColor('#10B981', this)"></div>
+        <div class="swatch" style="background:#6B7280" onclick="pickPresetColor('#6B7280', this)"></div>
+        <div class="custom-color">
+          <label for="customColor">Vlastní</label>
+          <input type="color" id="customColor" value="#ffffff" onchange="pickCustomColor(this.value)">
+        </div>
+      </div>
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()" disabled>Zpět</button>
+        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
+      </div>
+    </div>
+
+    <!-- KROK 2: Pravý horní roh -->
+    <div class="question-panel" data-step="2" id="step-2" style="display:none;">
+      <div class="q-title">Co bude v pravém horním rohu?</div>
+      <div class="q-sub">Zvolte nápis nebo logo</div>
+      <div class="options-row">
+        <button class="option" onclick="pickTopMode('napis', this)">Nápis</button>
+        <button class="option" onclick="pickTopMode('logo', this)">Vlastní logo</button>
+      </div>
+      <!-- Inline nastavení podle volby -->
+      <!-- Text nápisu (inline ve kroku 2) -->
+      <div id="napisWrapper" style="display:none; justify-content:center; flex-direction:column; gap:8px; margin-top:10px;">
+        <input type="text" id="napisInput" placeholder="Např. Vaše kavárna" oninput="onNapisInput()" style="width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:8px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <label for="napisFont" style="font-size:12px; color:#374151;">Styl písma</label>
+            <select id="napisFont" onchange="onNapisFontChange()" style="padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px;">
+              <option value="Arial">Arial</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Helvetica">Helvetica</option>
+              <option value="Tahoma">Tahoma</option>
+              <option value="Trebuchet MS">Trebuchet MS</option>
+              <option value="Verdana">Verdana</option>
+              <option value="Wix Bold Sans">Wix Bold Sans</option>
+              <option value="Wix Handwritten">Wix Handwritten</option>
+              <option value="Wix Fancy Cursive">Wix Fancy Cursive</option>
+            </select>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <label for="napisColor" style="font-size:12px; color:#374151;">Barva nápisu</label>
+            <input type="color" id="napisColor" value="#ff0000" onchange="onNapisColorChange()" style="width: 32px; height: 32px; border:none; background:transparent; padding:0;">
+          </div>
+        </div>
+      </div>
+      <!-- Logo upload (inline ve kroku 2) -->
+      <div id="logoWrapper" style="display:none; justify-content:center; margin-top:10px;">
+        <input type="file" id="logoFileInput" accept="image/*" onchange="onLogoFileChange(this)" style="width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:8px;">
+      </div>
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()">Zpět</button>
+        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
+      </div>
+    </div>
+
+    <!-- KROK 3: Typ karty -->
+    <div class="question-panel" data-step="3" id="step-3" style="display:none;">
+      <div class="q-title">Vyberte typ karty</div>
+      <div class="q-sub">Zvolte jeden z typů: Bodová, Procentní, Razítková</div>
+      <div class="type-grid">
+        <div class="type-item">
+          <div class="type-name">Bodová</div>
+          <button class="type-card" data-type="bodova" onclick="pickCardType('bodova', this)" aria-label="Bodová">
+            <img src="https://static.wixstatic.com/media/1cf87e_8c4334c0221641acb421515383310cc6~mv2.png" alt="Bodová">
+          </button>
+        </div>
+        <div class="type-item">
+          <div class="type-name">Procentní</div>
+          <button class="type-card" data-type="procentni" onclick="pickCardType('procentni', this)" aria-label="Procentní">
+            <img src="https://static.wixstatic.com/media/1cf87e_e218f5381e0748b2ad6d1c57b337af9f~mv2.png" alt="Procentní">
+          </button>
+        </div>
+        <div class="type-item">
+          <div class="type-name">Razítková</div>
+          <button class="type-card" data-type="razitkova" onclick="pickCardType('razitkova', this)" aria-label="Razítková">
+            <img src="https://static.wixstatic.com/media/1cf87e_522dc8abb98b4484adf341ccdddcabd2~mv2.png" alt="Razítková">
+          </button>
+        </div>
+      </div>
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()">Zpět</button>
+        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
+      </div>
+    </div>
+
+    <!-- KROK 4: Zobrazovat jméno zákazníka? -->
+    <div class="question-panel" data-step="4" id="step-4" style="display:none;">
+      <div class="q-title">Zobrazovat jméno zákazníka?</div>
+      <div class="q-sub">Vyberte možnost</div>
+      <div class="options-row">
+        <button class="option" onclick="pickShowCustomer(true, this)">Ano</button>
+        <button class="option" onclick="pickShowCustomer(false, this)">Ne</button>
+      </div>
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()">Zpět</button>
+        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
+      </div>
+    </div>
+
+    <!-- KROK 5: Jméno zákazníka -->
+    <div class="question-panel" data-step="5" id="step-5" style="display:none;">
+      <div class="q-title">Jméno zákazníka</div>
+      <div class="q-sub">Zadejte jméno, které se zobrazí na kartě</div>
+      <div style="display:flex; justify-content:center;">
+        <input type="text" id="customerNameInput" placeholder="Např. Jan Novák" oninput="onCustomerNameInput()" style="width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:8px;">
+      </div>
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()">Zpět</button>
+        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
+      </div>
+    </div>
+
+    <!-- KROK 6: Zobrazovat text na stripu? -->
+    <div class="question-panel" data-step="6" id="step-6" style="display:none;">
+      <div class="q-title">Zobrazovat text na stripu?</div>
+      <div class="q-sub">Vyberte možnost</div>
+      <div class="options-row">
+        <button class="option" onclick="pickShowStrip(true, this)">Ano</button>
+        <button class="option" onclick="pickShowStrip(false, this)">Ne</button>
+      </div>
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()">Zpět</button>
+        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
+      </div>
+    </div>
+
+    <!-- KROK 7: Text na stripu -->
+    <div class="question-panel" data-step="7" id="step-7" style="display:none;">
+      <div class="q-title">Text na stripu</div>
+      <div class="q-sub">Zadejte krátký text, který se zobrazí dole na stripu</div>
+      <div style="display:flex; justify-content:center;">
+        <input type="text" id="stripInput" placeholder="Např. Desátá káva je na nás." oninput="onStripTextInput()" style="width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:8px;">
+      </div>
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()">Zpět</button>
+        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
+      </div>
+    </div>
+
+    <!-- KROK 8: Barva textu (slevové texty apod.) -->
+    <div class="question-panel" data-step="8" id="step-8" style="display:none;">
+      <div class="q-title">Barva textu</div>
+      <div class="q-sub">Pro slevové texty a informace (vpravo nahoře/dole)</div>
+      <div class="color-row">
+        <div class="swatch" style="background:#111827" onclick="pickTextColor('#111827', this)"></div>
+        <div class="swatch" style="background:#EF4444" onclick="pickTextColor('#EF4444', this)"></div>
+        <div class="swatch" style="background:#10B981" onclick="pickTextColor('#10B981', this)"></div>
+        <div class="swatch" style="background:#3B82F6" onclick="pickTextColor('#3B82F6', this)"></div>
+        <div class="custom-color">
+          <label for="customTextColor">Vlastní</label>
+          <input type="color" id="customTextColor" value="#000000" onchange="pickCustomTextColor(this.value)">
+        </div>
+      </div>
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()">Zpět</button>
+        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
+      </div>
+    </div>
+
+    <!-- KROK 9: Shrnutí -->
+    <div class="question-panel" data-step="9" id="step-9" style="display:none;">
+      <div class="q-title">Shrnutí</div>
+      <div class="q-sub" id="summaryText" style="text-align:left; line-height:1.6;">
+        
+      </div>
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()">Zpět</button>
+        <button class="btn btn-next" onclick="finishWizard()">Dokončit</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const fakeCard = document.getElementById('fakeCard');
+
+    let currentStep = 1;
+    let pickedColor = null;
+    let topMode = null; // 'napis' | 'logo'
+    let cardType = null; // 'bodova' | 'procentni' | 'razitkova'
+    let napisText = '';
+    let napisFont = 'Arial';
+    let napisColor = '#ff0000';
+    let logoUrl = '';
+    let logoObjectUrl = null; // blob URL for uploaded file, revoked on change
+    let showCustomer = false;
+    let customerName = 'Jan Novák';
+    let showStrip = false;
+    let stripText = '';
+    let textColor = '';
+    let stripTextUserEdited = false; // true once user types custom strip text
+    let stripVisibilityUserEdited = false; // true once user picks Yes/No for strip
+    let stripBandHeight = 90; // computed band height for the strip background
+    let manualScale = null; // when set, overrides auto scale
+    const previewUrls = [
+      'https://static.wixstatic.com/media/1cf87e_17b76ac2b4dd408990a1c7214b62a4d4~mv2.png',
+      'https://static.wixstatic.com/media/1cf87e_78b5755ba16a45929e9d9ff958479d87~mv2.png',
+      'https://static.wixstatic.com/media/1cf87e_26c954047da04d8d9ed9c8ccd0badbe5~mv2.png'
+    ];
+    let previewIndex = 0;
+    let previewTimer = null;
+
+    function steps() {
+      return Array.from(document.querySelectorAll('.question-panel[data-step]'));
+    }
+
+    function getStepEl(n) {
+      return document.querySelector('.question-panel[data-step="' + n + '"]');
+    }
+
+    function showStep(n) {
+      steps().forEach(p => { p.style.display = (Number(p.dataset.step) === n) ? 'block' : 'none'; });
+      currentStep = n;
+      updateNavState();
+      // Správa dočasného náhledu pro krok 2
+      const tmpPrev = document.getElementById('topModePreview');
+      if (tmpPrev) tmpPrev.style.display = 'none';
+      if (n === 2) {
+        // výchozí volba: Vlastní logo
+        if (!topMode) topMode = 'logo';
+        const opts = document.querySelectorAll('#step-2 .option');
+        opts.forEach((o, i) => o.classList.toggle('selected', (topMode === 'napis' ? i === 0 : i === 1)));
+        const napisWrap = document.getElementById('napisWrapper');
+        const logoWrap = document.getElementById('logoWrapper');
+        const next = getCurrentNextBtn();
+        if (topMode === 'napis') {
+          if (napisWrap) napisWrap.style.display = 'flex';
+          if (logoWrap) logoWrap.style.display = 'none';
+          // populate controls and render with current state
+          const fSel = document.getElementById('napisFont');
+          if (fSel) fSel.value = napisFont;
+          const cInp = document.getElementById('napisColor');
+          if (cInp) cInp.value = napisColor;
+          renderLogoSlot();
+          if (next) next.disabled = (napisText.trim().length === 0);
+        } else {
+          if (napisWrap) napisWrap.style.display = 'none';
+          if (logoWrap) logoWrap.style.display = 'flex';
+          if (next) next.disabled = (logoUrl.trim().length === 0);
+        }
+        setTopModePreviewSrc();
+      }
+      if (n === 3) {
+        // výchozí volba: Procentní
+        if (!cardType) cardType = 'procentni';
+        const cards = document.querySelectorAll('#step-3 .type-card');
+        cards.forEach(btn => btn.classList.toggle('selected', btn.dataset.type === cardType));
+        const next = getCurrentNextBtn();
+        if (next) next.disabled = false;
+        applyCardType(cardType);
+      }
+      if (n === 5) {
+        // step 5: enable next only if name present
+        const next = getCurrentNextBtn();
+        if (next) next.disabled = (customerName.trim().length === 0);
+      }
+      if (n === 7) {
+        // step 7: enable next only if strip text present
+        const next = getCurrentNextBtn();
+        if (next) next.disabled = (stripText.trim().length === 0);
+      }
+      if (n === 8) {
+        const next = getCurrentNextBtn();
+        if (next) next.disabled = !textColor;
+      }
+      if (n === 9) {
+        const s = document.getElementById('summaryText');
+        s.innerHTML = `
+          <strong>Barva karty:</strong> <span style="display:inline-block; width:12px; height:12px; background:${pickedColor || '#ffffff'}; border:1px solid #e5e7eb; vertical-align:middle;"></span> ${pickedColor || '#ffffff'}<br>
+          <strong>Pravý horní roh:</strong> ${topMode === 'napis' ? 'Nápis' : 'Logo'}<br>
+          ${topMode === 'napis' ? `<strong>Nápis:</strong> ${escapeHtml(napisText)}` : `<strong>Logo URL:</strong> ${escapeHtml(logoUrl)}`}<br>
+          <strong>Typ karty:</strong> ${cardType === 'bodova' ? 'Bodová' : cardType === 'procentni' ? 'Procentní' : cardType === 'razitkova' ? 'Razítková' : ''}<br>
+          <strong>Zobrazovat jméno:</strong> ${showCustomer ? 'Ano' : 'Ne'}${showCustomer ? ` (\u2192 ${escapeHtml(customerName)})` : ''}<br>
+          <strong>Text na stripu:</strong> ${showStrip ? escapeHtml(stripText) : 'Nezobrazovat'}<br>
+          <strong>Barva textu:</strong> <span style="display:inline-block; width:12px; height:12px; background:${textColor || '#000000'}; border:1px solid #e5e7eb; vertical-align:middle;"></span> ${textColor || '#000000'}
+        `;
+      }
+    }
+
+    function getCurrentNextBtn() {
+      const el = getStepEl(currentStep);
+      return el ? el.querySelector('.btn-next') : null;
+    }
+
+    function getCurrentBackBtn() {
+      const el = getStepEl(currentStep);
+      return el ? el.querySelector('.btn-back') : null;
+    }
+
+    function updateNavState() {
+      const back = getCurrentBackBtn();
+      if (back) back.disabled = currentStep === 1;
+    }
+
+    function clearSelected() {
+      document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+    }
+
+    function setCardColor(color) {
+      fakeCard.style.backgroundColor = color;
+      pickedColor = color;
+      const next = getCurrentNextBtn();
+      if (next) next.disabled = false;
+    }
+
+    function pickPresetColor(color, el) {
+      clearSelected();
+      if (el) el.classList.add('selected');
+      setCardColor(color);
+      // reset custom picker to match chosen
+      const cc = document.getElementById('customColor');
+      try { cc.value = toHex(color); } catch(e) {}
+    }
+
+    function pickCustomColor(color) {
+      clearSelected();
+      setCardColor(color);
+    }
+
+    function pickTopMode(mode, el) {
+      topMode = mode; // 'napis' | 'logo'
+      document.querySelectorAll('#step-2 .option').forEach(o => o.classList.remove('selected'));
+      if (el) el.classList.add('selected');
+      // pokud jsme ve kroku 2, ihned zobrazit správné ovládací prvky a náhled + validovat
+      if (currentStep === 2) {
+        const napisWrap = document.getElementById('napisWrapper');
+        const logoWrap = document.getElementById('logoWrapper');
+        const next = getCurrentNextBtn();
+        if (topMode === 'napis') {
+          if (napisWrap) napisWrap.style.display = 'flex';
+          if (logoWrap) logoWrap.style.display = 'none';
+          const fSel = document.getElementById('napisFont');
+          if (fSel) fSel.value = napisFont;
+          const cInp = document.getElementById('napisColor');
+          if (cInp) cInp.value = napisColor;
+          renderLogoSlot();
+          if (next) next.disabled = (napisText.trim().length === 0);
+        } else {
+          if (napisWrap) napisWrap.style.display = 'none';
+          if (logoWrap) logoWrap.style.display = 'flex';
+          if (next) next.disabled = (logoUrl.trim().length === 0);
+        }
+        setTopModePreviewSrc();
+      }
+    }
+
+    function pickCardType(type, el) {
+      cardType = type;
+      document.querySelectorAll('#step-3 .type-card').forEach(b => b.classList.remove('selected'));
+      if (el) el.classList.add('selected');
+      const next = getCurrentNextBtn();
+      if (next) next.disabled = false;
+      applyCardType(type);
+    }
+
+    function onNapisInput() {
+      const v = document.getElementById('napisInput').value || '';
+      napisText = v;
+      renderLogoSlot();
+      setTopModePreviewSrc(); // hide sample overlay as soon as user types
+      const next = getCurrentNextBtn();
+      if (next) next.disabled = v.trim().length === 0;
+    }
+
+    // Nastaví/vypne dočasný náhled v kroku 2 podle topMode
+    function hideTopModePreview() {
+      const img = document.getElementById('topModePreview');
+      if (!img) return;
+      img.style.display = 'none';
+    }
+
+    function setTopModePreviewSrc() {
+      const img = document.getElementById('topModePreview');
+      if (!img) return;
+      if (currentStep !== 2) { img.style.display = 'none'; return; }
+      // Show sample only if there is no real input yet
+      if (topMode === 'napis') {
+        if (napisText && napisText.trim().length > 0) { img.style.display = 'none'; return; }
+      } else if (topMode === 'logo') {
+        if (logoUrl && logoUrl.trim().length > 0) { img.style.display = 'none'; return; }
+      }
+      const napisUrl = 'https://static.wixstatic.com/media/1cf87e_3461a98c2ad64e1e96caf24c3d6c0f32~mv2.png';
+      const logoUrlSample = 'https://static.wixstatic.com/media/1cf87e_cba3a7fc225c4665a9be53443b3c9ee7~mv2.png';
+      img.src = (topMode === 'napis') ? napisUrl : logoUrlSample;
+      img.style.display = 'block';
+    }
+
+    function onNapisFontChange() {
+      const sel = document.getElementById('napisFont');
+      if (sel) {
+        napisFont = sel.value || 'Arial';
+        renderLogoSlot();
+      }
+    }
+
+    function onNapisColorChange() {
+      const inp = document.getElementById('napisColor');
+      if (inp) {
+        napisColor = inp.value || '#ff0000';
+        renderLogoSlot();
+      }
+    }
+
+    function onLogoUrlInput() {
+      const v = document.getElementById('logoUrlInput').value || '';
+      logoUrl = v;
+      renderLogoSlot();
+      setTopModePreviewSrc();
+      const next = getCurrentNextBtn();
+      if (next) next.disabled = v.trim().length === 0;
+    }
+
+    function onLogoFileChange(input) {
+      try {
+        const file = input && input.files && input.files[0];
+        // revoke previous
+        if (logoObjectUrl) { try { URL.revokeObjectURL(logoObjectUrl); } catch(_) {} logoObjectUrl = null; }
+        if (!file) {
+          logoUrl = '';
+          renderLogoSlot();
+          setTopModePreviewSrc();
+          const next = getCurrentNextBtn();
+          if (next) next.disabled = true;
+          return;
+        }
+        const objUrl = URL.createObjectURL(file);
+        logoObjectUrl = objUrl;
+        logoUrl = objUrl;
+        renderLogoSlot();
+        setTopModePreviewSrc(); // hide sample overlay when real logo selected
+        const next = getCurrentNextBtn();
+        if (next) next.disabled = false;
+      } catch (_) {}
+    }
+
+    function renderLogoSlot() {
+      const slot = document.getElementById('logoSlot');
+      slot.innerHTML = '';
+      if (topMode === 'napis' && napisText.trim()) {
+        const div = document.createElement('div');
+        div.className = 'logo-text';
+        div.style.fontFamily = napisFont || 'Arial';
+        div.style.color = napisColor || '#ff0000';
+        div.style.lineHeight = '1.2';
+        // allow basic line breaks if user adds them later
+        div.textContent = napisText;
+        slot.appendChild(div);
+        // try to autofit text inside 120x45 slot similar to WIX.txt
+        autoSizeText(div, 120, 45);
+      } else if (topMode === 'logo' && logoUrl.trim()) {
+        const img = document.createElement('img');
+        img.className = 'logo-img';
+        img.src = logoUrl.trim();
+        img.alt = 'Logo';
+        slot.appendChild(img);
+      }
+      // Reflow strip so it fills space between logo and bottom info immediately
+      try {
+        positionStrip();
+        setStripBackground();
+        renderStrip();
+      } catch (_) {}
+    }
+
+    // Simple auto-size to make text fit within given box (width x height)
+    function autoSizeText(el, maxW, maxH) {
+      try {
+        let size = 24; // starting font size
+        el.style.whiteSpace = 'pre-wrap';
+        el.style.wordBreak = 'break-word';
+        el.style.fontSize = size + 'px';
+        // ensure layout is updated before measuring
+        const parent = el.parentElement;
+        if (!parent) return;
+        const maxWidth = Math.max(0, maxW);
+        const maxHeight = Math.max(0, maxH);
+        for (let i = 0; i < 30; i++) {
+          // if fits, break; else decrease size
+          if (el.scrollWidth <= maxWidth && el.scrollHeight <= maxHeight) break;
+          size -= 1;
+          if (size < 8) { size = 8; break; }
+          el.style.fontSize = size + 'px';
+        }
+      } catch (_) {}
+    }
+
+    function pickShowCustomer(val, el) {
+      showCustomer = !!val;
+      document.querySelectorAll('#step-4 .option').forEach(o => o.classList.remove('selected'));
+      if (el) el.classList.add('selected');
+      const next = getCurrentNextBtn();
+      if (next) next.disabled = false;
+      renderCustomer();
+    }
+
+    function onCustomerNameInput() {
+      const v = document.getElementById('customerNameInput').value || '';
+      customerName = v;
+      renderCustomer();
+      const next = getCurrentNextBtn();
+      if (next) next.disabled = v.trim().length === 0;
+    }
+
+    function renderCustomer() {
+      const ci = document.getElementById('customerInfo');
+      const cn = document.getElementById('custName');
+      if (showCustomer) {
+        ci.style.display = 'block';
+        cn.textContent = customerName && customerName.trim() ? customerName.trim() : 'Jan Novák';
+      } else {
+        ci.style.display = 'none';
+      }
+    }
+
+    function pickShowStrip(val, el) {
+      showStrip = !!val;
+      stripVisibilityUserEdited = true;
+      document.querySelectorAll('#step-6 .option').forEach(o => o.classList.remove('selected'));
+      if (el) el.classList.add('selected');
+      const next = getCurrentNextBtn();
+      if (next) next.disabled = false;
+      positionStrip();
+      setStripBackground();
+      renderStrip();
+    }
+
+    function onStripTextInput() {
+      const v = document.getElementById('stripInput').value || '';
+      stripText = v;
+      stripTextUserEdited = true;
+      renderStrip();
+      const next = getCurrentNextBtn();
+      if (next) next.disabled = v.trim().length === 0;
+    }
+
+    function renderStrip() {
+      const st = document.getElementById('stripTextElem');
+      const img = document.getElementById('stripResultImg');
+      if (showStrip) {
+        st.style.display = 'block';
+        st.textContent = stripText && stripText.trim() ? stripText.trim() : '';
+        if (img) img.style.display = 'block';
+      } else {
+        st.style.display = 'none';
+        st.textContent = '';
+        if (img) img.style.display = 'none';
+      }
+    }
+
+    // Dynamicky spočítá pozici a výšku pásu (stripu) mezi logem a spodní zónou (razítka/Ušetřil/Body)
+    function positionStrip() {
+      const img = document.getElementById('stripResultImg');
+      const st  = document.getElementById('stripTextElem');
+      const card = document.getElementById('fakeCard');
+      const logo = document.getElementById('logoSlot');
+      if (!img || !st || !card) return;
+
+      // Spodní zóna začíná na 157px (viz CSS: top: 157px u razítek/Ušetřil/Body)
+      const bottomAreaTop = 157;
+      const gapTop = 6;    // mezera pod logem
+      const gapBottom = 8; // mezera nad spodní zónou
+
+      const topBase = logo ? (logo.offsetTop + logo.offsetHeight) : 61;
+      let top = Math.round(topBase + gapTop);
+      // Výška pásu musí přesně vyplnit prostor nad spodní zónou, nesmí ji překrývat
+      const available = bottomAreaTop - top - gapBottom;
+      let h = Math.max(0, available);
+
+      // Omezit výšku, aby nepřesahovala kartu
+      const maxH = Math.max(20, card.clientHeight - top - 10);
+      if (h > maxH) h = maxH;
+
+      // Aplikovat styly
+      img.style.top = top + 'px';
+      img.style.height = h + 'px';
+      st.style.top = top + 'px';
+      st.style.height = h + 'px';
+      st.style.lineHeight = h + 'px';
+
+      // Uložit výšku pro generování pozadí
+      stripBandHeight = h;
+    }
+
+    function pickTextColor(color, el) {
+      textColor = color;
+      document.querySelectorAll('#step-8 .swatch').forEach(s => s.classList.remove('selected'));
+      if (el) el.classList.add('selected');
+      setTextColor(color);
+      const cc = document.getElementById('customTextColor');
+      try { cc.value = toHex(color); } catch(e) {}
+      const next = getCurrentNextBtn();
+      if (next) next.disabled = false;
+    }
+
+    function pickCustomTextColor(color) {
+      textColor = color;
+      document.querySelectorAll('#step-8 .swatch').forEach(s => s.classList.remove('selected'));
+      setTextColor(color);
+      const next = getCurrentNextBtn();
+      if (next) next.disabled = false;
+    }
+
+    function setTextColor(color) {
+      // applies to elements using var(--discountColor)
+      fakeCard.style.setProperty('--discountColor', color);
+    }
+
+    function toHex(c) {
+      // accepts #RRGGBB or rgb(a) strings, returns #RRGGBB (best effort)
+      if (c.startsWith('#') && (c.length === 7 || c.length === 4)) return c.length === 7 ? c : shortToFullHex(c);
+      if (c.startsWith('rgb')) {
+        const m = c.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+        if (m) {
+          const [r,g,b] = m.slice(1,4).map(n => Number(n));
+          return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
+        }
+      }
+      return '#ffffff';
+    }
+    function shortToFullHex(s) {
+      // #abc -> #aabbcc
+      return '#' + s.slice(1).split('').map(ch => ch + ch).join('');
+    }
+
+    function nextStepNum() {
+      switch (currentStep) {
+        case 1: return 2;
+        case 2: return 3;
+        case 3: return 4;
+        case 4: return showCustomer ? 5 : 6;
+        case 5: return 6;
+        case 6: return showStrip ? 7 : 8;
+        case 7: return 8;
+        case 8: return 9;
+        case 9: return 9;
+        default: return currentStep + 1;
+      }
+    }
+
+    function prevStepNum() {
+      switch (currentStep) {
+        case 9: return 8;
+        case 8: return showStrip ? 7 : 6;
+        case 7: return 6;
+        case 6: return showCustomer ? 5 : 4;
+        case 5: return 4;
+        case 4: return 3;
+        case 3: return 2;
+        case 2: return 1;
+        default: return 1;
+      }
+    }
+
+    function goNext() {
+      // validation per step
+      if (currentStep === 1 && !pickedColor) return;
+      if (currentStep === 2) {
+        if (!topMode) return;
+        if (topMode === 'napis' && !napisText.trim()) return;
+        if (topMode === 'logo' && !logoUrl.trim()) return;
+      }
+      if (currentStep === 3 && !cardType) return;
+      if (currentStep === 5 && !customerName.trim()) return;
+      if (currentStep === 7 && !stripText.trim()) return;
+      showStep(nextStepNum());
+    }
+
+    function goBack() {
+      if (currentStep === 1) return;
+      showStep(prevStepNum());
+    }
+
+    function finishWizard() {
+      alert('Hotovo! Výběry byly použity na náhledu karty.');
+    }
+
+    // utilities
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, function(m) {
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]);
+      });
+    }
+
+    // Intro preview slideshow
+    function startExampleSlideshow() {
+      const img = document.getElementById('examplePreview');
+      if (!img) return;
+      if (previewTimer) { clearInterval(previewTimer); previewTimer = null; }
+      previewIndex = 0;
+      img.src = previewUrls[previewIndex];
+      previewTimer = setInterval(() => {
+        previewIndex = (previewIndex + 1) % previewUrls.length;
+        img.src = previewUrls[previewIndex];
+      }, 1000);
+    }
+
+    function stopExampleSlideshow() {
+      if (previewTimer) { clearInterval(previewTimer); previewTimer = null; }
+    }
+
+    function startIntro() {
+      const intro = document.getElementById('intro-panel');
+      if (intro) intro.style.display = 'block';
+      const fake = document.getElementById('fakeCard');
+      if (fake) fake.style.display = 'none';
+      const prev = document.getElementById('examplePreview');
+      if (prev) prev.style.display = 'block';
+      startExampleSlideshow();
+    }
+
+    function startWizard() {
+      const intro = document.getElementById('intro-panel');
+      if (intro) intro.style.display = 'none';
+      stopExampleSlideshow();
+      const prev = document.getElementById('examplePreview');
+      if (prev) prev.style.display = 'none';
+      const fake = document.getElementById('fakeCard');
+      if (fake) fake.style.display = 'block';
+      showStep(1);
+    }
+
+    // Global scaling: auto-fit to viewport width, with optional manual override via ?scale=0.8
+    function getManualScaleFromQuery() {
+      try {
+        const params = new URLSearchParams(location.search);
+        const s = params.get('scale');
+        if (!s) return null;
+        const f = parseFloat(s);
+        if (isFinite(f) && f > 0) return Math.max(0.3, Math.min(2, f));
+      } catch (_) {}
+      return null;
+    }
+
+    function applyScale(s) {
+      document.documentElement.style.setProperty('--ui-scale', String(s));
+      const inp = document.getElementById('scaleInput');
+      if (inp && document.activeElement !== inp) {
+        try { inp.value = Number(s).toFixed(2); } catch(_) {}
+      }
+    }
+
+    function autoScale() {
+      if (manualScale !== null) { applyScale(manualScale); return; }
+      const manual = getManualScaleFromQuery();
+      if (manual) { applyScale(manual); return; }
+      const base = 340; // base width of builder
+      const horizontalPadding = 32; // body padding: 16 left + 16 right
+      const avail = Math.max(0, Math.min(window.innerWidth, document.documentElement.clientWidth) - horizontalPadding);
+      const s = Math.min(1, Math.max(0.5, avail / base));
+      applyScale(s);
+    }
+
+    window.addEventListener('resize', autoScale);
+    window.addEventListener('orientationchange', autoScale);
+
+    // init
+    (function initScale() {
+      const qp = getManualScaleFromQuery();
+      if (qp !== null) { manualScale = qp; applyScale(manualScale); }
+      else { autoScale(); }
+      const si = document.getElementById('scaleInput');
+      if (si) {
+        const handle = (e) => {
+          const val = parseFloat(e.target.value);
+          if (isFinite(val)) {
+            manualScale = Math.max(0.3, Math.min(2, val));
+            applyScale(manualScale);
+          }
+        };
+        si.addEventListener('input', handle);
+        si.addEventListener('change', handle);
+      }
+    })();
+    startIntro();
+
+    function applyCardType(type) {
+      console.log('applyCardType called with type:', type);
+      // schovat vše specifické
+      const dis = document.getElementById('discountLevelDisplay');
+      const sav = document.getElementById('savedAmountDisplay');
+      const stc = document.getElementById('stampCounterDisplay');
+      const bl  = document.getElementById('bodyLevelDisplay');
+      const bb  = document.getElementById('bodyBottomDisplay');
+      console.log('stampCounterDisplay element:', stc);
+      [dis, sav, stc, bl, bb].forEach(el => { if (el) el.style.display = 'none'; });
+
+      // nastavit výchozí text na stripu podle typu a ukázat správné bloky
+      let defaultStripText = '';
+      if (type === 'procentni') {
+        if (dis) dis.style.display = 'block';
+        if (sav) sav.style.display = 'block';
+        defaultStripText = 'Sleva';
+      } else if (type === 'razitkova') {
+        console.log('Setting razitkova type, stc element:', stc);
+        if (stc) {
+          stc.style.display = 'block';
+          console.log('Set stc display to block, current style:', stc.style.display);
+          const lab = document.getElementById('stampLabel');
+          const val = document.getElementById('stampVal');
+          if (lab) lab.textContent = 'Razítka';
+          if (val) val.textContent = '0 / 10';
+          console.log('Updated stamp label and value');
+        } else {
+          console.error('stampCounterDisplay element not found!');
+        }
+        defaultStripText = 'Razítka';
+      } else if (type === 'bodova') {
+        if (bl) bl.style.display = 'block';
+        if (bb) bb.style.display = 'block';
+        defaultStripText = 'Body';
+      } else {
+        defaultStripText = '';
+      }
+
+      // Použij výchozí strip text jen pokud ho uživatel neupravil
+      if (!stripTextUserEdited) {
+        stripText = defaultStripText;
+        const si = document.getElementById('stripInput');
+        if (si) si.value = stripText;
+      }
+
+      // Zobraz strip při výběru typu, ale neresetuj volbu uživatele (krok 6)
+      if (!stripVisibilityUserEdited) {
+        showStrip = true;
+      }
+      positionStrip();
+      setStripBackground();
+      const st = document.getElementById('stripTextElem');
+      if (st) { st.style.color = '#ffffff'; st.style.fontWeight = '700'; }
+      renderStrip();
+      
+      // Debug: Check stampCounterDisplay after all strip functions
+      const stcAfter = document.getElementById('stampCounterDisplay');
+      console.log('After strip functions - stampCounterDisplay:', stcAfter, 'display:', stcAfter ? stcAfter.style.display : 'not found');
+    }
+
+    function setStripBackground() {
+      const img = document.getElementById('stripResultImg');
+      if (!img) return;
+      const h = Math.max(40, Math.round(stripBandHeight || 90));
+      const l1 = Math.round(h * 0.17);
+      const l2 = Math.round(h * 0.50);
+      const l3 = Math.round(h * 0.83);
+      const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='600' height='" + h + "' viewBox='0 0 600 " + h + "'>"
+        + "<defs><linearGradient id='g' x1='0' x2='1' y1='0' y2='0'>"
+        + "<stop offset='0%' stop-color='#a5b4fc'/><stop offset='100%' stop-color='#93c5fd'/></linearGradient></defs>"
+        + "<rect width='600' height='" + h + "' fill='url(#g)'/>"
+        + "<g opacity='0.15'>"
+        + "<path d='M0 " + l2 + "h600' stroke='#ffffff' stroke-width='2'/>"
+        + "<path d='M0 " + l1 + "h600' stroke='#ffffff' stroke-width='2'/>"
+        + "<path d='M0 " + l3 + "h600' stroke='#ffffff' stroke-width='2'/></g></svg>";
+      img.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+      img.style.display = 'block';
+    }
+
+    // Reflow při změně velikosti okna/viewportu
+    window.addEventListener('resize', () => {
+      positionStrip();
+      setStripBackground();
+      renderStrip();
+    });
+  </script>
+</body>
+</html>
