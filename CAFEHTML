@@ -30,7 +30,7 @@
         </div>
       </div>
       <div id="clientEmail-field" style="display:none;"><label>Email *:</label><input type="email" id="clientEmail"></div>
-      <div id="classId-field" style="display:block;"><label>Class ID:</label><input type="text" id="classIdInput" placeholder="issuerId.classId or fullId"></div>
+      <!-- Class ID field removed; classId suffix is auto-derived from fullId -->
     </div>
     
     <button id="save-btn" style="margin-top:10px;">Uložit</button>
@@ -519,6 +519,21 @@ document.addEventListener("DOMContentLoaded", function() {
             break;
     }
 
+    // Přidání geolokace do Apple Pass payloadu (PassKit 'locations')
+    if (cafeSettings.branchLat != null && cafeSettings.branchLng != null) {
+      try {
+        const latNum = Number(cafeSettings.branchLat);
+        const lngNum = Number(cafeSettings.branchLng);
+        if (!isNaN(latNum) && !isNaN(lngNum)) {
+          payload.locations = [{
+            latitude: latNum,
+            longitude: lngNum,
+            relevantText: cafeSettings.branchAddressNormalized || cafeSettings.branchAddressInput || ''
+          }];
+        }
+      } catch (_) {}
+    }
+
     // konec payloadu, žádná další závorka zde nesmí být
 
     const resultEl = document.getElementById('pass-result'); 
@@ -534,12 +549,10 @@ document.addEventListener("DOMContentLoaded", function() {
         const phonePrefixEl = document.getElementById('clientPhonePrefix');
         const phoneEl = document.getElementById('clientPhone');
         const phoneCombined = (phonePrefixEl ? phonePrefixEl.value : '') + (phoneEl && phoneEl.value ? phoneEl.value.trim() : '');
-        const classIdEl = document.getElementById('classIdInput');
-        const selectedClassId = (classIdEl && classIdEl.value.trim()) ? classIdEl.value.trim() : cafeSettings.fullId;
+        const selectedClassId = (cafeSettings.fullId || '').slice(-12);
         const googlePayload = {
           classId: selectedClassId,
           objectData: {
-            userId: userId,
             givenName: cafeSettings.name || '',
             familyName: cafeSettings.surname || '',
             email: userEmail,
@@ -581,33 +594,64 @@ document.addEventListener("DOMContentLoaded", function() {
           resultEl.textContent = 'Chyba: ' + (json.error||JSON.stringify(json));
         }
       } else {
-        // PC – nabídnout instrukce + tlačítko pro vytvoření Google Wallet karty
+        // PC – nabídnout instrukce + tlačítka pro vytvoření Apple i Google Wallet karty
         resultEl.innerHTML = `
           <div style="color:#555; margin-bottom:10px;">
             Pro uložení karty použijte prosím mobilní zařízení (iOS/Android). Na PC není přímé uložení podporováno.
           </div>
-          <button id="create-google-pass-btn" style="display: inline-block; font-size: 16px; padding: 8px 14px; background-color: #1a73e8; color: white; border: none; border-radius: 5px; cursor: pointer;">
-            Vytvořit Google Wallet kartu
-          </button>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button id="create-apple-pass-btn" style="display:inline-block; font-size:16px; padding:8px 14px; background-color:#4CAF50; color:#fff; border:none; border-radius:5px; cursor:pointer;">Vytvořit Apple Wallet kartu</button>
+            <button id="create-google-pass-btn" style="display:inline-block; font-size:16px; padding:8px 14px; background-color:#1a73e8; color:#fff; border:none; border-radius:5px; cursor:pointer;">Vytvořit Google Wallet kartu</button>
+          </div>
+          <div id="apple-pass-save-link" style="margin-top:10px;"></div>
           <div id="google-pass-save-link" style="margin-top:10px;"></div>
         `;
 
-        const pcBtn = document.getElementById('create-google-pass-btn');
-        const saveLinkEl = document.getElementById('google-pass-save-link');
-        pcBtn.addEventListener('click', async () => {
-          pcBtn.disabled = true;
-          const originalText = pcBtn.textContent;
-          pcBtn.textContent = 'Vytvářím...';
+        const pcBtnGoogle = document.getElementById('create-google-pass-btn');
+        const pcBtnApple = document.getElementById('create-apple-pass-btn');
+        const saveLinkElGoogle = document.getElementById('google-pass-save-link');
+        const saveLinkElApple = document.getElementById('apple-pass-save-link');
+
+        // Apple Wallet na PC – vygeneruje .pkpass ke stažení
+        if (pcBtnApple) pcBtnApple.addEventListener('click', async () => {
+          pcBtnApple.disabled = true;
+          const originalText = pcBtnApple.textContent;
+          pcBtnApple.textContent = 'Vytvářím...';
+          try {
+            const resp = await fetch('https://createpass-2sun3frzja-uc.a.run.app', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            const json = await resp.json();
+            if (resp.ok && json.downloadUrl) {
+              saveLinkElApple.innerHTML = `<a href="${json.downloadUrl}" download style="display:inline-block; font-size:16px; padding:8px 14px; background-color:#4CAF50; color:white; text-decoration:none; border-radius:5px;">Stáhnout Apple Pass</a>`;
+            } else {
+              saveLinkElApple.textContent = 'Chyba: ' + (json.error || JSON.stringify(json));
+              saveLinkElApple.style.color = 'red';
+            }
+          } catch (e) {
+            saveLinkElApple.textContent = 'Chyba: ' + e.message;
+            saveLinkElApple.style.color = 'red';
+          } finally {
+            pcBtnApple.disabled = false;
+            pcBtnApple.textContent = originalText;
+          }
+        });
+
+        // Google Wallet na PC – vygeneruje saveUrl a zobrazí odkaz
+        if (pcBtnGoogle) pcBtnGoogle.addEventListener('click', async () => {
+          pcBtnGoogle.disabled = true;
+          const originalText = pcBtnGoogle.textContent;
+          pcBtnGoogle.textContent = 'Vytvářím...';
           try {
             const phonePrefixEl = document.getElementById('clientPhonePrefix');
             const phoneEl = document.getElementById('clientPhone');
             const phoneCombined = (phonePrefixEl ? phonePrefixEl.value : '') + (phoneEl && phoneEl.value ? phoneEl.value.trim() : '');
-            const classIdEl = document.getElementById('classIdInput');
-            const selectedClassId = (classIdEl && classIdEl.value.trim()) ? classIdEl.value.trim() : cafeSettings.fullId;
+            const selectedClassId = (cafeSettings.fullId || '').slice(-12);
             const googlePayload = {
               classId: selectedClassId,
               objectData: {
-                userId: userId,
                 givenName: cafeSettings.name || '',
                 familyName: cafeSettings.surname || '',
                 email: userEmail,
@@ -623,10 +667,10 @@ document.addEventListener("DOMContentLoaded", function() {
             });
             const json = await resp.json();
             if (!resp.ok) {
-              saveLinkEl.textContent = 'Chyba: ' + (json.error || JSON.stringify(json));
-              saveLinkEl.style.color = 'red';
+              saveLinkElGoogle.textContent = 'Chyba: ' + (json.error || JSON.stringify(json));
+              saveLinkElGoogle.style.color = 'red';
             } else if (json.saveUrl) {
-              saveLinkEl.innerHTML = `
+              saveLinkElGoogle.innerHTML = `
                 <div style="margin-top:8px;">
                   <button id="open-google-save" style="display:inline-block; font-size:16px; padding:8px 14px; background-color:#1a73e8; color:#fff; border:none; border-radius:5px; cursor:pointer;">Uložit do Google Peněženky</button>
                   <div style="margin-top:8px; color:#555;">Případně zkopírujte odkaz a otevřete na Android zařízení:</div>
@@ -636,17 +680,17 @@ document.addEventListener("DOMContentLoaded", function() {
               const openBtn = document.getElementById('open-google-save');
               if (openBtn) openBtn.addEventListener('click', () => window.open(json.saveUrl, '_blank'));
             } else if (json.success) {
-              saveLinkEl.textContent = 'Karta byla vytvořena.';
+              saveLinkElGoogle.textContent = 'Karta byla vytvořena.';
             } else {
-              saveLinkEl.textContent = 'Chyba: ' + (json.error || JSON.stringify(json));
-              saveLinkEl.style.color = 'red';
+              saveLinkElGoogle.textContent = 'Chyba: ' + (json.error || JSON.stringify(json));
+              saveLinkElGoogle.style.color = 'red';
             }
           } catch (e) {
-            saveLinkEl.textContent = 'Chyba: ' + e.message;
-            saveLinkEl.style.color = 'red';
+            saveLinkElGoogle.textContent = 'Chyba: ' + e.message;
+            saveLinkElGoogle.style.color = 'red';
           } finally {
-            pcBtn.disabled = false;
-            pcBtn.textContent = originalText;
+            pcBtnGoogle.disabled = false;
+            pcBtnGoogle.textContent = originalText;
           }
         });
       }
@@ -696,8 +740,7 @@ function fetchCafeSettings(cafeId) {
         const p=document.getElementById('clientPhone-field'); p.style.display='block';
         p.querySelector('label').textContent='Telefon'+(s.clientPhoneRequired==='on'?' *':' (Nepovinné)');
       }
-      const classIdEl = document.getElementById('classIdInput');
-      if (classIdEl) { classIdEl.value = s.fullId || ''; }
+      // Class ID input removed; suffix will be auto-derived from fullId when generating Google Wallet pass
     })
     .catch(err => {
         console.error('fetchCafeSettings error:', err);
@@ -728,8 +771,7 @@ function displayCafeDetails(settings) {
           document.getElementById('clientPhone').value = userPhone;
         }
     }
-    const classIdEl = document.getElementById('classIdInput');
-    if (classIdEl) { classIdEl.value = settings.fullId || ''; }
+    // Class ID input removed; suffix will be auto-derived from fullId when generating Google Wallet pass
 
     const businessName = settings.businessName || 'Název není k dispozici';
 
@@ -765,6 +807,9 @@ function displayCafeDetails(settings) {
       <p><strong>Stav úrovně 3:</strong> ${settings.level3_status || 'N/A'}</p>
       <p><strong>Sleva úrovně 3:</strong> ${settings.level3_sleva || 'N/A'}</p>
       <p><strong>Zůstatek úrovně 3:</strong> ${settings.level3_zustatek || 'N/A'}</p>
+      <hr>
+      <p><strong>Adresa pobočky:</strong> ${settings.branchAddressNormalized || settings.branchAddressInput || 'N/A'}</p>
+      <p><strong>GPS (lat, lng):</strong> ${(settings.branchLat !== undefined && settings.branchLat !== null ? settings.branchLat : 'N/A')}, ${(settings.branchLng !== undefined && settings.branchLng !== null ? settings.branchLng : 'N/A')}</p>
     `;
         document.getElementById('cafe-details').innerHTML = detailsHtml;
 

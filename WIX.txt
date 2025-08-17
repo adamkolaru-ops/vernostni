@@ -588,6 +588,31 @@
     </div>
   </div>
 
+  <!-- NOVÁ SEKCE: Adresa pobočky pro geonotifikace -->
+  <div class="form-panel" id="branchLocationPanel" style="display:none;">
+    <h3>Adresa pobočky (geonotifikace)</h3>
+    <p id="branchLocationPrompt" style="cursor:pointer; color:#1976d2; text-decoration:underline; margin-top:6px;">
+      Zadejte adresu podniku
+    </p>
+    <div id="branchLocationForm" style="display:none; margin-top:8px;">
+      <label for="branchAddressInput">Adresa podniku:</label>
+      <input type="text" id="branchAddressInput" placeholder="Např. Václavské náměstí 1, Praha" autocomplete="street-address">
+      <div style="margin-top:8px; display:flex; gap:8px;">
+        <button id="branchGeocodeBtn" type="button">Vyhledat adresu</button>
+        <button id="branchUseLocationBtn" type="button">Použít moji polohu</button>
+      </div>
+      <p id="branchAddressResult" style="font-size:12px; color:#555; margin-top:6px;"></p>
+      <p id="branchCoordsDisplay" style="font-size:12px; color:#555; margin-top:2px;"></p>
+      <!-- Skrytá pole pro odeslání do Firebase -->
+      <input type="hidden" id="branchAddressNormalized">
+      <input type="hidden" id="branchLat">
+      <input type="hidden" id="branchLng">
+      <input type="hidden" id="branchPlaceId">
+      <input type="hidden" id="branchOsmType">
+      <input type="hidden" id="branchOsmId">
+    </div>
+  </div>
+
   <!-- (4) FORMULÁŘ -->
   <div class="form-panel">
     <!-- Sekce: Zobrazovat jméno a text na stripu -->
@@ -1144,8 +1169,25 @@
         const createBtn = document.getElementById('createCardIDBtn');
         if (cardID) {
           createBtn.style.display = 'none';
+          // Show branch location panel when card exists
+          showBranchPanel(true);
+          setupBranchLocationUI();
         } else {
           createBtn.style.display = 'inline-block';
+        }
+        // If branch location was previously saved, populate UI and show form
+        if (data.branchAddressNormalized || (data.branchLat && data.branchLng)) {
+          const addr = data.branchAddressNormalized || '';
+          const lat = data.branchLat || '';
+          const lng = data.branchLng || '';
+          const pid = data.branchPlaceId || '';
+          const ot  = data.branchOsmType || '';
+          const oid = data.branchOsmId || '';
+          const input = document.getElementById('branchAddressInput');
+          if (input && addr) input.value = addr;
+          updateBranchDisplays(addr, lat, lng, pid, ot, oid);
+          const form = document.getElementById('branchLocationForm');
+          if (form) form.style.display = 'block';
         }
         // load saved card type from Firestore and apply UI
         const savedCardType = data.cardType || '';
@@ -1806,6 +1848,99 @@
     let savedBusinessName = '';
     let businessID = '';
     let cardID = '';
+    // --- Branch location helpers ---
+    function showBranchPanel(show=true) {
+      const p = document.getElementById('branchLocationPanel');
+      if (p) p.style.display = show ? 'block' : 'none';
+    }
+    function updateBranchDisplays(address, lat, lng, placeId, osmType, osmId) {
+      const addrRes = document.getElementById('branchAddressResult');
+      const coordsEl = document.getElementById('branchCoordsDisplay');
+      const addrNorm = document.getElementById('branchAddressNormalized');
+      const latEl = document.getElementById('branchLat');
+      const lngEl = document.getElementById('branchLng');
+      const pidEl = document.getElementById('branchPlaceId');
+      const otEl = document.getElementById('branchOsmType');
+      const oidEl = document.getElementById('branchOsmId');
+      if (addrRes) addrRes.textContent = address ? `Nalezená adresa: ${address}` : '';
+      if (coordsEl) coordsEl.textContent = (lat && lng) ? `Souřadnice: ${lat}, ${lng}` : '';
+      if (addrNorm) addrNorm.value = address || '';
+      if (latEl) latEl.value = lat || '';
+      if (lngEl) lngEl.value = lng || '';
+      if (pidEl) pidEl.value = placeId || '';
+      if (otEl) otEl.value = osmType || '';
+      if (oidEl) oidEl.value = osmId || '';
+      // aktualizuj náhled sběru dat
+      const collectBtn = document.getElementById('collectData');
+      if (collectBtn) collectBtn.click();
+    }
+    async function geocodeBranchAddress() {
+      try {
+        const input = document.getElementById('branchAddressInput');
+        const q = (input?.value || '').trim();
+        if (!q) {
+          alert('Zadejte prosím adresu podniku.');
+          return;
+        }
+        const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(q)}`;
+        const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        const arr = await resp.json();
+        if (!Array.isArray(arr) || arr.length === 0) {
+          alert('Adresa nebyla nalezena. Zkuste upřesnit zadání.');
+          return;
+        }
+        const best = arr[0];
+        updateBranchDisplays(best.display_name || q, best.lat, best.lon, best.place_id?.toString?.(), best.osm_type || '', best.osm_id?.toString?.());
+        // zobraz formulář (pokud byl skrytý)
+        const form = document.getElementById('branchLocationForm');
+        if (form) form.style.display = 'block';
+      } catch (e) {
+        console.error('Geocoding error:', e);
+        alert('Došlo k chybě při hledání adresy.');
+      }
+    }
+    async function reverseGeocode(lat, lng) {
+      try {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`;
+        const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        const j = await resp.json();
+        const display = j.display_name || `${lat}, ${lng}`;
+        updateBranchDisplays(display, lat, lng, j.place_id?.toString?.(), j.osm_type || '', j.osm_id?.toString?.());
+        const form = document.getElementById('branchLocationForm');
+        if (form) form.style.display = 'block';
+      } catch (e) {
+        console.error('Reverse geocoding error:', e);
+        updateBranchDisplays('', lat, lng, '', '', '');
+      }
+    }
+    function setupBranchLocationUI() {
+      const prompt = document.getElementById('branchLocationPrompt');
+      const form = document.getElementById('branchLocationForm');
+      const geocodeBtn = document.getElementById('branchGeocodeBtn');
+      const useLocBtn = document.getElementById('branchUseLocationBtn');
+      if (prompt) {
+        prompt.onclick = () => {
+          if (form) form.style.display = (form.style.display === 'none' || form.style.display === '') ? 'block' : 'none';
+        };
+      }
+      if (geocodeBtn) geocodeBtn.onclick = geocodeBranchAddress;
+      if (useLocBtn) {
+        useLocBtn.onclick = () => {
+          if (!navigator.geolocation) {
+            alert('Váš prohlížeč nepodporuje zjištění polohy.');
+            return;
+          }
+          navigator.geolocation.getCurrentPosition(pos => {
+            const { latitude, longitude } = pos.coords;
+            reverseGeocode(latitude, longitude);
+          }, err => {
+            console.error('Geolocation error:', err);
+            alert('Nepodařilo se získat vaši polohu.');
+          }, { enableHighAccuracy: true, timeout: 10000 });
+        };
+      }
+    }
+
     async function saveBusinessName() {
       const name = document.getElementById('businessNameInput').value.trim();
       if (!name) {
@@ -1854,6 +1989,9 @@
           body: JSON.stringify({ id: fullId, data:{cardID}})});
         if (!res.ok) console.error('updateUserData cardID:', res.status);
       } catch(e) { console.error('Persist cardID error:', e); }
+      // zobraz panel pro adresu pobočky a připrav UI
+      showBranchPanel(true);
+      setupBranchLocationUI();
       alert("ID karty bylo úspěšně vytvořeno! 🚀");
     }
     // --- FUNKCE PRO QR KÓD ---
