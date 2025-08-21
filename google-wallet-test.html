@@ -108,6 +108,11 @@
     <label for="program-logo">URL loga (volitelné):</label>
     <input type="text" id="program-logo" placeholder="https://example.com/logo.png">
   </div>
+
+  <div class="form-group">
+    <label for="hero-image">URL stripu (Hero image) – šablona (volitelné):</label>
+    <input type="text" id="hero-image" placeholder="https://example.com/hero.png">
+  </div>
   
   <button id="create-template-btn">Vytvořit šablonu</button>
   
@@ -157,6 +162,21 @@
     <label for="barcode-value">Hodnota QR kódu (volitelné):</label>
     <input type="text" id="barcode-value" placeholder="USER123456" value="USER123456">
   </div>
+
+  <div class="form-group">
+    <label for="object-hero-image">URL stripu (Hero image) – objekt (volitelné):</label>
+    <input type="text" id="object-hero-image" placeholder="https://example.com/hero.png">
+  </div>
+
+  <div class="form-group">
+    <label for="text-module-header">Text nad QR (záhlaví):</label>
+    <input type="text" id="text-module-header" placeholder="Např. Váš unikátní kód">
+  </div>
+
+  <div class="form-group">
+    <label for="text-module-body">Text nad QR (tělo):</label>
+    <textarea id="text-module-body" placeholder="Zobrazí se mezi stripem a QR kódem"></textarea>
+  </div>
   
   <button id="create-pass-btn">Vytvořit pass</button>
   
@@ -184,7 +204,12 @@ async function createTemplate() {
         issuerName: document.getElementById('issuer-name').value.trim(),
         programName: document.getElementById('program-name').value.trim(),
         hexBackgroundColor: document.getElementById('background-color').value.trim(),
-        programLogo: document.getElementById('program-logo').value.trim()
+        programLogo: document.getElementById('program-logo').value.trim(),
+        // Hero image pro šablonu (strip)
+        heroImageUrl: document.getElementById('hero-image').value.trim(),
+        heroImage: document.getElementById('hero-image').value.trim()
+          ? { sourceUri: { uri: document.getElementById('hero-image').value.trim() } }
+          : null
       }
     };
     
@@ -238,7 +263,18 @@ async function createPass() {
         phone: document.getElementById('user-phone').value.trim(),
         points: parseInt(document.getElementById('user-points').value) || 0,
         stampCount: parseInt(document.getElementById('user-stamps').value) || 0,
-        barcodeValue: document.getElementById('barcode-value').value.trim()
+        barcodeValue: document.getElementById('barcode-value').value.trim(),
+        // Hero image pro objekt (přebije class hero image)
+        heroImageUrl: document.getElementById('object-hero-image').value.trim(),
+        heroImage: document.getElementById('object-hero-image').value.trim()
+          ? { sourceUri: { uri: document.getElementById('object-hero-image').value.trim() } }
+          : null,
+        // Text module, který se zobrazí mezi stripem a QR
+        textModulesData: (function(){
+          const header = document.getElementById('text-module-header').value.trim();
+          const body = document.getElementById('text-module-body').value.trim();
+          return (header || body) ? [{ header, body }] : [];
+        })()
       }
     };
     

@@ -149,7 +149,20 @@ exports.getCardData = onRequest({ cors: true, cpu: 0.5, invoker: 'public' }, asy
     if (!docSnap.exists) {
       return res.status(404).json({ success: false, error: 'Dokument nenalezen' });
     }
-    return res.json({ success: true, data: docSnap.data() });
+    // Zajisti, že vracíme geolokační pole pobočky i když v DB chybí
+    const raw = docSnap.data() || {};
+    const enriched = {
+      ...raw,
+      // Podporujeme i snake_case fallbacky pro starší data
+      branchAddress: raw.branchAddress || raw.branch_address || '',
+      branchLat: (raw.branchLat ?? raw.branch_lat ?? null),
+      branchLng: (raw.branchLng ?? raw.branch_lng ?? null),
+      branchCity: raw.branchCity || raw.branch_city || '',
+      branchPostalCode: raw.branchPostalCode || raw.branch_postal_code || '',
+      branchCountry: raw.branchCountry || raw.branch_country || '',
+      branchPlaceId: raw.branchPlaceId || raw.branch_place_id || ''
+    };
+    return res.json({ success: true, data: enriched });
   } catch (e) {
     console.error('getCardData error:', e);
     return res.status(500).json({ success: false, error: e.message });
@@ -177,10 +190,20 @@ exports.getCafeSettings = onRequest({ cors: true, cpu: 0.5, invoker: 'public' },
     if (!settings) {
       return res.status(404).json({ success: false, error: 'Settings not found' });
     }
-    // Vracíme nastavení přesně tak, jak je v databázi, bez doplňování chybějících hodnot.
-    // Klient (CAFEHTML) je zodpovědný za zobrazení chyby, pokud cesty chybí.
-    console.log(`✅ Raw settings from DB:`, JSON.stringify(settings, null, 2));
-    return res.json({ success: true, id: matchedFullId, settings: settings });
+    // Normalizace geolokačních polí pobočky, aby UI dostalo konzistentní klíče
+    const s = settings || {};
+    const normalized = {
+      ...s,
+      branchAddress: s.branchAddress || s.branch_address || '',
+      branchLat: (s.branchLat ?? s.branch_lat ?? null),
+      branchLng: (s.branchLng ?? s.branch_lng ?? null),
+      branchCity: s.branchCity || s.branch_city || '',
+      branchPostalCode: s.branchPostalCode || s.branch_postal_code || '',
+      branchCountry: s.branchCountry || s.branch_country || '',
+      branchPlaceId: s.branchPlaceId || s.branch_place_id || ''
+    };
+    console.log(`✅ getCafeSettings normalized settings:`, JSON.stringify(normalized, null, 2));
+    return res.json({ success: true, id: matchedFullId, settings: normalized });
   } catch (err) {
     console.error('getCafeSettings error:', err);
     return res.status(500).json({ success: false, error: err.message });
@@ -896,22 +919,23 @@ async function createGoogleWalletObject(classId, objectData) {
       };
     }
     
-    // Textové moduly – email/telefon
-    const textModulesData = [];
-    if (objectData.email) textModulesData.push({ header: 'E-mail', body: String(objectData.email) });
-    if (objectData.phone) textModulesData.push({ header: 'Telefon', body: String(objectData.phone) });
-    if (textModulesData.length) loyaltyObject.textModulesData = textModulesData;
-    
-    // Info řádky – jméno/příjmení, razítka
-    const infoRows = [];
-    const nameColumns = [];
-    if (objectData.givenName) nameColumns.push({ label: 'Jméno', value: String(objectData.givenName) });
-    if (objectData.familyName) nameColumns.push({ label: 'Příjmení', value: String(objectData.familyName) });
-    if (nameColumns.length) infoRows.push({ columns: nameColumns });
-    if (Number.isFinite(Number(objectData.stampCount))) {
-      infoRows.push({ columns: [{ label: 'Razítka', value: String(objectData.stampCount) }] });
+    // TextModulesData v objektu - toto je správný způsob pro zobrazení na kartě!
+    if (Array.isArray(objectData.textModulesData) && objectData.textModulesData.length) {
+      loyaltyObject.textModulesData = objectData.textModulesData
+        .map(m => ({
+          id: m.id, // např. 'pole1', 'pole2', 'pole3'
+          header: m.header, // např. 'Sleva', 'Status', 'Ušetřeno'
+          body: m.body // např. '30%', 'VIP', '150 Kč'
+        }))
+        .filter(p => p.id && p.header && p.body);
     }
-    if (infoRows.length) loyaltyObject.infoModuleData = { labelValueRows: infoRows };
+    
+    // Hero image (strip) pro objekt – pokud je poskytnut, přebije class hero image
+    const objectHeroUri = (objectData.heroImage && objectData.heroImage.sourceUri && objectData.heroImage.sourceUri.uri)
+      || (objectData.heroImageUrl && String(objectData.heroImageUrl).trim());
+    if (objectHeroUri) {
+      loyaltyObject.heroImage = { sourceUri: { uri: objectHeroUri } };
+    }
     
     // Barcode – pokud je k dispozici
     if (objectData.barcodeValue) {
@@ -1023,6 +1047,39 @@ async function createGoogleWalletClass(classId, templateData) {
         }
       };
     }
+    // Hero image (strip) pro šablonu – zobrazí se pod horní hlavičkou
+    const classHeroUri = (templateData.heroImage && templateData.heroImage.sourceUri && templateData.heroImage.sourceUri.uri)
+      || (templateData.heroImageUrl && templateData.heroImageUrl.trim());
+    if (classHeroUri) {
+      loyaltyClass.heroImage = { sourceUri: { uri: classHeroUri } };
+    }
+
+    // Definice zobrazení na přední straně karty - všechna 3 pole vedle sebe!
+    loyaltyClass.classTemplateInfo = {
+      cardTemplateOverride: {
+        cardRowTemplateInfos: [
+          {
+            threeItems: {
+              startItem: {
+                firstValue: {
+                  fields: [{ fieldPath: "object.textModulesData['pole1']" }]
+                }
+              },
+              middleItem: {
+                firstValue: {
+                  fields: [{ fieldPath: "object.textModulesData['pole2']" }]
+                }
+              },
+              endItem: {
+                firstValue: {
+                  fields: [{ fieldPath: "object.textModulesData['pole3']" }]
+                }
+              }
+            }
+          }
+        ]
+      }
+    };
     
     // API volání na Google Wallet
     const https = require('https');

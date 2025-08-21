@@ -221,7 +221,44 @@
                    value="#4285f4" class="color-input">
           </div>
         </div>
-        
+
+        <div class="form-group">
+          <label for="heroImageUrl">URL stripu (Hero image)</label>
+          <input type="url" id="heroImageUrl" name="heroImageUrl" 
+                 placeholder="https://example.com/hero.png">
+          <div class="help-text">Doporučená velikost: 1032×336 px (poměr 3:1). Zobrazí se jako strip pod horní hlavičkou.</div>
+        </div>
+
+        <!-- Textové moduly (3 sloty) -->
+        <div class="form-group">
+          <label>Textové moduly (3 sloty – nadpis a hodnota)</label>
+          <div class="help-text">Tyto položky se uloží do šablony (class) a zobrazí se také jako 3 řádky (label/value). Konkrétní karta (object) je může přebít vlastními hodnotami.</div>
+          <div class="form-row" style="margin-top: 10px;">
+            <div>
+              <input type="text" name="tm1_header" placeholder="Pole 1">
+            </div>
+            <div>
+              <input type="text" name="tm1_body" placeholder="Hodnota 1">
+            </div>
+          </div>
+          <div class="form-row" style="margin-top: 10px;">
+            <div>
+              <input type="text" name="tm2_header" placeholder="Pole 2">
+            </div>
+            <div>
+              <input type="text" name="tm2_body" placeholder="Hodnota 2">
+            </div>
+          </div>
+          <div class="form-row" style="margin-top: 10px;">
+            <div>
+              <input type="text" name="tm3_header" placeholder="Pole 3">
+            </div>
+            <div>
+              <input type="text" name="tm3_body" placeholder="Hodnota 3">
+            </div>
+          </div>
+        </div>
+
         <div class="form-row">
           <div class="form-group">
             <label for="localizedIssuerName">Lokalizovaný název vydavatele (CS)</label>
@@ -308,6 +345,9 @@
         programDescription: data.programDescription || null,
         programLogo: data.programLogo || null,
         hexBackgroundColor: data.hexBackgroundColor || '#4285f4',
+        // Hero image pro zobrazení stripu (poskytneme jak jednoduché URL, tak objekt heroImage)
+        heroImageUrl: data.heroImageUrl || null,
+        heroImage: data.heroImageUrl ? { sourceUri: { uri: data.heroImageUrl } } : null,
         localizedIssuerName: data.localizedIssuerName || data.issuerName,
         localizedProgramName: data.localizedProgramName || data.programName,
         rewardsTier: data.rewardsTier || null,
@@ -317,6 +357,24 @@
         fullClassId: `3388000000022981331.${data.classId}`,
         status: 'created'
       };
+
+      // Sestavit class-level textModulesData (až 3 položky) s pevnými ID: pole1–pole3
+      const tms = [];
+      const addTM = (id, h, b) => {
+        const header = (h || '').trim();
+        const body = (b || '').trim();
+        if (header || body) tms.push({ id, header, body });
+      };
+      // Defaultní nadpisy pro 3 sloty: Pole 1/2/3
+      const tm1h = (data.tm1_header || 'Pole 1');
+      const tm2h = (data.tm2_header || 'Pole 2');
+      const tm3h = (data.tm3_header || 'Pole 3');
+      addTM('pole1', tm1h, data.tm1_body);
+      addTM('pole2', tm2h, data.tm2_body);
+      addTM('pole3', tm3h, data.tm3_body);
+      if (tms.length) {
+        templateData.textModulesData = tms;
+      }
       
       // Payload podle updateUserData patternu: { id, data }
       const payload = {

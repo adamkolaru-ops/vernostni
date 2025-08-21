@@ -30,7 +30,7 @@
         </div>
       </div>
       <div id="clientEmail-field" style="display:none;"><label>Email *:</label><input type="email" id="clientEmail"></div>
-      <!-- Class ID field removed; classId suffix is auto-derived from fullId -->
+      <div id="classId-field" style="display:block;"><label>Class ID:</label><input type="text" id="classIdInput" placeholder="např. celé ID (použije se posledních 12 znaků)"></div>
     </div>
     
     <button id="save-btn" style="margin-top:10px;">Uložit</button>
@@ -549,7 +549,19 @@ document.addEventListener("DOMContentLoaded", function() {
         const phonePrefixEl = document.getElementById('clientPhonePrefix');
         const phoneEl = document.getElementById('clientPhone');
         const phoneCombined = (phonePrefixEl ? phonePrefixEl.value : '') + (phoneEl && phoneEl.value ? phoneEl.value.trim() : '');
-        const selectedClassId = (cafeSettings.fullId || '').slice(-12);
+        const classIdEl = document.getElementById('classIdInput');
+        const classIdRaw = classIdEl && classIdEl.value ? classIdEl.value.trim() : '';
+        const selectedClassId = (classIdRaw || cafeSettings.fullId || '').slice(-12);
+        // Sestavení textModulesData a heroImageUrl podle stejné logiky jako Apple
+        const textModules = [];
+        // VŽDY 3 řádky: SLEVA, STATUS, UŠETŘENO (vyplněné reálnými hodnotami, s defaulty)
+        const slevaPct = Number(cafeSettings.level1_sleva ?? cafeSettings.sleva ?? 0) || 0;
+        const statusVal = (cafeSettings.level1_status || cafeSettings.status || 'Aktivní');
+        const utrataNum = Number(cafeSettings.aktualniUtrata ?? cafeSettings.utrata ?? 0) || 0;
+        const usetrenoNum = Math.round((utrataNum * slevaPct) / 100);
+        textModules.push({ header: 'SLEVA', body: `${slevaPct} %` });
+        textModules.push({ header: 'STATUS', body: `${statusVal}` });
+        textModules.push({ header: 'UŠETŘENO', body: `${usetrenoNum} Kč` });
         const googlePayload = {
           classId: selectedClassId,
           objectData: {
@@ -558,10 +570,14 @@ document.addEventListener("DOMContentLoaded", function() {
             email: userEmail,
             phone: phoneCombined,
             stampCount: cafeSettings.stampValInput || 0,
-            barcodeValue: qrText
+            barcodeValue: qrText,
+            heroImageUrl: cafeSettings.stripImageURL || ''
           }
         };
-        const resp = await fetch('https://creategooglewalletpass-weeqy2w2la-uc.a.run.app', {
+        if (textModules.length) {
+          googlePayload.objectData.textModulesData = textModules;
+        }
+        const resp = await fetch('https://us-central1-vernostkarty-db.cloudfunctions.net/createGoogleWalletPass', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(googlePayload)
@@ -648,7 +664,73 @@ document.addEventListener("DOMContentLoaded", function() {
             const phonePrefixEl = document.getElementById('clientPhonePrefix');
             const phoneEl = document.getElementById('clientPhone');
             const phoneCombined = (phonePrefixEl ? phonePrefixEl.value : '') + (phoneEl && phoneEl.value ? phoneEl.value.trim() : '');
-            const selectedClassId = (cafeSettings.fullId || '').slice(-12);
+            const classIdEl = document.getElementById('classIdInput');
+            const classIdRaw = classIdEl && classIdEl.value ? classIdEl.value.trim() : '';
+            const selectedClassId = (classIdRaw || cafeSettings.fullId || '').slice(-12);
+            // Sestavení textModulesData podle typu karty - STEJNĚ JAKO APPLE WALLET!
+            const textModules = [];
+            
+            // Použijeme přesně stejnou logiku jako Apple Wallet switch
+            let discountLabel = '', discountValue = '';
+            let headerCenterLabel = '', headerCenterValue = '';
+            let auxiliaryLabel = '', auxiliaryValue = '';
+            
+            switch (cafeSettings.cardType) {
+              case 'card-body':
+                // Apple: discountLabel/Value = bodyLabel1Input + bodyValInput
+                discountLabel = cafeSettings.bodyLabel1Input || 'BODY';
+                discountValue = cafeSettings.bodyValInput || '0';
+                // Apple: headerCenter = prázdné
+                headerCenterLabel = '';
+                headerCenterValue = '';
+                // Apple: auxiliary[1] = bodyBottomTopInput + bodyBottomBotInput
+                auxiliaryLabel = cafeSettings.bodyBottomTopInput || '';
+                auxiliaryValue = cafeSettings.bodyBottomBotInput || '';
+                break;
+                
+              case 'card-razitka':
+                // Apple: discount = prázdné
+                discountLabel = '';
+                discountValue = '';
+                // Apple: headerCenter = prázdné
+                headerCenterLabel = '';
+                headerCenterValue = '';
+                // Apple: auxiliary[1] = RAZÍTKA + počet
+                auxiliaryLabel = 'RAZÍTKA';
+                auxiliaryValue = `${cafeSettings.stampValInput || '0'} / ${cafeSettings.stampCount || '0'}`;
+                break;
+                
+              case 'card-procentni':
+                // Apple: discount = SLEVA + procenta
+                discountLabel = 'SLEVA';
+                discountValue = `${cafeSettings.level1_sleva || '0'} %`;
+                // Apple: headerCenter = STATUS
+                headerCenterLabel = 'STATUS';
+                headerCenterValue = cafeSettings.level1_status || 'VIP';
+                // Apple: auxiliary[1] = UŠETŘENO (vypočítat hodnotu!)
+                auxiliaryLabel = 'UŠETŘENO';
+                // Vypočítat ušetřeno: útrata * sleva / 100
+                const slevaPct = Number(cafeSettings.level1_sleva ?? cafeSettings.sleva ?? 0) || 0;
+                const utrataNum = Number(cafeSettings.aktualniUtrata ?? cafeSettings.utrata ?? 0) || 0;
+                const usetrenoNum = Math.round((utrataNum * slevaPct) / 100);
+                auxiliaryValue = `${usetrenoNum} Kč`;
+                break;
+                
+              default:
+                // Fallback - vše prázdné
+                discountLabel = '';
+                discountValue = '';
+                headerCenterLabel = '';
+                headerCenterValue = '';
+                auxiliaryLabel = '';
+                auxiliaryValue = '';
+                break;
+            }
+            
+            // Sestavení textModules podle Apple Wallet mapování
+            textModules.push({ id: 'pole1', header: discountLabel, body: discountValue });
+            textModules.push({ id: 'pole2', header: headerCenterLabel, body: headerCenterValue });
+            textModules.push({ id: 'pole3', header: auxiliaryLabel, body: auxiliaryValue });
             const googlePayload = {
               classId: selectedClassId,
               objectData: {
@@ -657,10 +739,14 @@ document.addEventListener("DOMContentLoaded", function() {
                 email: userEmail,
                 phone: phoneCombined,
                 stampCount: cafeSettings.stampValInput || 0,
-                barcodeValue: qrText
+                barcodeValue: qrText,
+                heroImageUrl: cafeSettings.stripImageURL || ''
               }
             };
-            const resp = await fetch('https://creategooglewalletpass-weeqy2w2la-uc.a.run.app', {
+            if (textModules.length) {
+              googlePayload.objectData.textModulesData = textModules;
+            }
+            const resp = await fetch('https://us-central1-vernostkarty-db.cloudfunctions.net/createGoogleWalletPass', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(googlePayload)
@@ -771,7 +857,9 @@ function displayCafeDetails(settings) {
           document.getElementById('clientPhone').value = userPhone;
         }
     }
-    // Class ID input removed; suffix will be auto-derived from fullId when generating Google Wallet pass
+    // Prefill visible Class ID input with fullId (user can override; last 12 chars are used)
+    const classIdField = document.getElementById('classIdInput');
+    if (classIdField) { classIdField.value = settings.fullId || ''; }
 
     const businessName = settings.businessName || 'Název není k dispozici';
 
