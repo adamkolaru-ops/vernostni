@@ -1,0 +1,1890 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Věrnostní karta – Nastavení (krok: barva)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plaster&family=Rubik+Spray+Paint&family=Staatliches&family=Coiny&display=swap" rel="stylesheet">
+  <style>
+    /* RESET */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: transparent;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+    }
+    /* h1 uses default system fonts */
+
+    /* Custom font (user-provided) */
+    @font-face {
+      font-family: 'tan-nimbus-2-webfont';
+      src: url('mojefonty/webfontkit-20250823-064711/tan-nimbus_2-webfont.woff2') format('woff2'),
+           url('https://adamkolaru-ops.github.io/mojefonty/webfontkit-20250823-064711/tan-nimbus_2-webfont.woff2') format('woff2');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    /* WRAPPER */
+    :root { --ui-scale: 1; }
+    /* Scaled root wraps the whole builder so we can scale everything at once */
+    #scaleRoot {
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+      width: 100%; /* PC layout: využij šířku */
+      margin: 0 auto;
+    }
+    .builder-wrap {
+      /* PC layout: dvousloupcový grid */
+      width: 100%;
+      display: grid;
+      grid-template-columns: 360px minmax(520px, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    /* (PC) Scale control removed */
+
+    /* TELEFON + FAKE CARD (1:1 dle WIX.txt) */
+    .phone-container {
+      grid-column: 1;
+      position: relative;
+      width: 300px; /* shodné s šířkou obrázku telefonu, kvůli centrování overlaye */
+      margin: 0 auto; /* centrovat kontejner v builderu */
+      margin-bottom: 0; /* držet kartu co nejblíž k otázkám */
+    }
+    .phone-image {
+      width: 300px;
+      display: block;
+      margin: 0 auto; /* centrovat telefon v builderu */
+    }
+    .fake-card {
+      position: absolute;
+      top: 76px;
+      left: 50%;
+      transform: translateX(-50%); /* centrovat overlay na střed telefonu */
+      width: 257px;
+      height: 363px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 0 2px rgba(0,0,0,0.3);
+      pointer-events: none;
+      overflow: hidden;
+    }
+    /* Ukázkový rotující náhled před zahájením tvorby */
+    .example-preview {
+      position: absolute;
+      top: 76px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 257px;
+      height: 363px;
+      object-fit: cover;
+      object-position: center;
+      border-radius: 8px;
+      box-shadow: 0 0 2px rgba(0,0,0,0.3);
+      z-index: 1; /* ensure preview shows above phone image */
+    }
+    /* LOGO-SLOT */
+    .logo-slot {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 120px;
+      height: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      overflow: hidden;
+      padding-left: 2px;
+    }
+    .logo-img { max-width: 100%; max-height: 100%; object-fit: contain; object-position: left center; }
+    .logo-text { white-space: pre-wrap; font-weight: bold; margin: 0; padding: 0; overflow: hidden; text-align: left; }
+    /* Controls (step 2) */
+    .mini-label { font-size:12px; color:#374151; }
+    .toggle-group, .align-group { display:flex; align-items:center; gap:6px; }
+    .toggle-btn, .align-btn {
+      appearance:none; border:1px solid #e5e7eb; background:#f9fafb; color:#111827;
+      padding:6px 8px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:600;
+    }
+    .toggle-btn.selected, .align-btn.selected { border-color:#4f46e5; background:#eef2ff; color:#1f2a6b; }
+    .align-icons { display:flex; gap:6px; }
+    .align-btn svg { width:16px; height:16px; display:block; }
+
+    /* Dočasný náhled v kroku 2 (překryv přes slot) */
+    .top-mode-preview {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: none;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* STRIP => #stripResultImg */
+    #stripResultImg {
+      position: absolute;
+      left: 0;
+      top: 61px; /* fallback mid-band between logo and bottom area */
+      width: 100%;
+      height: 90px; /* fallback band height; final height is set dynamically */
+      object-fit: contain; /* show the entire pattern image without cropping */
+      object-position: center;
+      display: none;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* menší QR kód */
+    .qr-code {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 96px;
+      z-index: 2;
+    }
+
+    /* UŠETŘIL (vpravo) */
+    .saved-amount {
+      position: absolute;
+      top: 170px;
+      right: 10px;
+      text-align: right;
+      display: none;
+      font-family: sans-serif;
+      color: var(--discountColor, #000);
+      z-index: 2;
+    }
+    .saved-amount .saved-label { font-size: 12px; font-weight: 600; }
+    .saved-amount .saved-value { display: block; margin-top: 2px; font-size: 18px; font-weight: 700; }
+
+    /* DISCOUNT LEVEL (vpravo nahoře) */
+    .discount-level {
+      position: absolute;
+      top: 22px;
+      right: 10px;
+      width: 95px;
+      text-align: right;
+      display: none;
+      color: var(--discountColor, #000);
+      z-index: 2;
+    }
+    .discount-level-rows { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; }
+    .discount-level-values { display: flex; justify-content: space-between; font-size: 14px; margin-top: 2px; font-weight: 600; }
+
+    /* RAZÍTKA (vpravo dole) */
+    .stamp-counter {
+      position: absolute;
+      top: 170px;
+      right: 10px;
+      text-align: right;
+      display: none;
+      font-family: sans-serif;
+      color: var(--discountColor, #000);
+      z-index: 2;
+    }
+    .stamp-counter .saved-label { font-size: 12px; font-weight: 600; }
+    .stamp-counter .saved-value { display: block; margin-top: 2px; font-size: 18px; font-weight: 700; }
+
+    /* BODY (vpravo nahoře) */
+    .body-level {
+      position: absolute;
+      top: 22px;
+      right: 10px;
+      width: 95px;
+      text-align: right;
+      display: none;
+      color: var(--discountColor, #000);
+      z-index: 2;
+    }
+    .body-level-rows { display: flex; justify-content: flex-end; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+    .body-level-values { display: flex; justify-content: flex-end; font-size: 14px; margin-top: 2px; font-weight: 600; }
+
+    /* BODY dole (vpravo) */
+    .body-bottom {
+      position: absolute;
+      top: 170px;
+      right: 10px;
+      text-align: right;
+      display: none;
+      font-family: sans-serif;
+      color: var(--discountColor, #000);
+      z-index: 2;
+    }
+    .body-bottom .top-line { font-size: 12px; font-weight: 600; }
+    .body-bottom .bottom-line { display: block; margin-top: 2px; font-size: 18px; font-weight: 700; }
+
+    /* ZÁKAZNÍK (vlevo) */
+    .customer-info {
+      position: absolute;
+      top: 170px;
+      left: 10px;
+      text-align: left;
+      display: none;
+      font-family: sans-serif;
+      color: var(--discountColor, #000);
+      z-index: 2;
+    }
+    .customer-info .cust-label { font-size: 12px; font-weight: 600; }
+    .customer-info .cust-value { display: block; margin-top: 2px; font-size: 18px; font-weight: 700; }
+
+    /* Text na stripu */
+    .strip-text {
+      position: absolute;
+      display: none; /* will be toggled to flex when enabled */
+      top: 61px; /* fallback to align over the strip image */
+      left: 0;
+      width: 100%;
+      height: 90px;
+      /* Use flex to control vertical placement of text (top/center/bottom) */
+      display: none;
+      justify-content: center;
+      align-items: flex-end; /* default = bottom */
+      padding: 0 10px 6px;
+      box-sizing: border-box;
+      text-align: center; /* horizontal centering */
+      transform: none;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    /* Minimal controls for strip text (step 7) */
+    .strip-mini { display:flex; gap:10px; justify-content:center; align-items:center; margin-top:10px; }
+    .mini-group { display:flex; gap:6px; align-items:center; }
+    .mini-label { font-size:11px; color:#6b7280; }
+    .mini-btn { border:1px solid #e5e7eb; background:#f9fafb; border-radius:6px; padding:6px 8px; font-size:12px; cursor:pointer; }
+    .mini-btn.selected { outline:2px solid #4f46e5; outline-offset:0; }
+
+    /* --- OTÁZKOVÝ PANEL (jedno pole) --- */
+    .question-panel {
+      grid-column: 2;
+      width: 100%;
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      position: relative;
+      z-index: 2;
+      margin-top: 5cm; /* PC: offset to align roughly with fake card center */
+      border: 2px solid #d1d5db; /* výraznější ohraničení */
+      padding: 6px 14px 14px; /* menší horní odsazení pro nadpis a popis */
+    }
+    .q-title { font-size: 16px; font-weight: 700; text-align: center; margin-bottom: 10px; }
+    .q-sub { font-size: 12px; color: #6b7280; text-align: center; margin-bottom: 12px; }
+
+    .color-row { display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+    .swatch {
+      width: 36px; height: 36px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: transform .18s, border-color .18s;
+    }
+    .swatch:hover { transform: translateY(-2px); }
+    .swatch.selected { border-color: #4f46e5; }
+
+    .custom-color {
+      display: flex; align-items: center; gap: 6px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 6px 8px;
+    }
+    .custom-color label { font-size: 12px; color: #374151; }
+    .custom-color input[type="color"] { width: 28px; height: 28px; border: none; background: transparent; padding: 0; }
+
+    .q-actions { display: flex; justify-content: center; margin-top: 12px; }
+    .q-actions { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .btn {
+      appearance: none; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 700; font-size: 14px;
+    }
+    .btn-next { background: #4f46e5; color: #fff; box-shadow: 0 4px 10px rgba(79,70,229,.25); }
+    .btn-next:disabled { opacity: .6; }
+    .btn-back { background: #e5e7eb; color: #111827; }
+
+    .options-row { display: flex; justify-content: center; gap: 10px; }
+    .option { padding: 10px 14px; border-radius: 10px; background: #f3f4f6; border: 1px solid #e5e7eb; cursor: pointer; font-weight: 700; color: #111827; }
+    .option.selected { outline: 2px solid #4f46e5; outline-offset: 0; }
+    /* Typ karty – grid a tlačítka s obrázky */
+    .type-grid { display: flex; justify-content: center; align-items: center; gap: 10px; }
+    .type-card {
+      width: 90px; height: 90px; border-radius: 12px; border: 2px solid #e5e7eb; background: #f9fafb; overflow: hidden;
+      padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .type-card img { width: 100%; height: 100%; object-fit: cover; }
+    .type-card.selected { border-color: #4f46e5; box-shadow: 0 0 0 2px rgba(79,70,229,0.15) inset; }
+    .type-item { display:flex; flex-direction:column; align-items:center; gap:6px; }
+    .type-name { font-size:12px; font-weight:700; color:#374151; }
+
+    /* Strip carousel (portrait cards) */
+    .strip-carousel-container { position: relative; display:flex; align-items:center; justify-content:center; }
+    .strip-track {
+      display:flex; align-items:center; gap:12px; overflow-x:auto; padding: 6px 44px; max-width: 100%;
+      scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+    }
+    .strip-track::-webkit-scrollbar { display: none; }
+    .strip-card {
+      width: 82px; height: 124px; border-radius: 8px; border: 2px solid #e5e7eb; background: #f9fafb; overflow: hidden;
+      padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; scroll-snap-align: start;
+    }
+    .strip-card img { width: 100%; height: 100%; object-fit: cover; }
+    .strip-nav-btn { position:absolute; top:50%; transform: translateY(-50%); width:32px; height:32px; border-radius:50%;
+      background:#ffffff; border:1px solid #e5e7eb; box-shadow:0 2px 8px rgba(0,0,0,.08); cursor:pointer; font-size:18px; font-weight:700; color:#374151;
+      display:flex; align-items:center; justify-content:center; }
+    .strip-nav-btn:hover { background:#f9fafb; }
+    .strip-nav-btn.prev { left:6px; }
+    .strip-nav-btn.next { right:6px; }
+    .strip-card.selected { border-color: #4f46e5; box-shadow: 0 0 0 2px rgba(79,70,229,0.15) inset; }
+  </style>
+</head>
+<body>
+  <div id="scaleRoot">
+    <div class="builder-wrap">
+      <!-- scale control removed in PC layout -->
+    <!-- Telefon + 1:1 fake card -->
+    <div class="phone-container">
+      <img 
+        src="https://static.wixstatic.com/media/1cf87e_7d2b3744c04f4bf6af84a1b9868ea0b2~mv2.png"
+        alt="Telefon"
+        class="phone-image"
+      >
+      <img id="examplePreview" class="example-preview" alt="Ukázková karta"
+        src="https://static.wixstatic.com/media/1cf87e_8eaa5bcd78cb47acb401966c9ab36fe4~mv2.png"
+      >
+      <div class="fake-card" id="fakeCard" style="display:none;">
+        <!-- STRIP => #stripResultImg -->
+        <img id="stripResultImg" alt="Strip náhled">
+
+        <!-- DISCOUNT LEVEL -->
+        <div class="discount-level" id="discountLevelDisplay">
+          <div class="discount-level-rows">
+            <div id="discountLabel1">STATUS</div>
+            <div id="discountLabel2">SLEVA</div>
+          </div>
+          <div class="discount-level-values">
+            <div id="statusVal">VIP</div>
+            <div id="discountVal">10%</div>
+          </div>
+        </div>
+
+        <!-- UŠETŘIL (vpravo) -->
+        <div class="saved-amount" id="savedAmountDisplay">
+          <span class="saved-label">Ušetřil</span>
+          <span class="saved-value" id="savedVal">378 Kč</span>
+        </div>
+
+        <!-- RAZÍTKA (vpravo dole) -->
+        <div class="stamp-counter" id="stampCounterDisplay">
+          <span class="saved-label" id="stampLabel">Razítka</span>
+          <span class="saved-value" id="stampVal">0 / 10</span>
+        </div>
+
+        <!-- BODY (vpravo nahoře) -->
+        <div class="body-level" id="bodyLevelDisplay">
+          <div class="body-level-rows">
+            <div id="bodyLabel1">BODY</div>
+          </div>
+          <div class="body-level-values">
+            <div id="bodyVal">0</div>
+          </div>
+        </div>
+
+        <!-- BODY dole (vpravo) -->
+        <div class="body-bottom" id="bodyBottomDisplay">
+          <span class="top-line" id="bodyBottomTop">ZA 100B KÁVA ZDARMA</span>
+          <span class="bottom-line" id="bodyBottomBot">10Kč=1BOD</span>
+        </div>
+
+        <!-- Menší QR kód (URL zachována) -->
+        <img 
+          src="https://static.wixstatic.com/media/1cf87e_54c7b5f266684220b9746a99b53d3ffa~mv2.png"
+          alt="QR kód"
+          class="qr-code"
+        >
+
+        <!-- Zákazník (vlevo) -->
+        <div class="customer-info" id="customerInfo">
+          <span class="cust-label">Zákazník:</span>
+          <span class="cust-value" id="custName">Jan Novák</span>
+        </div>
+
+        <!-- Logo / Text -->
+        <div class="logo-slot" id="logoSlot"></div>
+
+        <!-- Dočasný překryv pro krok 2 (náhled nápis/logo) -->
+        <img id="topModePreview" class="top-mode-preview" alt="Preview">
+
+        <!-- Text na stripu -->
+        <div class="strip-text" id="stripTextElem"></div>
+      </div>
+    </div>
+
+    <!-- INTRO: Start wizard -->
+    <div class="question-panel" id="intro-panel">
+      <div class="q-title">Jak může vaše karta vypadat</div>
+      <div class="q-sub">Ukázkové příklady se mění každých 1,7 sekundy. Až budete připraveni, začněte vytvářet svou kartu.</div>
+      <div class="q-actions">
+        <button class="btn btn-next" onclick="startWizard()">Začít vytvářet</button>
+      </div>
+    </div>
+
+    <!-- KROK 1: Barva karty -->
+    <div class="question-panel" data-step="1" id="step-1" style="display:none;">
+      <div class="q-title">Nastavte barvu vaší karty</div>
+      <div class="q-sub">Vyberte jednu z předvoleb nebo zvolte vlastní barvu</div>
+      <div class="color-row">
+        <!-- Neutrals -->
+        <div class="swatch" style="background:#FFFFFF" title="Bílá" onclick="pickPresetColor('#FFFFFF', this)"></div>
+        <div class="swatch" style="background:#F3F4F6" title="Světle šedá" onclick="pickPresetColor('#F3F4F6', this)"></div>
+        <div class="swatch" style="background:#9CA3AF" title="Šedá" onclick="pickPresetColor('#9CA3AF', this)"></div>
+        <div class="swatch" style="background:#6B7280" title="Tmavší šedá" onclick="pickPresetColor('#6B7280', this)"></div>
+        <div class="swatch" style="background:#374151" title="Tmavá šedá" onclick="pickPresetColor('#374151', this)"></div>
+        <div class="swatch" style="background:#111827" title="Černá" onclick="pickPresetColor('#111827', this)"></div>
+        <!-- Reds / Warm -->
+        <div class="swatch" style="background:#FEE2E2" title="Světle červená" onclick="pickPresetColor('#FEE2E2', this)"></div>
+        <div class="swatch" style="background:#F43F5E" title="Růžovo-červená" onclick="pickPresetColor('#F43F5E', this)"></div>
+        <div class="swatch" style="background:#EF4444" title="Červená" onclick="pickPresetColor('#EF4444', this)"></div>
+        <div class="swatch" style="background:#DC2626" title="Tmavší červená" onclick="pickPresetColor('#DC2626', this)"></div>
+        <div class="swatch" style="background:#F97316" title="Oranžová" onclick="pickPresetColor('#F97316', this)"></div>
+        <div class="swatch" style="background:#F59E0B" title="Amber" onclick="pickPresetColor('#F59E0B', this)"></div>
+        <div class="swatch" style="background:#EAB308" title="Žlutá" onclick="pickPresetColor('#EAB308', this)"></div>
+        <!-- Greens -->
+        <div class="swatch" style="background:#84CC16" title="Limetková" onclick="pickPresetColor('#84CC16', this)"></div>
+        <div class="swatch" style="background:#22C55E" title="Zelená" onclick="pickPresetColor('#22C55E', this)"></div>
+        <div class="swatch" style="background:#10B981" title="Smaragdová" onclick="pickPresetColor('#10B981', this)"></div>
+        <div class="swatch" style="background:#14B8A6" title="Tyrkysová" onclick="pickPresetColor('#14B8A6', this)"></div>
+        <!-- Blues -->
+        <div class="swatch" style="background:#06B6D4" title="Cyan" onclick="pickPresetColor('#06B6D4', this)"></div>
+        <div class="swatch" style="background:#38BDF8" title="Nebesky modrá" onclick="pickPresetColor('#38BDF8', this)"></div>
+        <div class="swatch" style="background:#3B82F6" title="Modrá" onclick="pickPresetColor('#3B82F6', this)"></div>
+        <div class="swatch" style="background:#2563EB" title="Tmavší modrá" onclick="pickPresetColor('#2563EB', this)"></div>
+        <div class="swatch" style="background:#6366F1" title="Indigo" onclick="pickPresetColor('#6366F1', this)"></div>
+        <!-- Purples -->
+        <div class="swatch" style="background:#8B5CF6" title="Fialová" onclick="pickPresetColor('#8B5CF6', this)"></div>
+        <div class="swatch" style="background:#A855F7" title="Purple" onclick="pickPresetColor('#A855F7', this)"></div>
+        <div class="swatch" style="background:#D946EF" title="Fuchsiová" onclick="pickPresetColor('#D946EF', this)"></div>
+        <div class="swatch" style="background:#EC4899" title="Růžová" onclick="pickPresetColor('#EC4899', this)"></div>
+        <!-- Custom -->
+        <div class="custom-color">
+          <label for="customColor">Vlastní</label>
+          <input type="color" id="customColor" value="#ffffff" onchange="pickCustomColor(this.value)">
+        </div>
+      </div>
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()" disabled>Zpět</button>
+        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
+      </div>
+    </div>
+
+    <!-- KROK 2: Pravý horní roh -->
+    <div class="question-panel" data-step="2" id="step-2" style="display:none;">
+      <div class="q-title">Co bude v levém horním rohu?</div>
+      <div class="q-sub">Zvolte text nebo logo</div>
+      <div class="options-row">
+        <button class="option" onclick="pickTopMode('napis', this)">Text</button>
+        <button class="option" onclick="pickTopMode('logo', this)">Vlastní logo</button>
+      </div>
+      <!-- Inline nastavení podle volby -->
+      <!-- Text nápisu (inline ve kroku 2) -->
+      <div id="napisWrapper" style="display:none; justify-content:center; flex-direction:column; gap:8px; margin-top:10px;">
+        <!-- Zarovnání (nad polem) -->
+        <div class="align-group">
+          <label class="mini-label">Zarovnání</label>
+          <div class="align-icons">
+            <button class="align-btn" id="alignLeftBtn" onclick="pickNapisAlign('left', this)" title="Zarovnat vlevo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="5" x2="21" y2="5"/>
+                <line x1="3" y1="11" x2="15" y2="11"/>
+                <line x1="3" y1="17" x2="18" y2="17"/>
+              </svg>
+            </button>
+            <button class="align-btn" id="alignCenterBtn" onclick="pickNapisAlign('center', this)" title="Zarovnat na střed">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="6" y1="5" x2="18" y2="5"/>
+                <line x1="4" y1="11" x2="20" y2="11"/>
+                <line x1="6" y1="17" x2="18" y2="17"/>
+              </svg>
+            </button>
+            <button class="align-btn" id="alignRightBtn" onclick="pickNapisAlign('right', this)" title="Zarovnat vpravo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="5" x2="21" y2="5"/>
+                <line x1="9" y1="11" x2="21" y2="11"/>
+                <line x1="6" y1="17" x2="21" y2="17"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <!-- Víceřádkové pole -->
+        <textarea id="napisTextarea" placeholder="Zadejte text (max. 2 řádky, řádek 2 až po Enteru)" oninput="onNapisInput()" onkeydown="napisKeyDown(event)" rows="2" wrap="off" style="width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:8px; resize: none; overflow-y: hidden;"></textarea>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <label for="napisFont" style="font-size:12px; color:#374151;">Styl písma</label>
+            <select id="napisFont" onchange="onNapisFontChange()" style="padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px;">
+              <option value="tan-nimbus-2-webfont">Karrli</option>
+              <option value="Rubik Spray Paint">Rubik Spray Paint</option>
+              <option value="Staatliches">Staatliches</option>
+              <option value="Plaster">Plaster</option>
+              <option value="Coiny">Coiny</option>
+              <option value="Arial">Arial</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Helvetica">Helvetica</option>
+              <option value="Tahoma">Tahoma</option>
+              <option value="Trebuchet MS">Trebuchet MS</option>
+              <option value="Verdana">Verdana</option>
+              <option value="Wix Bold Sans">Wix Bold Sans</option>
+              <option value="Wix Handwritten">Wix Handwritten</option>
+              <option value="Wix Fancy Cursive">Wix Fancy Cursive</option>
+            </select>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <button type="button" class="toggle-btn" onclick="toggleTextPalette()" title="Vyberte barvu textu" style="font-size:13px; font-weight:700; background:#fef3c7; border-color:#f59e0b; box-shadow:0 0 0 2px rgba(245,158,11,0.15) inset;">Vyberte si barvu</button>
+            <input type="color" id="napisColor" value="#000000" onchange="onNapisColorChange()" onmousedown="openTextPaletteFromColor(event)" onclick="return false;" onfocus="this.blur();" style="width: 32px; height: 32px; border:none; background:transparent; padding:0;">
+          </div>
+          <!-- Paleta barev pro text (stejná jako krok 1), zobrazí se po kliknutí na tlačítko -->
+          <div id="textColorPalette" style="display:none; margin-top:8px;">
+            <div class="color-row">
+              <!-- Neutrals -->
+              <div class="swatch text-swatch" style="background:#FFFFFF" title="Bílá" onclick="pickTextPresetColor('#FFFFFF', this)"></div>
+              <div class="swatch text-swatch" style="background:#F3F4F6" title="Světle šedá" onclick="pickTextPresetColor('#F3F4F6', this)"></div>
+              <div class="swatch text-swatch" style="background:#9CA3AF" title="Šedá" onclick="pickTextPresetColor('#9CA3AF', this)"></div>
+              <div class="swatch text-swatch" style="background:#6B7280" title="Tmavší šedá" onclick="pickTextPresetColor('#6B7280', this)"></div>
+              <div class="swatch text-swatch" style="background:#374151" title="Tmavá šedá" onclick="pickTextPresetColor('#374151', this)"></div>
+              <div class="swatch text-swatch" style="background:#111827" title="Černá" onclick="pickTextPresetColor('#111827', this)"></div>
+              <!-- Reds / Warm -->
+              <div class="swatch text-swatch" style="background:#FEE2E2" title="Světle červená" onclick="pickTextPresetColor('#FEE2E2', this)"></div>
+              <div class="swatch text-swatch" style="background:#F43F5E" title="Růžovo-červená" onclick="pickTextPresetColor('#F43F5E', this)"></div>
+              <div class="swatch text-swatch" style="background:#EF4444" title="Červená" onclick="pickTextPresetColor('#EF4444', this)"></div>
+              <div class="swatch text-swatch" style="background:#DC2626" title="Tmavší červená" onclick="pickTextPresetColor('#DC2626', this)"></div>
+              <div class="swatch text-swatch" style="background:#F97316" title="Oranžová" onclick="pickTextPresetColor('#F97316', this)"></div>
+              <div class="swatch text-swatch" style="background:#F59E0B" title="Amber" onclick="pickTextPresetColor('#F59E0B', this)"></div>
+              <div class="swatch text-swatch" style="background:#EAB308" title="Žlutá" onclick="pickTextPresetColor('#EAB308', this)"></div>
+              <!-- Greens -->
+              <div class="swatch text-swatch" style="background:#84CC16" title="Limetková" onclick="pickTextPresetColor('#84CC16', this)"></div>
+              <div class="swatch text-swatch" style="background:#22C55E" title="Zelená" onclick="pickTextPresetColor('#22C55E', this)"></div>
+              <div class="swatch text-swatch" style="background:#10B981" title="Smaragdová" onclick="pickTextPresetColor('#10B981', this)"></div>
+              <div class="swatch text-swatch" style="background:#14B8A6" title="Tyrkysová" onclick="pickTextPresetColor('#14B8A6', this)"></div>
+              <!-- Blues -->
+              <div class="swatch text-swatch" style="background:#06B6D4" title="Cyan" onclick="pickTextPresetColor('#06B6D4', this)"></div>
+              <div class="swatch text-swatch" style="background:#38BDF8" title="Nebesky modrá" onclick="pickTextPresetColor('#38BDF8', this)"></div>
+              <div class="swatch text-swatch" style="background:#3B82F6" title="Modrá" onclick="pickTextPresetColor('#3B82F6', this)"></div>
+              <div class="swatch text-swatch" style="background:#2563EB" title="Tmavší modrá" onclick="pickTextPresetColor('#2563EB', this)"></div>
+              <div class="swatch text-swatch" style="background:#6366F1" title="Indigo" onclick="pickTextPresetColor('#6366F1', this)"></div>
+              <!-- Purples -->
+              <div class="swatch text-swatch" style="background:#8B5CF6" title="Fialová" onclick="pickTextPresetColor('#8B5CF6', this)"></div>
+              <div class="swatch text-swatch" style="background:#A855F7" title="Purple" onclick="pickTextPresetColor('#A855F7', this)"></div>
+              <div class="swatch text-swatch" style="background:#D946EF" title="Fuchsiová" onclick="pickTextPresetColor('#D946EF', this)"></div>
+              <div class="swatch text-swatch" style="background:#EC4899" title="Růžová" onclick="pickTextPresetColor('#EC4899', this)"></div>
+              <!-- Custom -->
+              <div class="custom-color">
+                <label for="textCustomColor">Vlastní</label>
+                <input type="color" id="textCustomColor" value="#000000" onchange="pickTextCustomColor(this.value)">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Logo upload (inline ve kroku 2) -->
+      <div id="logoWrapper" style="display:none; justify-content:center; margin-top:10px;">
+        <input type="file" id="logoFileInput" accept="image/*" onchange="onLogoFileChange(this)" style="width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:8px;">
+      </div>
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()">Zpět</button>
+        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
+      </div>
+    </div>
+
+    <!-- KROK 3: Typ karty -->
+    <div class="question-panel" data-step="3" id="step-3" style="display:none;">
+      <div class="q-title">Vyberte vzhled stripu</div>
+      <div class="q-sub">Zvolte jeden z předpřipravených stripů nebo nahrajte vlastní</div>
+      <div class="strip-carousel-container" id="stripCarousel">
+        <button type="button" class="strip-nav-btn prev" aria-label="Předchozí" onclick="scrollStrip(-1)">‹</button>
+        <div class="strip-track" id="stripTrack">
+          <button class="strip-card" data-url="https://static.wixstatic.com/media/1cf87e_2fb228538c8f4f76b7c27f489c9ec86d~mv2.png" onclick="pickStrip('https://static.wixstatic.com/media/1cf87e_2fb228538c8f4f76b7c27f489c9ec86d~mv2.png', this)" aria-label="Strip A">
+            <img src="https://static.wixstatic.com/media/1cf87e_42c16166df474011b268ed32c9ac20f8~mv2.png" alt="Strip A">
+          </button>
+          <button class="strip-card" data-url="https://static.wixstatic.com/media/1cf87e_9e03bf4b81fc434b8525abfc5c179da2~mv2.png" onclick="pickStrip('https://static.wixstatic.com/media/1cf87e_9e03bf4b81fc434b8525abfc5c179da2~mv2.png', this)" aria-label="Strip B">
+            <img src="https://static.wixstatic.com/media/1cf87e_1cda969fb17a4202b31e3a41ab485eed~mv2.png" alt="Strip B">
+          </button>
+          <button class="strip-card" data-url="https://static.wixstatic.com/media/1cf87e_feb21ec9d6614055ae0820b4704c1b80~mv2.png" onclick="pickStrip('https://static.wixstatic.com/media/1cf87e_feb21ec9d6614055ae0820b4704c1b80~mv2.png', this)" aria-label="Strip C">
+            <img src="https://static.wixstatic.com/media/1cf87e_64d2c7ad7b6644dc96a9b0de8bebe268~mv2.png" alt="Strip C">
+          </button>
+          <button class="strip-card" data-url="https://static.wixstatic.com/media/1cf87e_f1c5b37e7ed548ec9d61769b2ab1bf40~mv2.png" onclick="pickStrip('https://static.wixstatic.com/media/1cf87e_f1c5b37e7ed548ec9d61769b2ab1bf40~mv2.png', this)" aria-label="Strip D">
+            <img src="https://static.wixstatic.com/media/1cf87e_c50a75b5045a412293dc11dc5b39e5f3~mv2.png" alt="Strip D">
+          </button>
+          <button id="stripCustomBtn" class="strip-card" type="button" onclick="document.getElementById('customStripInput').click()" title="Vlastní strip">
+            <span style="font-weight:700; font-size:12px; color:#374151;">Vlastní</span>
+          </button>
+          <input type="file" id="customStripInput" accept="image/*" style="display:none" onchange="onCustomStripFileChange(this)">
+        </div>
+        <button type="button" class="strip-nav-btn next" aria-label="Další" onclick="scrollStrip(1)">›</button>
+      </div>
+
+      <!-- Typ karty přesunut do kroku 4 -->
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()">Zpět</button>
+        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
+      </div>
+    </div>
+
+    <!-- KROK 4: Typ karty (až po potvrzení stripu) -->
+    <div class="question-panel" data-step="4" id="step-4" style="display:none;">
+      <div class="q-title">Vyberte typ karty</div>
+      <div class="q-sub">Zvolte jeden z typů: Bodová, Procentní, Razítková</div>
+      <div class="type-grid">
+        <div class="type-item">
+          <div class="type-name">Bodová</div>
+          <button class="type-card" data-type="bodova" onclick="pickCardType('bodova', this)" aria-label="Bodová">
+            <img src="https://static.wixstatic.com/media/1cf87e_8c4334c0221641acb421515383310cc6~mv2.png" alt="Bodová">
+          </button>
+        </div>
+        <div class="type-item">
+          <div class="type-name">Procentní</div>
+          <button class="type-card" data-type="procentni" onclick="pickCardType('procentni', this)" aria-label="Procentní">
+            <img src="https://static.wixstatic.com/media/1cf87e_e218f5381e0748b2ad6d1c57b337af9f~mv2.png" alt="Procentní">
+          </button>
+        </div>
+        <div class="type-item">
+          <div class="type-name">Razítková</div>
+          <button class="type-card" data-type="razitkova" onclick="pickCardType('razitkova', this)" aria-label="Razítková">
+            <img src="https://static.wixstatic.com/media/1cf87e_522dc8abb98b4484adf341ccdddcabd2~mv2.png" alt="Razítková">
+          </button>
+        </div>
+      </div>
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()">Zpět</button>
+        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
+      </div>
+    </div>
+
+    <!-- KROK 5: Jméno zákazníka -->
+    <div class="question-panel" data-step="5" id="step-5" style="display:none;">
+      <div class="q-title">Jméno zákazníka</div>
+      <div class="q-sub">Zadejte jméno, které se zobrazí na kartě</div>
+      <div style="display:flex; justify-content:center;">
+        <input type="text" id="customerNameInput" placeholder="Např. Jan Novák" oninput="onCustomerNameInput()" style="width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:8px;">
+      </div>
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()">Zpět</button>
+        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
+      </div>
+    </div>
+
+    <!-- KROK 6: Zobrazovat text na stripu? -->
+    <div class="question-panel" data-step="6" id="step-6" style="display:none;">
+      <div class="q-title">Zobrazovat text na stripu?</div>
+      <div class="q-sub">Vyberte možnost</div>
+      <div class="options-row">
+        <button class="option" onclick="pickShowStrip(true, this)">Ano</button>
+        <button class="option" onclick="pickShowStrip(false, this)">Ne</button>
+      </div>
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()">Zpět</button>
+        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
+      </div>
+    </div>
+
+    <!-- KROK 7: Text na stripu -->
+    <div class="question-panel" data-step="7" id="step-7" style="display:none;">
+      <div class="q-title">Text na stripu</div>
+      <div class="q-sub">Zadejte krátký text, který se zobrazí na stripu (defaultně dole)</div>
+      <div style="display:flex; justify-content:center;">
+        <input type="text" id="stripInput" placeholder="Např. Desátá káva je na nás." oninput="onStripTextInput()" style="width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:8px;">
+      </div>
+      <!-- Minimal controls: position, color, size -->
+      <div class="strip-mini" style="justify-content:space-between;">
+        <div class="mini-group" id="stripPosGroup">
+          <span class="mini-label">Umístění</span>
+          <button type="button" class="mini-btn" id="posTopBtn"   onclick="pickStripPos('top', this)" title="Nahoře">▲</button>
+          <button type="button" class="mini-btn" id="posCenterBtn"onclick="pickStripPos('center', this)" title="Uprostřed">■</button>
+          <button type="button" class="mini-btn" id="posBottomBtn"onclick="pickStripPos('bottom', this)" title="Dole">▼</button>
+        </div>
+        <div class="mini-group" id="stripColorGroup">
+          <span class="mini-label">Barva</span>
+          <button type="button" class="mini-btn" onclick="toggleStripPalette()" title="Vyberte barvu">Vybrat</button>
+          <input type="color" id="stripColor" value="#000000" onmousedown="openStripPaletteFromColor(event)" onclick="return false;" onfocus="this.blur();" title="Zvolte barvu" style="width: 28px; height: 28px; border:none; background:transparent; padding:0;">
+        </div>
+        <div class="mini-group" id="stripSizeGroup">
+          <span class="mini-label">Velikost</span>
+          <button type="button" class="mini-btn" onclick="pickStripSize('S', this)">S</button>
+          <button type="button" class="mini-btn" onclick="pickStripSize('M', this)">M</button>
+          <button type="button" class="mini-btn" onclick="pickStripSize('L', this)">L</button>
+        </div>
+      </div>
+      <!-- Paleta barev pro text na stripu -->
+      <div id="stripColorPalette" style="display:none; margin-top:8px;">
+        <div class="color-row">
+          <!-- Neutrals -->
+          <div class="swatch strip-swatch" style="background:#FFFFFF" title="Bílá" onclick="pickStripPresetColor('#FFFFFF', this)"></div>
+          <div class="swatch strip-swatch" style="background:#F3F4F6" title="Světle šedá" onclick="pickStripPresetColor('#F3F4F6', this)"></div>
+          <div class="swatch strip-swatch" style="background:#9CA3AF" title="Šedá" onclick="pickStripPresetColor('#9CA3AF', this)"></div>
+          <div class="swatch strip-swatch" style="background:#6B7280" title="Tmavší šedá" onclick="pickStripPresetColor('#6B7280', this)"></div>
+          <div class="swatch strip-swatch" style="background:#374151" title="Tmavá šedá" onclick="pickStripPresetColor('#374151', this)"></div>
+          <div class="swatch strip-swatch" style="background:#111827" title="Černá" onclick="pickStripPresetColor('#111827', this)"></div>
+          <!-- Reds / Warm -->
+          <div class="swatch strip-swatch" style="background:#FEE2E2" title="Světle červená" onclick="pickStripPresetColor('#FEE2E2', this)"></div>
+          <div class="swatch strip-swatch" style="background:#F43F5E" title="Růžovo-červená" onclick="pickStripPresetColor('#F43F5E', this)"></div>
+          <div class="swatch strip-swatch" style="background:#EF4444" title="Červená" onclick="pickStripPresetColor('#EF4444', this)"></div>
+          <div class="swatch strip-swatch" style="background:#DC2626" title="Tmavší červená" onclick="pickStripPresetColor('#DC2626', this)"></div>
+          <div class="swatch strip-swatch" style="background:#F97316" title="Oranžová" onclick="pickStripPresetColor('#F97316', this)"></div>
+          <div class="swatch strip-swatch" style="background:#F59E0B" title="Amber" onclick="pickStripPresetColor('#F59E0B', this)"></div>
+          <div class="swatch strip-swatch" style="background:#EAB308" title="Žlutá" onclick="pickStripPresetColor('#EAB308', this)"></div>
+          <!-- Greens -->
+          <div class="swatch strip-swatch" style="background:#84CC16" title="Limetková" onclick="pickStripPresetColor('#84CC16', this)"></div>
+          <div class="swatch strip-swatch" style="background:#22C55E" title="Zelená" onclick="pickStripPresetColor('#22C55E', this)"></div>
+          <div class="swatch strip-swatch" style="background:#10B981" title="Smaragdová" onclick="pickStripPresetColor('#10B981', this)"></div>
+          <div class="swatch strip-swatch" style="background:#14B8A6" title="Tyrkysová" onclick="pickStripPresetColor('#14B8A6', this)"></div>
+          <!-- Blues -->
+          <div class="swatch strip-swatch" style="background:#06B6D4" title="Cyan" onclick="pickStripPresetColor('#06B6D4', this)"></div>
+          <div class="swatch strip-swatch" style="background:#38BDF8" title="Nebesky modrá" onclick="pickStripPresetColor('#38BDF8', this)"></div>
+          <div class="swatch strip-swatch" style="background:#3B82F6" title="Modrá" onclick="pickStripPresetColor('#3B82F6', this)"></div>
+          <div class="swatch strip-swatch" style="background:#2563EB" title="Tmavší modrá" onclick="pickStripPresetColor('#2563EB', this)"></div>
+          <div class="swatch strip-swatch" style="background:#6366F1" title="Indigo" onclick="pickStripPresetColor('#6366F1', this)"></div>
+          <!-- Purples -->
+          <div class="swatch strip-swatch" style="background:#8B5CF6" title="Fialová" onclick="pickStripPresetColor('#8B5CF6', this)"></div>
+          <div class="swatch strip-swatch" style="background:#A855F7" title="Purple" onclick="pickStripPresetColor('#A855F7', this)"></div>
+          <div class="swatch strip-swatch" style="background:#D946EF" title="Fuchsiová" onclick="pickStripPresetColor('#D946EF', this)"></div>
+          <div class="swatch strip-swatch" style="background:#EC4899" title="Růžová" onclick="pickStripPresetColor('#EC4899', this)"></div>
+          <!-- Custom -->
+          <div class="custom-color">
+            <label for="stripCustomColor">Vlastní</label>
+            <input type="color" id="stripCustomColor" value="#000000" onchange="pickStripCustomColor(this.value)">
+          </div>
+        </div>
+      </div>
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()">Zpět</button>
+        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
+      </div>
+    </div>
+
+    <!-- KROK 8: Barva textu (slevové texty apod.) -->
+    <div class="question-panel" data-step="8" id="step-8" style="display:none;">
+      <div class="q-title">Barva textu</div>
+      <div class="q-sub">Pro slevové texty a informace (vpravo nahoře/dole)</div>
+      <div class="color-row">
+        <!-- Neutrals for text -->
+        <div class="swatch" style="background:#000000" title="Černá" onclick="pickTextColor('#000000', this)"></div>
+        <div class="swatch" style="background:#111827" title="Témně šedá" onclick="pickTextColor('#111827', this)"></div>
+        <div class="swatch" style="background:#374151" title="Tmavá šedá" onclick="pickTextColor('#374151', this)"></div>
+        <div class="swatch" style="background:#6B7280" title="Šedá" onclick="pickTextColor('#6B7280', this)"></div>
+        <div class="swatch" style="background:#9CA3AF" title="Světle šedá" onclick="pickTextColor('#9CA3AF', this)"></div>
+        <div class="swatch" style="background:#FFFFFF" title="Bílá" onclick="pickTextColor('#FFFFFF', this)"></div>
+        <!-- Accent colors for emphasis -->
+        <div class="swatch" style="background:#EF4444" title="Červená" onclick="pickTextColor('#EF4444', this)"></div>
+        <div class="swatch" style="background:#F97316" title="Oranžová" onclick="pickTextColor('#F97316', this)"></div>
+        <div class="swatch" style="background:#F59E0B" title="Amber" onclick="pickTextColor('#F59E0B', this)"></div>
+        <div class="swatch" style="background:#EAB308" title="Žlutá" onclick="pickTextColor('#EAB308', this)"></div>
+        <div class="swatch" style="background:#22C55E" title="Zelená" onclick="pickTextColor('#22C55E', this)"></div>
+        <div class="swatch" style="background:#10B981" title="Smaragdová" onclick="pickTextColor('#10B981', this)"></div>
+        <div class="swatch" style="background:#06B6D4" title="Cyan" onclick="pickTextColor('#06B6D4', this)"></div>
+        <div class="swatch" style="background:#3B82F6" title="Modrá" onclick="pickTextColor('#3B82F6', this)"></div>
+        <div class="swatch" style="background:#2563EB" title="Tmavší modrá" onclick="pickTextColor('#2563EB', this)"></div>
+        <div class="swatch" style="background:#6366F1" title="Indigo" onclick="pickTextColor('#6366F1', this)"></div>
+        <div class="swatch" style="background:#8B5CF6" title="Fialová" onclick="pickTextColor('#8B5CF6', this)"></div>
+        <div class="swatch" style="background:#A855F7" title="Purple" onclick="pickTextColor('#A855F7', this)"></div>
+        <div class="swatch" style="background:#D946EF" title="Fuchsiová" onclick="pickTextColor('#D946EF', this)"></div>
+        <div class="swatch" style="background:#EC4899" title="Růžová" onclick="pickTextColor('#EC4899', this)"></div>
+        <!-- Custom -->
+        <div class="custom-color">
+          <label for="customTextColor">Vlastní</label>
+          <input type="color" id="customTextColor" value="#000000" onchange="pickCustomTextColor(this.value)">
+        </div>
+      </div>
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()">Zpět</button>
+        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
+      </div>
+    </div>
+
+    <!-- KROK 9: Shrnutí -->
+    <div class="question-panel" data-step="9" id="step-9" style="display:none;">
+      <div class="q-title">Shrnutí</div>
+      <div class="q-sub" id="summaryText" style="text-align:left; line-height:1.6;">
+        
+      </div>
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()">Zpět</button>
+        <button class="btn btn-next" onclick="finishWizard()">Dokončit</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const fakeCard = document.getElementById('fakeCard');
+
+    let currentStep = 1;
+    let pickedColor = null;
+    let topMode = null; // 'napis' | 'logo'
+    let cardType = null; // 'bodova' | 'procentni' | 'razitkova'
+    let napisText = 'Text';
+    let napisFont = 'tan-nimbus-2-webfont';
+    let napisColor = '#000000';
+    let napisLayout = 'single'; // 'single' | 'double'
+    let napisText2 = '';
+    let napisAlign = 'left'; // 'left' | 'center' | 'right'
+    let logoUrl = '';
+    let logoObjectUrl = null; // blob URL for uploaded file, revoked on change
+    let showCustomer = false;
+    let customerName = 'Jan Novák';
+    let stripText = '';
+    let stripTextUserEdited = false; // true once user edits strip text
+    let showStrip = false;           // user toggles whether to show strip (step 6)
+    let stripVisibilityUserEdited = false; // true once user picks Yes/No for strip
+    // Strip text display settings
+    let stripTextPos = 'bottom';     // 'top' | 'center' | 'bottom' (default)
+    let stripTextSize = 'M';         // 'S' | 'M' | 'L'
+    let stripTextColor = '#000000';  // default color for strip text
+    let stripBandHeight = 90; // computed band height for the strip background
+    // Strip selection state
+    let selectedStripUrl = '';
+    let selectedStripIconUrl = '';
+    let customStripObjectUrl = null; // blob URL for uploaded custom strip
+    let manualScale = null; // when set, overrides auto scale
+    
+    // --- Strip selection handlers ---
+    function highlightSelectedStrip(el) {
+      try {
+        document.querySelectorAll('#step-3 .strip-card').forEach(b => b.classList.remove('selected'));
+        if (el) el.classList.add('selected');
+      } catch (_) {}
+    }
+    
+    function pickStrip(url, el) {
+      try {
+        selectedStripUrl = url || '';
+        // If switching from custom to preset, release previous object URL
+        if (customStripObjectUrl) {
+          try { URL.revokeObjectURL(customStripObjectUrl); } catch (_) {}
+          customStripObjectUrl = null;
+        }
+        highlightSelectedStrip(el);
+        positionStrip();
+        setStripBackground();
+        renderStrip();
+      } catch (_) {}
+    }
+    
+    function onCustomStripFileChange(input) {
+      try {
+        const file = input && input.files && input.files[0];
+        if (!file) return;
+        if (customStripObjectUrl) {
+          try { URL.revokeObjectURL(customStripObjectUrl); } catch (_) {}
+        }
+        const objUrl = URL.createObjectURL(file);
+        customStripObjectUrl = objUrl;
+        selectedStripUrl = objUrl;
+        const customBtn = document.getElementById('stripCustomBtn');
+        highlightSelectedStrip(customBtn);
+        positionStrip();
+        setStripBackground();
+        renderStrip();
+      } catch (_) {}
+    }
+    
+    // Scroll the strip carousel by N items (negative for prev, positive for next)
+    function scrollStrip(direction) {
+      const track = document.getElementById('stripTrack');
+      if (!track) return;
+      const first = track.querySelector('.strip-card');
+      const gap = 12; // must match CSS gap
+      const cardW = first ? first.getBoundingClientRect().width + gap : 100;
+      const step = Math.max(cardW, 100) * 3; // scroll by ~3 cards
+      const delta = direction > 0 ? step : -step;
+      try {
+        track.scrollBy({ left: delta, behavior: 'smooth' });
+      } catch (_) {
+        track.scrollLeft += delta;
+      }
+    }
+    const previewUrls = [
+      'https://static.wixstatic.com/media/1cf87e_8eaa5bcd78cb47acb401966c9ab36fe4~mv2.png',
+      'https://static.wixstatic.com/media/1cf87e_c0958eccec69453792ac9a7cec8f7f05~mv2.png',
+      'https://static.wixstatic.com/media/1cf87e_fd48ad49147c406dba2f1b53d26bd739~mv2.png'
+    ];
+    let previewIndex = 0;
+    let previewTimer = null;
+
+    function steps() {
+      return Array.from(document.querySelectorAll('.question-panel[data-step]'));
+    }
+
+    function getStepEl(n) {
+      return document.querySelector('.question-panel[data-step="' + n + '"]');
+    }
+
+    function showStep(n) {
+      steps().forEach(p => { p.style.display = (Number(p.dataset.step) === n) ? 'block' : 'none'; });
+      currentStep = n;
+      updateNavState();
+      // Správa dočasného náhledu pro krok 2
+      const tmpPrev = document.getElementById('topModePreview');
+      if (tmpPrev) tmpPrev.style.display = 'none';
+      if (n === 2) {
+        // výchozí volba: Text
+        if (!topMode) topMode = 'napis';
+        const opts = document.querySelectorAll('#step-2 .option');
+        opts.forEach((o, i) => o.classList.toggle('selected', (topMode === 'napis' ? i === 0 : i === 1)));
+        const napisWrapper = document.getElementById('napisWrapper');
+        const logoWrapper = document.getElementById('logoWrapper');
+        const next = getCurrentNextBtn();
+        if (topMode === 'napis') {
+          if (napisWrapper) napisWrapper.style.display = 'flex';
+          if (logoWrapper) logoWrapper.style.display = 'none';
+          const textarea = document.getElementById('napisTextarea');
+          if (textarea) textarea.value = napisText;
+          updateNapisUI();
+          renderLogoSlot();
+          if (next) next.disabled = (napisText.trim().split('\n')[0].length === 0);
+        } else {
+          if (napisWrapper) napisWrapper.style.display = 'none';
+          if (logoWrapper) logoWrapper.style.display = 'flex';
+          // ensure preview reflects current choice (clear text if no logo yet)
+          renderLogoSlot();
+          if (next) next.disabled = (logoUrl.trim().length === 0);
+        }
+        setTopModePreviewSrc();
+      }
+      if (n === 3) {
+        // Krok 3: výběr stripu (bez typu karty)
+        const next = getCurrentNextBtn();
+        if (next) next.disabled = false;
+        // Init strip selection to first option if not chosen yet
+        try {
+          const stripButtons = document.querySelectorAll('#step-3 .strip-card');
+          if (!selectedStripUrl && stripButtons.length) {
+            const first = stripButtons[0];
+            selectedStripUrl = first.dataset.url || '';
+            first.classList.add('selected');
+            positionStrip();
+            setStripBackground();
+            renderStrip();
+          } else {
+            // refresh selection highlight (handle custom vs preset)
+            if (customStripObjectUrl) {
+              const customBtn = document.getElementById('stripCustomBtn');
+              if (customBtn) {
+                stripButtons.forEach(b => b.classList.remove('selected'));
+                customBtn.classList.add('selected');
+              }
+            } else {
+              stripButtons.forEach(b => b.classList.toggle('selected', b.dataset.url === selectedStripUrl));
+            }
+          }
+        } catch (_) {}
+      }
+      if (n === 4) {
+        // Krok 4: výběr typu karty (až po potvrzení stripu)
+        if (!cardType) cardType = 'procentni';
+        const cards = document.querySelectorAll('#step-4 .type-card');
+        cards.forEach(btn => btn.classList.toggle('selected', btn.dataset.type === cardType));
+        const next = getCurrentNextBtn();
+        if (next) next.disabled = false;
+        applyCardType(cardType);
+      }
+      if (n === 5) {
+        // step 5: enable next only if name present
+        const next = getCurrentNextBtn();
+        if (next) next.disabled = (customerName.trim().length === 0);
+      }
+      if (n === 7) {
+        // step 7: enable next only if strip text present
+        const next = getCurrentNextBtn();
+        if (next) next.disabled = (stripText.trim().length === 0);
+        // Initialize mini controls UI
+        updateStripMiniUI();
+      }
+      if (n === 8) {
+        const next = getCurrentNextBtn();
+        if (next) next.disabled = !textColor;
+      }
+      if (n === 9) {
+        const s = document.getElementById('summaryText');
+        s.innerHTML = `
+          <strong>Barva karty:</strong> <span style="display:inline-block; width:12px; height:12px; background:${pickedColor || '#ffffff'}; border:1px solid #e5e7eb; vertical-align:middle;"></span> ${pickedColor || '#ffffff'}<br>
+          <strong>Levý horní roh:</strong> ${topMode === 'napis' ? 'Text' : 'Logo'}<br>
+          ${topMode === 'napis' ? `<strong>Text:</strong> ${escapeHtml(napisText)}` : `<strong>Logo URL:</strong> ${escapeHtml(logoUrl)}`}<br>
+          <strong>Typ karty:</strong> ${cardType === 'bodova' ? 'Bodová' : cardType === 'procentni' ? 'Procentní' : cardType === 'razitkova' ? 'Razítková' : ''}<br>
+          <strong>Vzhled stripu:</strong> ${selectedStripUrl ? (customStripObjectUrl ? 'Vlastní' : 'Předvolený') : '—'} ${selectedStripUrl ? `<img src="${selectedStripUrl}" alt="Strip" style="display:inline-block; width:60px; height:14px; object-fit:cover; border-radius:2px; border:1px solid #e5e7eb; vertical-align:middle; margin-left:6px;">` : ''}<br>
+          <strong>Text na stripu:</strong> ${showStrip ? escapeHtml(stripText) : 'Nezobrazovat'}<br>
+          ${showStrip ? `<strong>Umístění textu:</strong> ${stripTextPos}<br>` : ''}
+          ${showStrip ? `<strong>Velikost textu:</strong> ${stripTextSize}<br>` : ''}
+          ${showStrip ? `<strong>Barva textu stripu:</strong> <span style="display:inline-block; width:12px; height:12px; background:${stripTextColor || '#000000'}; border:1px solid #e5e7eb; vertical-align:middle;"></span> ${stripTextColor || '#000000'}` : ''}
+        `;
+      }
+    }
+
+    function getCurrentNextBtn() {
+      const el = getStepEl(currentStep);
+      return el ? el.querySelector('.btn-next') : null;
+    }
+
+    function getCurrentBackBtn() {
+      const el = getStepEl(currentStep);
+      return el ? el.querySelector('.btn-back') : null;
+    }
+
+    function updateNavState() {
+      const back = getCurrentBackBtn();
+      if (back) back.disabled = currentStep === 1;
+    }
+
+    function clearSelected() {
+      document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+    }
+
+    function setCardColor(color) {
+      fakeCard.style.backgroundColor = color;
+      pickedColor = color;
+      const next = getCurrentNextBtn();
+      if (next) next.disabled = false;
+    }
+
+    function pickPresetColor(color, el) {
+      clearSelected();
+      if (el) el.classList.add('selected');
+      setCardColor(color);
+      // reset custom picker to match chosen
+      const cc = document.getElementById('customColor');
+      try { cc.value = toHex(color); } catch(e) {}
+    }
+
+    function pickCustomColor(color) {
+      clearSelected();
+      setCardColor(color);
+    }
+
+    function pickTopMode(mode, el) {
+      topMode = mode; // 'napis' | 'logo'
+      document.querySelectorAll('#step-2 .option').forEach(o => o.classList.remove('selected'));
+      if (el) el.classList.add('selected');
+      // pokud jsme ve kroku 2, ihned zobrazit správné ovládací prvky a náhled + validovat
+      if (currentStep === 2) {
+        const napisWrap = document.getElementById('napisWrapper');
+        const logoWrap = document.getElementById('logoWrapper');
+        const next = getCurrentNextBtn();
+        if (topMode === 'napis') {
+          if (napisWrap) napisWrap.style.display = 'flex';
+          if (logoWrap) logoWrap.style.display = 'none';
+          const fSel = document.getElementById('napisFont');
+          if (fSel) fSel.value = napisFont;
+          const cInp = document.getElementById('napisColor');
+          if (cInp) cInp.value = napisColor;
+          updateNapisUI();
+          renderLogoSlot();
+          const first = (napisText || '').split('\n')[0].trim();
+          if (next) next.disabled = (first.length === 0);
+        } else {
+          if (napisWrap) napisWrap.style.display = 'none';
+          if (logoWrap) logoWrap.style.display = 'flex';
+          // re-render slot so any previously typed text disappears when switching to logo
+          renderLogoSlot();
+          if (next) next.disabled = (logoUrl.trim().length === 0);
+        }
+        setTopModePreviewSrc();
+      }
+    }
+
+    function pickCardType(type, el) {
+      cardType = type;
+      document.querySelectorAll('#step-4 .type-card').forEach(b => b.classList.remove('selected'));
+      if (el) el.classList.add('selected');
+      const next = getCurrentNextBtn();
+      if (next) next.disabled = false;
+      applyCardType(type);
+    }
+
+    function onNapisInput() {
+      const ta = document.getElementById('napisTextarea');
+      let v = (ta?.value || '').replace(/\r/g, '');
+      // Enforce max 2 lines and no auto-wrap: keep at most one newline
+      const parts = v.split('\n');
+      if (parts.length > 2) {
+        v = parts.slice(0, 2).join('\n');
+        if (ta) ta.value = v; // reflect truncation in UI
+      }
+      napisText = v;
+      renderLogoSlot();
+      setTopModePreviewSrc(); // hide sample overlay as soon as user types
+      const next = getCurrentNextBtn();
+      const first = v.split('\n')[0].trim();
+      if (next) next.disabled = (first.length === 0);
+    }
+
+    // Prevent more than one Enter (so there are at most 2 lines)
+    function napisKeyDown(e) {
+      try {
+        if (e.key === 'Enter') {
+          const ta = e.target;
+          const value = (ta?.value || '').replace(/\r/g, '');
+          if (value.includes('\n')) {
+            e.preventDefault();
+            return false;
+          }
+        }
+      } catch (_) {}
+    }
+
+    function onNapisInput2() {
+      const v = document.getElementById('napisInput2').value || '';
+      napisText2 = v;
+      renderLogoSlot();
+      const next = getCurrentNextBtn();
+      // pro dvojřádek stačí, aby 1. řádek nebyl prázdný
+      if (next) next.disabled = (napisLayout === 'single') ? (napisText.trim().length === 0) : (napisText.trim().length === 0);
+    }
+
+    // Nastaví/vypne dočasný náhled v kroku 2 podle topMode
+    function hideTopModePreview() {
+      const img = document.getElementById('topModePreview');
+      if (!img) return;
+      img.style.display = 'none';
+    }
+
+    // Layout a zarovnání nápisu (krok 2)
+    function pickNapisLayout(layout, el) {
+      napisLayout = layout === 'double' ? 'double' : 'single';
+      updateNapisUI();
+      renderLogoSlot();
+      const next = getCurrentNextBtn();
+      if (next) next.disabled = (napisLayout === 'single') ? (napisText.trim().length === 0) : (napisText.trim().length === 0);
+    }
+
+    function updateNapisUI() {
+      const ta = document.getElementById('napisTextarea');
+      if (ta) ta.value = napisText || '';
+      updateAlignUI();
+    }
+
+    function pickNapisAlign(align, el) {
+      napisAlign = (align === 'center' || align === 'right') ? align : 'left';
+      updateAlignUI();
+      renderLogoSlot();
+    }
+
+    function updateAlignUI() {
+      const left = document.getElementById('alignLeftBtn');
+      const center = document.getElementById('alignCenterBtn');
+      const right = document.getElementById('alignRightBtn');
+      [left, center, right].forEach(b => b && b.classList.remove('selected'));
+      if (napisAlign === 'left' && left) left.classList.add('selected');
+      if (napisAlign === 'center' && center) center.classList.add('selected');
+      if (napisAlign === 'right' && right) right.classList.add('selected');
+    }
+
+    function setTopModePreviewSrc() {
+      const img = document.getElementById('topModePreview');
+      if (!img) return;
+      if (currentStep !== 2) { img.style.display = 'none'; return; }
+      // Show sample only if there is no real input yet
+      if (topMode === 'napis') {
+        if (napisText && napisText.trim().length > 0) { img.style.display = 'none'; return; }
+      } else if (topMode === 'logo') {
+        if (logoUrl && logoUrl.trim().length > 0) { img.style.display = 'none'; return; }
+      }
+      const napisUrl = 'https://static.wixstatic.com/media/1cf87e_3461a98c2ad64e1e96caf24c3d6c0f32~mv2.png';
+      const logoUrlSample = 'https://static.wixstatic.com/media/1cf87e_cba3a7fc225c4665a9be53443b3c9ee7~mv2.png';
+      img.src = (topMode === 'napis') ? napisUrl : logoUrlSample;
+      img.style.display = 'block';
+    }
+
+    function onNapisFontChange() {
+      const sel = document.getElementById('napisFont');
+      if (sel) {
+        napisFont = sel.value || 'Arial';
+        renderLogoSlot();
+      }
+    }
+
+    function onNapisColorChange() {
+      const inp = document.getElementById('napisColor');
+      if (inp) {
+        napisColor = inp.value || '#ff0000';
+        renderLogoSlot();
+      }
+    }
+
+    // Toggle palette visibility for text color
+    function toggleTextPalette() {
+      const p = document.getElementById('textColorPalette');
+      if (!p) return;
+      p.style.display = (p.style.display === 'none' || p.style.display === '') ? 'block' : 'none';
+    }
+
+    // Ensure clicking the small color square opens the palette (not native picker)
+    function openTextPaletteFromColor(e) {
+      try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+      const p = document.getElementById('textColorPalette');
+      if (!p) return false;
+      p.style.display = 'block';
+      return false;
+    }
+
+    function clearTextSelected() {
+      document.querySelectorAll('#textColorPalette .text-swatch').forEach(s => s.classList.remove('selected'));
+    }
+
+    function pickTextPresetColor(color, el) {
+      clearTextSelected();
+      if (el) el.classList.add('selected');
+      napisColor = color;
+      // sync the tiny color input next to the button
+      const c = document.getElementById('napisColor');
+      try { if (c) c.value = toHex(color); } catch(e) {}
+      // sync the custom input inside palette too
+      const tc = document.getElementById('textCustomColor');
+      try { if (tc) tc.value = toHex(color); } catch(e) {}
+      renderLogoSlot();
+      // auto-close palette after pick
+      const p = document.getElementById('textColorPalette');
+      if (p) p.style.display = 'none';
+    }
+
+    function pickTextCustomColor(color) {
+      clearTextSelected();
+      napisColor = color;
+      const c = document.getElementById('napisColor');
+      if (c) c.value = color;
+      renderLogoSlot();
+      const p = document.getElementById('textColorPalette');
+      if (p) p.style.display = 'none';
+    }
+
+    function onLogoUrlInput() {
+      const v = document.getElementById('logoUrlInput').value || '';
+      logoUrl = v;
+      renderLogoSlot();
+      setTopModePreviewSrc();
+      const next = getCurrentNextBtn();
+      if (next) next.disabled = v.trim().length === 0;
+    }
+
+    function onLogoFileChange(input) {
+      try {
+        const file = input && input.files && input.files[0];
+        // revoke previous
+        if (logoObjectUrl) { try { URL.revokeObjectURL(logoObjectUrl); } catch(_) {} logoObjectUrl = null; }
+        if (!file) {
+          logoUrl = '';
+          renderLogoSlot();
+          setTopModePreviewSrc();
+          const next = getCurrentNextBtn();
+          if (next) next.disabled = true;
+          return;
+        }
+        const objUrl = URL.createObjectURL(file);
+        logoObjectUrl = objUrl;
+        logoUrl = objUrl;
+        renderLogoSlot();
+        setTopModePreviewSrc(); // hide sample overlay when real logo selected
+        const next = getCurrentNextBtn();
+        if (next) next.disabled = false;
+      } catch (_) {}
+    }
+
+    function renderLogoSlot() {
+      const slot = document.getElementById('logoSlot');
+      slot.innerHTML = '';
+      if (topMode === 'napis' && (napisText || '').trim()) {
+        const text = (napisText || '').replace(/\r/g, '');
+        const parts = text.split('\n');
+        const maxW = slot?.clientWidth || 120;
+        // Single-line until user presses Enter
+        if (parts.length === 1) {
+          const el = document.createElement('div');
+          el.style.fontFamily = napisFont || 'Arial';
+          el.style.color = napisColor || '#ff0000';
+          el.style.lineHeight = '1.1';
+          el.style.width = '100%';
+          el.style.fontWeight = 'bold';
+          el.style.margin = '0';
+          el.style.padding = '0';
+          el.style.overflow = 'hidden';
+          el.style.whiteSpace = 'nowrap'; // no wrap on first line
+          el.style.textAlign = napisAlign;
+          el.textContent = parts[0];
+          slot.appendChild(el);
+          autoSizeTextSingleLine(el, maxW, 45);
+        } else {
+          // Two-line mode when Enter is used (exactly 2 lines)
+          const wrap = document.createElement('div');
+          wrap.style.width = '100%';
+          wrap.style.display = 'flex';
+          wrap.style.flexDirection = 'column';
+          wrap.style.lineHeight = '1.1';
+          wrap.style.fontFamily = napisFont || 'Arial';
+          wrap.style.color = napisColor || '#ff0000';
+          wrap.style.fontWeight = 'bold';
+          wrap.style.margin = '0';
+          wrap.style.padding = '0';
+          wrap.style.overflow = 'hidden';
+          wrap.style.textAlign = napisAlign;
+
+          const l1 = document.createElement('div');
+          const l2 = document.createElement('div');
+          [l1, l2].forEach((el) => {
+            el.style.whiteSpace = 'nowrap'; // no wrapping per line
+            el.style.width = '100%';
+            el.style.margin = '0';
+            el.style.padding = '0';
+            el.style.overflow = 'hidden';
+            el.style.textAlign = 'inherit';
+          });
+          l1.textContent = parts[0];
+          l2.textContent = parts[1] || '';
+          wrap.appendChild(l1);
+          wrap.appendChild(l2);
+          slot.appendChild(wrap);
+          // Slightly larger height to accommodate two lines
+          autoSizeTwoLines(wrap, maxW, 56);
+        }
+      } else if (topMode === 'logo' && logoUrl.trim()) {
+        const img = document.createElement('img');
+        img.className = 'logo-img';
+        img.src = logoUrl.trim();
+        img.alt = 'Logo';
+        slot.appendChild(img);
+      }
+      // Reflow strip so it fills space between logo and bottom info immediately
+      try {
+        positionStrip();
+        setStripBackground();
+        renderStrip();
+      } catch (_) {}
+    }
+
+    // Autofit helpers for Wix-like behavior (no wrapping for single line)
+    function autoSizeTextSingleLine(el, maxW, maxH) {
+      try {
+        let size = 24;
+        el.style.fontSize = size + 'px';
+        el.style.whiteSpace = 'nowrap';
+        for (let i = 0; i < 30; i++) {
+          if (el.scrollWidth <= maxW && el.scrollHeight <= maxH) break;
+          size -= 1;
+          if (size < 8) break;
+          el.style.fontSize = size + 'px';
+        }
+      } catch (_) {}
+    }
+
+    function autoSizeTwoLines(wrap, maxW, maxH) {
+      try {
+        const lines = Array.from(wrap.children);
+        let size = 18;
+        lines.forEach(el => el.style.fontSize = size + 'px');
+        for (let i = 0; i < 30; i++) {
+          const tooWide = lines.some(el => el.scrollWidth > maxW);
+          const tooTall = wrap.scrollHeight > maxH;
+          if (!tooWide && !tooTall) break;
+          size -= 1;
+          if (size < 8) break;
+          lines.forEach(el => el.style.fontSize = size + 'px');
+        }
+      } catch (_) {}
+    }
+
+    // Simple auto-size to make text fit within given box (width x height)
+    function autoSizeText(el, maxW, maxH) {
+      try {
+        let size = 24; // starting font size
+        el.style.whiteSpace = 'pre-wrap';
+        el.style.wordBreak = 'break-word';
+        el.style.fontSize = size + 'px';
+        // ensure layout is updated before measuring
+        const parent = el.parentElement;
+        if (!parent) return;
+        const maxWidth = Math.max(0, maxW);
+        const maxHeight = Math.max(0, maxH);
+        for (let i = 0; i < 30; i++) {
+          // if fits, break; else decrease size
+          if (el.scrollWidth <= maxWidth && el.scrollHeight <= maxHeight) break;
+          size -= 1;
+          if (size < 8) { size = 8; break; }
+          el.style.fontSize = size + 'px';
+        }
+      } catch (_) {}
+    }
+
+    function pickShowCustomer(val, el) {
+      showCustomer = !!val;
+      document.querySelectorAll('#step-4 .option').forEach(o => o.classList.remove('selected'));
+      if (el) el.classList.add('selected');
+      const next = getCurrentNextBtn();
+      if (next) next.disabled = false;
+      renderCustomer();
+    }
+
+    function onCustomerNameInput() {
+      const v = document.getElementById('customerNameInput').value || '';
+      customerName = v;
+      renderCustomer();
+      const next = getCurrentNextBtn();
+      if (next) next.disabled = v.trim().length === 0;
+    }
+
+    function renderCustomer() {
+      const ci = document.getElementById('customerInfo');
+      const cn = document.getElementById('custName');
+      if (showCustomer) {
+        ci.style.display = 'block';
+        cn.textContent = customerName && customerName.trim() ? customerName.trim() : 'Jan Novák';
+      } else {
+        ci.style.display = 'none';
+      }
+    }
+
+    function pickShowStrip(val, el) {
+      showStrip = !!val;
+      stripVisibilityUserEdited = true;
+      document.querySelectorAll('#step-6 .option').forEach(o => o.classList.remove('selected'));
+      if (el) el.classList.add('selected');
+      const next = getCurrentNextBtn();
+      if (next) next.disabled = false;
+      positionStrip();
+      setStripBackground();
+      renderStrip();
+    }
+
+    function onStripTextInput() {
+      const v = document.getElementById('stripInput').value || '';
+      stripText = v;
+      stripTextUserEdited = true;
+      renderStrip();
+      const next = getCurrentNextBtn();
+      if (next) next.disabled = v.trim().length === 0;
+    }
+
+    // --- Mini controls for strip text (position, color, size) ---
+    function updateStripMiniUI() {
+      // Position buttons
+      const posMap = {
+        top: document.getElementById('posTopBtn'),
+        center: document.getElementById('posCenterBtn'),
+        bottom: document.getElementById('posBottomBtn')
+      };
+      Object.keys(posMap).forEach(k => {
+        const b = posMap[k];
+        if (b) b.classList.toggle('selected', stripTextPos === k);
+      });
+      // Size buttons
+      const sizeButtons = (document.getElementById('stripSizeGroup') || {}).querySelectorAll ? document.getElementById('stripSizeGroup').querySelectorAll('.mini-btn') : [];
+      sizeButtons && sizeButtons.forEach(btn => {
+        const val = btn.textContent && btn.textContent.trim();
+        btn.classList.toggle('selected', val === stripTextSize);
+      });
+      // Color input (sync both the tiny square and custom input in palette)
+      const ci = document.getElementById('stripColor');
+      if (ci && stripTextColor) {
+        try { ci.value = toHex(stripTextColor); } catch(e) { ci.value = stripTextColor; }
+      }
+      const sc = document.getElementById('stripCustomColor');
+      if (sc && stripTextColor) {
+        try { sc.value = toHex(stripTextColor); } catch(e) { sc.value = stripTextColor; }
+      }
+    }
+
+    function pickStripPos(pos, el) {
+      stripTextPos = pos;
+      updateStripMiniUI();
+      renderStrip();
+    }
+
+    function pickStripSize(sz, el) {
+      stripTextSize = sz;
+      updateStripMiniUI();
+      renderStrip();
+    }
+
+    function onStripColorChange() {
+      const ci = document.getElementById('stripColor');
+      const val = ci && ci.value ? ci.value : '#000000';
+      stripTextColor = val;
+      renderStrip();
+    }
+
+    // --- Strip color palette handlers (mirror of step 2 text palette) ---
+    function toggleStripPalette() {
+      const p = document.getElementById('stripColorPalette');
+      if (!p) return;
+      p.style.display = (p.style.display === 'none' || p.style.display === '') ? 'block' : 'none';
+    }
+
+    function openStripPaletteFromColor(e) {
+      try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+      const p = document.getElementById('stripColorPalette');
+      if (!p) return false;
+      p.style.display = 'block';
+      return false;
+    }
+
+    function clearStripSelected() {
+      document.querySelectorAll('#stripColorPalette .strip-swatch').forEach(s => s.classList.remove('selected'));
+    }
+
+    function pickStripPresetColor(color, el) {
+      clearStripSelected();
+      if (el) el.classList.add('selected');
+      stripTextColor = color;
+      // sync mini square and custom input
+      const sq = document.getElementById('stripColor');
+      try { if (sq) sq.value = toHex(color); } catch(e) { if (sq) sq.value = color; }
+      const cc = document.getElementById('stripCustomColor');
+      try { if (cc) cc.value = toHex(color); } catch(e) { if (cc) cc.value = color; }
+      renderStrip();
+      const p = document.getElementById('stripColorPalette');
+      if (p) p.style.display = 'none';
+    }
+
+    function pickStripCustomColor(color) {
+      clearStripSelected();
+      stripTextColor = color;
+      const sq = document.getElementById('stripColor');
+      if (sq) sq.value = color;
+      renderStrip();
+      const p = document.getElementById('stripColorPalette');
+      if (p) p.style.display = 'none';
+    }
+
+    function renderStrip() {
+      const st = document.getElementById('stripTextElem');
+      const img = document.getElementById('stripResultImg');
+      // Image (strip background) is always visible; toggle only the text overlay
+      if (img) img.style.display = 'block';
+      if (!st) return;
+      if (showStrip) {
+        st.style.display = 'flex';
+        st.textContent = stripText && stripText.trim() ? stripText.trim() : '';
+        // Apply position
+        if (stripTextPos === 'top') {
+          st.style.alignItems = 'flex-start';
+          st.style.padding = '6px 10px 0';
+        } else if (stripTextPos === 'center') {
+          st.style.alignItems = 'center';
+          st.style.padding = '0 10px 0';
+        } else { // bottom
+          st.style.alignItems = 'flex-end';
+          st.style.padding = '0 10px 6px';
+        }
+        // Apply color and size
+        st.style.color = stripTextColor || '#000000';
+        st.style.fontWeight = '700';
+        const sizePx = (stripTextSize === 'S') ? 14 : (stripTextSize === 'L') ? 22 : 18;
+        st.style.fontSize = sizePx + 'px';
+      } else {
+        st.style.display = 'none';
+        st.textContent = '';
+      }
+    }
+
+    // Dynamicky spočítá pozici a výšku pásu (stripu) mezi logem a spodní zónou (razítka/Ušetřil/Body)
+    function positionStrip() {
+      const img = document.getElementById('stripResultImg');
+      const st  = document.getElementById('stripTextElem');
+      const card = document.getElementById('fakeCard');
+      const logo = document.getElementById('logoSlot');
+      if (!img || !st || !card) return;
+
+      // Spodní zóna začíná na 170px (viz CSS: top: 170px u razítek/Ušetřil/Body)
+      const bottomAreaTop = 170;
+      const gapTop = 6;    // mezera pod logem
+      const gapBottom = 8; // mezera nad spodní zónou
+
+      const topBase = logo ? (logo.offsetTop + logo.offsetHeight) : 61;
+      let top = Math.round(topBase + gapTop);
+      // Výška pásu musí přesně vyplnit prostor nad spodní zónou, nesmí ji překrývat
+      const available = bottomAreaTop - top - gapBottom;
+      // Keep the strip image at its natural aspect ratio (5:2 => 246/624)
+      const desired = Math.round(card.clientWidth * (246 / 624));
+      let h = Math.max(0, Math.min(available, desired));
+
+      // Omezit výšku, aby nepřesahovala kartu
+      const maxH = Math.max(20, card.clientHeight - top - 10);
+      if (h > maxH) h = maxH;
+
+      // Aplikovat styly
+      img.style.top = top + 'px';
+      img.style.height = h + 'px';
+      st.style.top = top + 'px';
+      st.style.height = h + 'px';
+      // Use flex alignment in CSS; keep normal line-height
+      st.style.lineHeight = 'normal';
+
+      // Uložit výšku pro generování pozadí
+      stripBandHeight = h;
+    }
+
+    function pickTextColor(color, el) {
+      textColor = color;
+      document.querySelectorAll('#step-8 .swatch').forEach(s => s.classList.remove('selected'));
+      if (el) el.classList.add('selected');
+      setTextColor(color);
+      const cc = document.getElementById('customTextColor');
+      try { cc.value = toHex(color); } catch(e) {}
+      const next = getCurrentNextBtn();
+      if (next) next.disabled = false;
+    }
+
+    function pickCustomTextColor(color) {
+      textColor = color;
+      document.querySelectorAll('#step-8 .swatch').forEach(s => s.classList.remove('selected'));
+      setTextColor(color);
+      const next = getCurrentNextBtn();
+      if (next) next.disabled = false;
+    }
+
+    function setTextColor(color) {
+      // applies to elements using var(--discountColor)
+      fakeCard.style.setProperty('--discountColor', color);
+    }
+
+    function toHex(c) {
+      // accepts #RRGGBB or rgb(a) strings, returns #RRGGBB (best effort)
+      if (c.startsWith('#') && (c.length === 7 || c.length === 4)) return c.length === 7 ? c : shortToFullHex(c);
+      if (c.startsWith('rgb')) {
+        const m = c.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+        if (m) {
+          const [r,g,b] = m.slice(1,4).map(n => Number(n));
+          return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
+        }
+      }
+      return '#ffffff';
+    }
+    function shortToFullHex(s) {
+      // #abc -> #aabbcc
+      return '#' + s.slice(1).split('').map(ch => ch + ch).join('');
+    }
+
+    function nextStepNum() {
+      switch (currentStep) {
+        case 1: return 2;
+        case 2: return 3;
+        case 3: return 4; // po výběru stripu jít na výběr typu karty
+        case 4: return 8; // po výběru typu karty hned barva slevových textů
+        case 5: return 6; // unreachable, but ensure skip
+        case 6: return showStrip ? 7 : 9; // po potvrzení stripu buď editor, nebo rovnou shrnutí
+        case 7: return 9; // po úpravě textu na stripu jít na shrnutí
+        case 8: return 6; // po barvě slevových textů potvrzení stripu
+        case 9: return 9;
+        default: return currentStep + 1;
+      }
+    }
+
+    function prevStepNum() {
+      switch (currentStep) {
+        case 9: return showStrip ? 7 : 6; // ze shrnutí zpět na editor stripu / potvrzení stripu
+        case 8: return 4; // z barvy slevových textů zpět na typ karty
+        case 7: return 6;
+        case 6: return 8; // z potvrzení stripu zpět na barvu slevových textů
+        case 5: return 4; // unreachable
+        case 4: return 3;
+        case 3: return 2;
+        case 2: return 1;
+        default: return 1;
+      }
+    }
+
+    function goNext() {
+      // validation per step
+      if (currentStep === 1 && !pickedColor) return;
+      if (currentStep === 2) {
+        if (!topMode) return;
+        if (topMode === 'napis' && !napisText.trim()) return;
+        if (topMode === 'logo' && !logoUrl.trim()) return;
+      }
+      if (currentStep === 4 && !cardType) return;
+      if (currentStep === 7 && !stripText.trim()) return;
+      showStep(nextStepNum());
+    }
+
+    function goBack() {
+      if (currentStep === 1) return;
+      showStep(prevStepNum());
+    }
+
+    function finishWizard() {
+      alert('Hotovo! Výběry byly použity na náhledu karty.');
+    }
+
+    // utilities
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, function(m) {
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]);
+      });
+    }
+
+    // Intro preview slideshow
+    function startExampleSlideshow() {
+      const img = document.getElementById('examplePreview');
+      if (!img) return;
+      if (previewTimer) { clearInterval(previewTimer); previewTimer = null; }
+      previewIndex = 0;
+      img.src = previewUrls[previewIndex];
+      previewTimer = setInterval(() => {
+        previewIndex = (previewIndex + 1) % previewUrls.length;
+        img.src = previewUrls[previewIndex];
+      }, 1700);
+    }
+
+    function stopExampleSlideshow() {
+      if (previewTimer) { clearInterval(previewTimer); previewTimer = null; }
+    }
+
+    function startIntro() {
+      const intro = document.getElementById('intro-panel');
+      if (intro) intro.style.display = 'block';
+      const fake = document.getElementById('fakeCard');
+      if (fake) fake.style.display = 'none';
+      const prev = document.getElementById('examplePreview');
+      if (prev) prev.style.display = 'block';
+      startExampleSlideshow();
+    }
+
+    function startWizard() {
+      const intro = document.getElementById('intro-panel');
+      if (intro) intro.style.display = 'none';
+      stopExampleSlideshow();
+      const prev = document.getElementById('examplePreview');
+      if (prev) prev.style.display = 'none';
+      const fake = document.getElementById('fakeCard');
+      if (fake) fake.style.display = 'block';
+      showStep(1);
+    }
+
+    // Global scaling: auto-fit to viewport width, with optional manual override via ?scale=0.8
+    function getManualScaleFromQuery() {
+      try {
+        const params = new URLSearchParams(location.search);
+        const s = params.get('scale');
+        if (!s) return null;
+        const f = parseFloat(s);
+        if (isFinite(f) && f > 0) return Math.max(0.3, Math.min(2, f));
+      } catch (_) {}
+      return null;
+    }
+
+    function applyScale(s) {
+      document.documentElement.style.setProperty('--ui-scale', String(s));
+      const inp = document.getElementById('scaleInput');
+      if (inp && document.activeElement !== inp) {
+        try { inp.value = Number(s).toFixed(2); } catch(_) {}
+      }
+    }
+
+    function autoScale() {
+      if (manualScale !== null) { applyScale(manualScale); return; }
+      const manual = getManualScaleFromQuery();
+      if (manual) { applyScale(manual); return; }
+      const base = 340; // base width of builder
+      const horizontalPadding = 32; // body padding: 16 left + 16 right
+      const avail = Math.max(0, Math.min(window.innerWidth, document.documentElement.clientWidth) - horizontalPadding);
+      const s = Math.min(1, Math.max(0.5, avail / base));
+      applyScale(s);
+    }
+
+    window.addEventListener('resize', autoScale);
+    window.addEventListener('orientationchange', autoScale);
+
+    // init
+    (function initScale() {
+      const qp = getManualScaleFromQuery();
+      if (qp !== null) { manualScale = qp; applyScale(manualScale); }
+      else { autoScale(); }
+      const si = document.getElementById('scaleInput');
+      if (si) {
+        const handle = (e) => {
+          const val = parseFloat(e.target.value);
+          if (isFinite(val)) {
+            manualScale = Math.max(0.3, Math.min(2, val));
+            applyScale(manualScale);
+          }
+        };
+        si.addEventListener('input', handle);
+        si.addEventListener('change', handle);
+      }
+    })();
+    startIntro();
+
+    function applyCardType(type) {
+      console.log('applyCardType called with type:', type);
+      // schovat vše specifické
+      const dis = document.getElementById('discountLevelDisplay');
+      const sav = document.getElementById('savedAmountDisplay');
+      const stc = document.getElementById('stampCounterDisplay');
+      const bl  = document.getElementById('bodyLevelDisplay');
+      const bb  = document.getElementById('bodyBottomDisplay');
+      console.log('stampCounterDisplay element:', stc);
+      [dis, sav, stc, bl, bb].forEach(el => { if (el) el.style.display = 'none'; });
+
+      // nastavit výchozí text na stripu podle typu a ukázat správné bloky
+      let defaultStripText = '';
+      if (type === 'procentni') {
+        if (dis) dis.style.display = 'block';
+        if (sav) sav.style.display = 'block';
+        defaultStripText = 'Sleva';
+      } else if (type === 'razitkova') {
+        console.log('Setting razitkova type, stc element:', stc);
+        if (stc) {
+          stc.style.display = 'block';
+          console.log('Set stc display to block, current style:', stc.style.display);
+          const lab = document.getElementById('stampLabel');
+          const val = document.getElementById('stampVal');
+          if (lab) lab.textContent = 'Razítka';
+          if (val) val.textContent = '0 / 10';
+          console.log('Updated stamp label and value');
+        } else {
+          console.error('stampCounterDisplay element not found!');
+        }
+        defaultStripText = 'Razítka';
+      } else if (type === 'bodova') {
+        if (bl) bl.style.display = 'block';
+        if (bb) bb.style.display = 'block';
+        const blab = document.getElementById('bodyLabel1');
+        if (blab) blab.textContent = 'BODY';
+        defaultStripText = 'Body';
+      } else {
+        defaultStripText = '';
+      }
+
+      // Použij výchozí strip text jen pokud ho uživatel neupravil
+      if (!stripTextUserEdited) {
+        stripText = defaultStripText;
+        const si = document.getElementById('stripInput');
+        if (si) si.value = stripText;
+      }
+
+      // Nezapínej text na stripu automaticky – řídí se až potvrzením na kroku 6
+      positionStrip();
+      setStripBackground();
+      const st = document.getElementById('stripTextElem');
+      // Styling now controlled by renderStrip() with user-selected settings
+      renderStrip();
+      
+      // Debug: Check stampCounterDisplay after all strip functions
+      const stcAfter = document.getElementById('stampCounterDisplay');
+      console.log('After strip functions - stampCounterDisplay:', stcAfter, 'display:', stcAfter ? stcAfter.style.display : 'not found');
+    }
+
+    function setStripBackground() {
+      const img = document.getElementById('stripResultImg');
+      if (!img) return;
+      // Use selected strip (preset or custom), fallback to WIX-like base
+      const src = (selectedStripUrl && selectedStripUrl.trim())
+        ? selectedStripUrl
+        : 'https://static.wixstatic.com/media/1cf87e_3ae4f6a9c66a44ef9aa950f489356001~mv2.png';
+      img.src = src;
+      img.style.display = 'block';
+    }
+
+    // Reflow při změně velikosti okna/viewportu
+    window.addEventListener('resize', () => {
+      positionStrip();
+      setStripBackground();
+      renderStrip();
+    });
+  </script>
+</body>
+</html>
