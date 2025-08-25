@@ -812,21 +812,21 @@
     <input type="number" id="stampCount" value="10" style="width:80px;" oninput="onStampCountChange()">
     <!-- NOVÉ pole dle zadání pro výchozí počet razítek -->
     <label>Kolik razítek bude mít uživatel po přidání karty (výchozí 0):</label>
-    <input type="number" id="stampValInput" value="0" style="width:60px;">
+    <input type="number" id="stampValInput" value="10" style="width:60px;">
     <label>Vyplněno (0 až N):</label>
-    <input type="range" id="stampFilled" min="0" max="10" value="0" style="width:120px;" oninput="renderStrip()">
+    <input type="range" id="stampFilled" min="0" max="10" value="10" style="width:120px;" oninput="renderStrip()">
     <label>Posun X (px) pro razítka:</label>
     <input type="number" id="stampOffsetX" value="0" style="width:80px;" oninput="renderStrip()">
     <label>Posun Y (px) pro razítka:</label>
     <input type="number" id="stampOffsetY" value="0" style="width:80px;" oninput="renderStrip()">
     <label>Velikost vnitřku (razítko) (px):</label>
-    <input type="number" id="stampSize" value="80" style="width:80px;" oninput="renderStrip()">
+    <input type="number" id="stampSize" value="100" style="width:80px;" oninput="renderStrip()">
     <label>Mezera mezi razítky (px):</label>
     <input type="number" id="stampGap" value="10" style="width:80px;" oninput="renderStrip()">
     <hr>
     <h4>Design vnitřku (razítko) + overlay alpha</h4>
     <div>
-      <input type="radio" name="stampChoice" id="stampPredef" value="stampPredef" onclick="renderStrip()">
+      <input type="radio" name="stampChoice" id="stampPredef" value="stampPredef" onclick="renderStrip()" checked>
       <label for="stampPredef">Vybrat předpřipravené razítko</label>
     </div>
     <div>
@@ -834,6 +834,7 @@
       <label for="stampCustom">Nahrát vlastní PNG</label>
     </div>
     <div class="stamp-gallery" style="margin-top:6px;">
+      <img src="https://static.wixstatic.com/media/1cf87e_f7284a8ad6d1438c9e79eb3d0818890a~mv2.png" alt="Razítko 0" id="stamp0" onclick="selectPredefStamp('stamp0')">
       <img src="https://static.wixstatic.com/media/1cf87e_b902bf7ff01d45679dc1964eedc548d2~mv2.png" alt="Razítko 1" id="stamp1" onclick="selectPredefStamp('stamp1')">
       <img src="https://static.wixstatic.com/media/1cf87e_4f9563aebb5d4391ab392f456c1f8c74~mv2.png" alt="Razítko 2" id="stamp2" onclick="selectPredefStamp('stamp2')">
     </div>
@@ -861,6 +862,10 @@
     <h4>Ohraničení (border) + overlay alpha</h4>
     <label>Velikost ohraničení (px):</label>
     <input type="number" id="borderSize" value="80" style="width:80px;" oninput="renderStrip()">
+    <div style="margin:6px 0;">
+      <label>Zobrazovat ohraničení?</label>
+      <input type="checkbox" id="borderEnabled" onclick="renderStrip()">
+    </div>
     <div>
       <input type="radio" name="borderChoice" id="borderPredef" value="borderPredef" onclick="renderStrip()">
       <label for="borderPredef">Vybrat předpřipravené</label>
@@ -870,6 +875,7 @@
       <label for="borderCustom">Nahrát vlastní PNG</label>
     </div>
     <div class="border-gallery" style="margin-top:6px;">
+      <img src="https://static.wixstatic.com/media/1cf87e_38adc779dcf74126b32459b591f7405d~mv2.png" alt="Border0" id="border0" onclick="selectPredefBorder('border0')">
       <img src="https://static.wixstatic.com/media/1cf87e_f9c1f6035fd14a6c87eb72e797edb4e1~mv2.png" alt="Border1" id="border1" onclick="selectPredefBorder('border1')">
       <img src="https://static.wixstatic.com/media/1cf87e_c9af8c73f3dc4513bcae356276cc9809~mv2.png" alt="Border2" id="border2" onclick="selectPredefBorder('border2')">
     </div>
@@ -1474,27 +1480,40 @@
     }
     let stampSelected = null;
     function selectPredefStamp(id) {
+      document.getElementById('stamp0').style.borderColor = 'transparent';
       document.getElementById('stamp1').style.borderColor = 'transparent';
       document.getElementById('stamp2').style.borderColor = 'transparent';
-      if (id === 'stamp1') {
+      if (id === 'stamp0') {
+        document.getElementById('stamp0').style.borderColor = '#2196f3';
+        stampSelected = 'https://static.wixstatic.com/media/1cf87e_f7284a8ad6d1438c9e79eb3d0818890a~mv2.png';
+      } else if (id === 'stamp1') {
         document.getElementById('stamp1').style.borderColor = '#2196f3';
         stampSelected = 'https://static.wixstatic.com/media/1cf87e_b902bf7ff01d45679dc1964eedc548d2~mv2.png';
-      }
-      else {
+      } else {
         document.getElementById('stamp2').style.borderColor = '#2196f3';
         stampSelected = 'https://static.wixstatic.com/media/1cf87e_4f9563aebb5d4391ab392f456c1f8c74~mv2.png';
       }
       renderStrip();
     }
+    // Default: ensure new Stamp0 is selected on load
+    (function(){
+      try {
+        document.getElementById('stampPredef').checked = true;
+        selectPredefStamp('stamp0');
+      } catch(e) {}
+    })();
     let borderSelected = null;
     function selectPredefBorder(id) {
+      document.getElementById('border0').style.borderColor = 'transparent';
       document.getElementById('border1').style.borderColor = 'transparent';
       document.getElementById('border2').style.borderColor = 'transparent';
-      if (id === 'border1') {
+      if (id === 'border0') {
+        document.getElementById('border0').style.borderColor = '#2196f3';
+        borderSelected = 'https://static.wixstatic.com/media/1cf87e_38adc779dcf74126b32459b591f7405d~mv2.png';
+      } else if (id === 'border1') {
         document.getElementById('border1').style.borderColor = '#2196f3';
         borderSelected = 'https://static.wixstatic.com/media/1cf87e_f9c1f6035fd14a6c87eb72e797edb4e1~mv2.png';
-      }
-      else {
+      } else {
         document.getElementById('border2').style.borderColor = '#2196f3';
         borderSelected = 'https://static.wixstatic.com/media/1cf87e_c9af8c73f3dc4513bcae356276cc9809~mv2.png';
       }
@@ -1504,6 +1523,13 @@
       document.getElementById('pbSlevaBox').style.display = isYes ? 'block' : 'none';
       renderStrip();
     }
+    // Default: ensure new Border0 is selected on load
+    (function(){
+      try {
+        document.getElementById('borderPredef').checked = true;
+        selectPredefBorder('border0');
+      } catch(e) {}
+    })();
     async function renderStrip() {
       currentStripBlob = null;
       const canvas = document.getElementById('stripCanvas');
@@ -1720,7 +1746,7 @@
       let stampImg   = null;
       let stampColor = '#ffffff';
       let stampAlpha = 0;
-      let stampSize  = +document.getElementById('stampSize').value || 80;
+      let stampSize  = +document.getElementById('stampSize').value || 100;
       const stampStrokeOn    = document.getElementById('stampStrokeOn').checked;
       const stampStrokeColor = document.getElementById('stampStrokeColor').value || '#000000';
       const stampStrokeSize  = +document.getElementById('stampStrokeSize').value || 2;
@@ -1728,12 +1754,12 @@
       const isPredef = document.getElementById('stampPredef').checked;
       const isCustom = document.getElementById('stampCustom').checked;
       if (!isPredef && !isCustom) {
-        stampSelected = 'https://static.wixstatic.com/media/1cf87e_b902bf7ff01d45679dc1964eedc548d2~mv2.png';
+        stampSelected = 'https://static.wixstatic.com/media/1cf87e_f7284a8ad6d1438c9e79eb3d0818890a~mv2.png';
         document.getElementById('stampPredef').checked = true;
       }
       if (document.getElementById('stampPredef').checked) {
         if (!stampSelected) {
-          stampSelected = 'https://static.wixstatic.com/media/1cf87e_b902bf7ff01d45679dc1964eedc548d2~mv2.png';
+          stampSelected = 'https://static.wixstatic.com/media/1cf87e_f7284a8ad6d1438c9e79eb3d0818890a~mv2.png';
         }
         stampImg   = await loadImage(stampSelected);
         stampColor = document.getElementById('stampColor').value || '#ffffff';
@@ -1761,15 +1787,29 @@
       const borderStrokeColor = document.getElementById('borderStrokeColor').value || '#000000';
       const borderStrokeSize  = +document.getElementById('borderStrokeSize').value || 2;
       const borderStrokeAlpha = +document.getElementById('borderStrokeAlpha').value || 100;
+      const borderEnabledEl = document.getElementById('borderEnabled');
+      const borderEnabled = borderEnabledEl ? borderEnabledEl.checked : false;
+      if (!borderEnabled) {
+        return {
+          borderImg: null,
+          borderColor,
+          borderAlpha,
+          borderSize: 0,
+          borderStrokeOn: false,
+          borderStrokeColor,
+          borderStrokeSize,
+          borderStrokeAlpha
+        };
+      }
       const isBPredef = document.getElementById('borderPredef').checked;
       const isBCustom = document.getElementById('borderCustom').checked;
       if (!isBPredef && !isBCustom) {
-        borderSelected = 'https://static.wixstatic.com/media/1cf87e_f9c1f6035fd14a6c87eb72e797edb4e1~mv2.png';
+        borderSelected = 'https://static.wixstatic.com/media/1cf87e_38adc779dcf74126b32459b591f7405d~mv2.png';
         document.getElementById('borderPredef').checked = true;
       }
       if (document.getElementById('borderPredef').checked) {
         if (!borderSelected) {
-          borderSelected = 'https://static.wixstatic.com/media/1cf87e_f9c1f6035fd14a6c87eb72e797edb4e1~mv2.png';
+          borderSelected = 'https://static.wixstatic.com/media/1cf87e_38adc779dcf74126b32459b591f7405d~mv2.png';
         }
         borderImg   = await loadImage(borderSelected);
         borderColor = document.getElementById('borderColor').value || '#ffffff';

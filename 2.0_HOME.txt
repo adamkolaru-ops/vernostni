@@ -141,6 +141,18 @@
       object-position: center;
       display: none;
       pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Strip canvas (drawn overlay for pattern+razítka) */
+    #stripCanvas {
+      position: absolute;
+      left: 0;
+      top: 61px; /* fallback aligned with strip image */
+      width: 100%;
+      height: 90px;
+      display: none;
+      pointer-events: none;
       z-index: 1;
     }
 
@@ -264,6 +276,13 @@
     .mini-label { font-size:11px; color:#6b7280; }
     .mini-btn { border:1px solid #e5e7eb; background:#f9fafb; border-radius:6px; padding:6px 8px; font-size:12px; cursor:pointer; }
     .mini-btn.selected { outline:2px solid #4f46e5; outline-offset:0; }
+    .mini-btn:hover {
+      background: #f3f4f6;
+    }
+    .mini-btn.selected {
+      background: #3b82f6;
+      color: white;
+    }
 
     /* --- OTÁZKOVÝ PANEL (jedno pole) --- */
     .question-panel {
@@ -336,7 +355,40 @@
     .strip-nav-btn:hover { background:#f9fafb; }
     .strip-nav-btn.prev { left:6px; }
     .strip-nav-btn.next { right:6px; }
-    .strip-card.selected { border-color: #4f46e5; box-shadow: 0 0 0 2px rgba(79,70,229,0.15) inset; }
+    /* (removed) stamps-layer: stamps are now rendered on the strip canvas */
+    /* Compact type description under Step 4 */
+    .type-desc { margin-top: 10px; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; }
+    .type-desc p { margin: 0 0 6px 0; font-size: 12px; color: #374151; }
+    .type-desc ul { margin: 6px 0 0 18px; padding: 0; font-size: 12px; color: #4b5563; }
+    .type-desc-actions { display: flex; justify-content: flex-end; margin-top: 6px; }
+    .type-desc .mini-btn { padding: 4px 8px; font-size: 12px; }
+    
+    /* Stamp option styling */
+    .stamp-option {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-width: 60px;
+    }
+    .stamp-option:hover {
+      border-color: #3b82f6;
+      background: #f8fafc;
+    }
+    .stamp-option[data-selected="true"] {
+      border-color: #3b82f6;
+      background: #eff6ff;
+    }
+    .stamp-option span {
+      font-size: 12px;
+      font-weight: 500;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -356,6 +408,7 @@
       <div class="fake-card" id="fakeCard" style="display:none;">
         <!-- STRIP => #stripResultImg -->
         <img id="stripResultImg" alt="Strip náhled">
+        <canvas id="stripCanvas"></canvas>
 
         <!-- DISCOUNT LEVEL -->
         <div class="discount-level" id="discountLevelDisplay">
@@ -632,12 +685,12 @@
     <!-- KROK 4: Typ karty (až po potvrzení stripu) -->
     <div class="question-panel" data-step="4" id="step-4" style="display:none;">
       <div class="q-title">Vyberte typ karty</div>
-      <div class="q-sub">Zvolte jeden z typů: Bodová, Procentní, Razítková</div>
+      <div class="q-sub">Zvolte jeden z typů: Revolution, Procentní, Bodová, Razítková</div>
       <div class="type-grid">
         <div class="type-item">
-          <div class="type-name">Bodová</div>
-          <button class="type-card" data-type="bodova" onclick="pickCardType('bodova', this)" aria-label="Bodová">
-            <img src="https://static.wixstatic.com/media/1cf87e_8c4334c0221641acb421515383310cc6~mv2.png" alt="Bodová">
+          <div class="type-name">Revolution</div>
+          <button class="type-card" data-type="revolution" onclick="pickCardType('revolution', this)" aria-label="Revolution">
+            <img src="https://static.wixstatic.com/media/1cf87e_7bd4c3edcda74b0c966ecb5471f14d30~mv2.png" alt="Revolution">
           </button>
         </div>
         <div class="type-item">
@@ -647,10 +700,24 @@
           </button>
         </div>
         <div class="type-item">
+          <div class="type-name">Bodová</div>
+          <button class="type-card" data-type="bodova" onclick="pickCardType('bodova', this)" aria-label="Bodová">
+            <img src="https://static.wixstatic.com/media/1cf87e_8c4334c0221641acb421515383310cc6~mv2.png" alt="Bodová">
+          </button>
+        </div>
+        <div class="type-item">
           <div class="type-name">Razítková</div>
           <button class="type-card" data-type="razitkova" onclick="pickCardType('razitkova', this)" aria-label="Razítková">
             <img src="https://static.wixstatic.com/media/1cf87e_522dc8abb98b4484adf341ccdddcabd2~mv2.png" alt="Razítková">
           </button>
+        </div>
+      </div>
+      <!-- Compact description panel -->
+      <div id="typeDescPanel" class="type-desc" style="display:none;">
+        <p id="typeDescShort"></p>
+        <div id="typeDescMore" style="display:none;"></div>
+        <div class="type-desc-actions">
+          <button type="button" id="typeDescToggle" class="mini-btn" onclick="toggleTypeDesc()">Více informací</button>
         </div>
       </div>
       <div class="q-actions">
@@ -659,27 +726,108 @@
       </div>
     </div>
 
-    <!-- KROK 5: Jméno zákazníka -->
+    <!-- KROK 5: Razítka – výběr režimu -->
     <div class="question-panel" data-step="5" id="step-5" style="display:none;">
-      <div class="q-title">Jméno zákazníka</div>
-      <div class="q-sub">Zadejte jméno, které se zobrazí na kartě</div>
-      <div style="display:flex; justify-content:center;">
-        <input type="text" id="customerNameInput" placeholder="Např. Jan Novák" oninput="onCustomerNameInput()" style="width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:8px;">
+      <div class="q-title">Razítka – vyberte způsob</div>
+      <div class="q-sub">Zvolte jak chcete razítka nastavit</div>
+      <div class="options-row" style="justify-content:center;">
+        <button type="button" id="stampModePresetBtn" class="option" onclick="pickStampMode('preset', this)">Předpřipravené (doporučujeme)</button>
+        <button type="button" id="stampModeStandardBtn" class="option" onclick="pickStampMode('standard', this)">Standardní</button>
+        <button type="button" id="stampModePerBtn" class="option" onclick="pickStampMode('perStamp', this)">Vlastní pro každé</button>
       </div>
+      <div id="stampPresetNote" style="display:none; margin-top:8px; font-size:12px; color:#6b7280; text-align:center;">Režim "Předpřipravené" je v přípravě.</div>
+      <div id="stampPerNote" style="display:none; margin-top:8px; font-size:12px; color:#6b7280; text-align:center;">Režim "Vlastní pro každé": V dalším kroku nastavíte počet razítek (1–20) a nahrajete strip pro každý stav (0 = bez razítek, 1 = po 1. razítku, …, N = po N. razítku).</div>
       <div class="q-actions">
         <button class="btn btn-back" onclick="goBack()">Zpět</button>
         <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
       </div>
     </div>
 
-    <!-- KROK 6: Zobrazovat text na stripu? -->
+    <!-- KROK 6: Podmíněný krok
+         - Pokud Razítková + Standardní: detailní nastavení razítek
+         - Jinak: Zobrazovat text na stripu? -->
     <div class="question-panel" data-step="6" id="step-6" style="display:none;">
-      <div class="q-title">Zobrazovat text na stripu?</div>
-      <div class="q-sub">Vyberte možnost</div>
-      <div class="options-row">
-        <button class="option" onclick="pickShowStrip(true, this)">Ano</button>
-        <button class="option" onclick="pickShowStrip(false, this)">Ne</button>
+      <div id="step6StampStandard" style="display:none;">
+        <div class="q-title">Razítka – standardní nastavení</div>
+        
+        <div class="q-sub" style="margin-bottom:8px;">Maximální počet razítek (1–20)</div>
+        <div style="display:flex; gap:8px; justify-content:center; align-items:center; margin-bottom:16px;">
+          <input type="number" id="stampTotalInput" min="1" max="20" value="10" oninput="onStampTotalChange(this)" style="width:90px; padding:8px; border:1px solid #e5e7eb; border-radius:8px; text-align:center;">
+        </div>
+
+        <div class="q-sub" style="margin-bottom:8px;">Design razítka</div>
+        <div style="display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
+          <div class="stamp-option" onclick="pickStampIcon('https://static.wixstatic.com/media/1cf87e_f7284a8ad6d1438c9e79eb3d0818890a~mv2.png', this)" data-selected="true">
+            <img src="https://static.wixstatic.com/media/1cf87e_f7284a8ad6d1438c9e79eb3d0818890a~mv2.png" alt="Výchozí" style="width:32px; height:32px; border-radius:4px;">
+            <span>Výchozí</span>
+          </div>
+          <div class="stamp-option" onclick="pickStampIcon('https://static.wixstatic.com/media/1cf87e_b902bf7ff01d45679dc1964eedc548d2~mv2.png', this)">
+            <img src="https://static.wixstatic.com/media/1cf87e_b902bf7ff01d45679dc1964eedc548d2~mv2.png" alt="Káva" style="width:32px; height:32px; border-radius:4px;">
+            <span>Káva</span>
+          </div>
+          <div class="stamp-option" onclick="pickStampIcon('https://static.wixstatic.com/media/1cf87e_4f9563aebb5d4391ab392f456c1f8c74~mv2.png', this)">
+            <img src="https://static.wixstatic.com/media/1cf87e_4f9563aebb5d4391ab392f456c1f8c74~mv2.png" alt="Hvězda" style="width:32px; height:32px; border-radius:4px;">
+            <span>Hvězda</span>
+          </div>
+          <div class="stamp-option custom-upload">
+            <input type="file" id="stampIconFile" accept="image/*" onchange="onStampCustomIconChange(this)" style="display:none;">
+            <div onclick="document.getElementById('stampIconFile').click()" style="width:32px; height:32px; border:2px dashed #ccc; border-radius:4px; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+              <span style="font-size:18px; color:#999;">+</span>
+            </div>
+            <span>Vlastní</span>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:16px; justify-content:center; align-items:flex-end; flex-wrap:wrap; margin-top:8px;">
+          <div style="display:flex; flex-direction:column; gap:6px; min-width:160px;">
+            <label style="font-size:13px; color:#374151; font-weight:600;">Velikost razítka (px)</label>
+            <input type="number" id="stampSizeInput" min="1" value="44" oninput="onStampSizeChange(this)" style="height:38px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; text-align:center;">
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px; min-width:160px;">
+            <label style="font-size:13px; color:#374151; font-weight:600;">Rozestup mezi razítky (px)</label>
+            <input type="number" id="stampGapInput" min="2" max="30" value="2" oninput="onStampGapChange(this)" style="height:38px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; text-align:center;">
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px; min-width:160px;">
+            <label style="font-size:13px; color:#374151; font-weight:600;">Průhlednost razítka (%)</label>
+            <input type="number" id="stampOpacityInput" min="0" max="100" value="100" oninput="onStampOpacityChange(this)" style="height:38px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; text-align:center;">
+          </div>
+        </div>
+        </div>
+        
+        <div id="step6StampPer" style="display:none;">
+          <div class="q-title">Razítka – Vlastní pro každé</div>
+          <div class="q-sub">Zadejte počet razítek (1–20) a nahrajte obrázky stripu pro každý stav (0 až N).</div>
+          <div style="display:flex; gap:12px; justify-content:center; align-items:flex-end; flex-wrap:wrap; margin-bottom:12px;">
+            <div style="display:flex; flex-direction:column; gap:6px; min-width:160px;">
+              <label style="font-size:13px; color:#374151; font-weight:600;">Počet razítek (1–20)</label>
+              <input type="number" id="perStampTotalInput" min="1" max="20" value="10" oninput="onPerStampTotalChange(this)" style="height:38px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; text-align:center;">
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px; min-width:220px;">
+              <label style="font-size:13px; color:#374151; font-weight:600;">Náhled a stažení</label>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <select id="perStripStepSelect" onchange="onPerStripStepChange(this)" style="height:38px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px;"></select>
+                <a id="perStripDownloadBtn" href="#" download="strip.png" class="mini-btn" onclick="return onPerStripDownloadClick(event)">Stáhnout</a>
+              </div>
+            </div>
+          </div>
+          <div style="text-align:center; margin-bottom:8px; font-size:12px; color:#6b7280;">
+            Nejprve nahrajte obrázek stripu bez razítek (stav 0). Poté nahrajte, jak vypadá strip po přidání 1., 2., … razítka.
+          </div>
+          <div style="display:flex; justify-content:center; margin-bottom:12px;">
+            <img id="perStripTopPreview" alt="Náhled stripu" style="max-width:100%; height:auto; border:1px solid #e5e7eb; border-radius:8px;">
+          </div>
+          <div id="perStripUploads" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; align-items:start;"></div>
+        </div>
+
+        <div id="step6StripPanel">
+        <div class="q-title">Zobrazovat text na stripu?</div>
+        <div class="q-sub">Vyberte možnost</div>
+        <div class="options-row">
+          <button class="option" onclick="pickShowStrip(true, this)">Ano</button>
+          <button class="option" onclick="pickShowStrip(false, this)">Ne</button>
+        </div>
       </div>
+
       <div class="q-actions">
         <button class="btn btn-back" onclick="goBack()">Zpět</button>
         <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
@@ -708,6 +856,7 @@
         </div>
         <div class="mini-group" id="stripSizeGroup">
           <span class="mini-label">Velikost</span>
+          <button type="button" class="mini-btn" onclick="pickStripSize('XS', this)">XS</button>
           <button type="button" class="mini-btn" onclick="pickStripSize('S', this)">S</button>
           <button type="button" class="mini-btn" onclick="pickStripSize('M', this)">M</button>
           <button type="button" class="mini-btn" onclick="pickStripSize('L', this)">L</button>
@@ -818,7 +967,7 @@
     let currentStep = 1;
     let pickedColor = null;
     let topMode = null; // 'napis' | 'logo'
-    let cardType = null; // 'bodova' | 'procentni' | 'razitkova'
+    let cardType = null; // 'bodova' | 'procentni' | 'razitkova' | 'revolution'
     let napisText = 'Text';
     let napisFont = 'tan-nimbus-2-webfont';
     let napisColor = '#000000';
@@ -835,7 +984,7 @@
     let stripVisibilityUserEdited = false; // true once user picks Yes/No for strip
     // Strip text display settings
     let stripTextPos = 'bottom';     // 'top' | 'center' | 'bottom' (default)
-    let stripTextSize = 'M';         // 'S' | 'M' | 'L'
+    let stripTextSize = 'M';         // 'XS' | 'S' | 'M' | 'L'
     let stripTextColor = '#000000';  // default color for strip text
     let stripBandHeight = 90; // computed band height for the strip background
     // Strip selection state
@@ -843,6 +992,21 @@
     let selectedStripIconUrl = '';
     let customStripObjectUrl = null; // blob URL for uploaded custom strip
     let manualScale = null; // when set, overrides auto scale
+
+    // Default stamp settings for Razítková preview (drawn on strip)
+    const defaultStampUrl = 'https://static.wixstatic.com/media/1cf87e_f7284a8ad6d1438c9e79eb3d0818890a~mv2.png';
+    let stampTotal = 10;               // maximum stamps in grid/counter
+    let stampIconUrl = defaultStampUrl; // current stamp icon
+    let stampSize = 44;                // default stamp size in pixels
+    let stampMode = null;              // null until chosen; 'preset' | 'standard' | 'perStamp'
+    let stampCustomObjectUrl = null;   // blob URL for uploaded custom icon
+    let stampOpacity = 1.0;            // 0.0–1.0
+    let stampGap = 2;                  // 2-30px default
+    // Per-stamp (custom for each) mode state
+    let perStampTotal = 10;            // number of stamps (1..20)
+    let perStripSelectedStep = 0;      // selected step for preview/download (0..perStampTotal)
+    let perStripUrls = [];             // object URLs for each step image (index 0..N)
+    let currentCardType = '';
     
     // --- Strip selection handlers ---
     function highlightSelectedStrip(el) {
@@ -978,17 +1142,74 @@
       }
       if (n === 4) {
         // Krok 4: výběr typu karty (až po potvrzení stripu)
-        if (!cardType) cardType = 'procentni';
+        if (!cardType) cardType = 'revolution';
         const cards = document.querySelectorAll('#step-4 .type-card');
         cards.forEach(btn => btn.classList.toggle('selected', btn.dataset.type === cardType));
         const next = getCurrentNextBtn();
         if (next) next.disabled = false;
         applyCardType(cardType);
+        updateTypeDescription(cardType);
+        const descPanel = document.getElementById('typeDescPanel');
+        if (descPanel) descPanel.style.display = 'block';
       }
       if (n === 5) {
-        // step 5: enable next only if name present
+        // Krok 5: Režim razítek – povolit pokračovat po výběru režimu
         const next = getCurrentNextBtn();
-        if (next) next.disabled = (customerName.trim().length === 0);
+        if (next) next.disabled = !stampMode;
+        // UI init
+        const preNote = document.getElementById('stampPresetNote');
+        if (preNote) preNote.style.display = (stampMode === 'preset') ? 'block' : 'none';
+        const perNote = document.getElementById('stampPerNote');
+        if (perNote) perNote.style.display = (stampMode === 'perStamp') ? 'block' : 'none';
+        const prBtn = document.getElementById('stampModePresetBtn');
+        const sBtn = document.getElementById('stampModeStandardBtn');
+        const pBtn = document.getElementById('stampModePerBtn');
+        if (prBtn) prBtn.classList.toggle('selected', stampMode === 'preset');
+        if (sBtn) sBtn.classList.toggle('selected', stampMode === 'standard');
+        if (pBtn) pBtn.classList.toggle('selected', stampMode === 'perStamp');
+      }
+      if (n === 6) {
+        // Krok 6: buď panel pro standardní razítka, nebo dotaz na text na stripu
+        const isStampStandard = (cardType === 'razitkova' && stampMode === 'standard');
+        const isStampPer = (cardType === 'razitkova' && stampMode === 'perStamp');
+        const std = document.getElementById('step6StampStandard');
+        const per = document.getElementById('step6StampPer');
+        const strip = document.getElementById('step6StripPanel');
+        if (std) std.style.display = isStampStandard ? 'block' : 'none';
+        if (per) per.style.display = isStampPer ? 'block' : 'none';
+        if (strip) strip.style.display = (!isStampStandard && !isStampPer) ? 'block' : 'none';
+        const next = getCurrentNextBtn();
+        if (next) next.disabled = false;
+        if (isStampStandard) {
+          try {
+            document.getElementById('stampTotalInput').value = String(stampTotal);
+            const opi = document.getElementById('stampOpacityInput');
+            if (opi) opi.value = String(Math.round(Math.max(0, Math.min(1, stampOpacity)) * 100));
+            const opl = document.getElementById('stampOpacityVal');
+            if (opl) opl.textContent = Math.round(Math.max(0, Math.min(1, stampOpacity)) * 100) + '%';
+            const szi = document.getElementById('stampSizeInput');
+            if (szi) szi.value = String(stampSize);
+            const szl = document.getElementById('stampSizeVal');
+            if (szl) szl.textContent = stampSize + 'px';
+            const sgi = document.getElementById('stampGapInput');
+            if (sgi) sgi.value = String(stampGap);
+            // Update stamp icon selection
+            const stampOptions = document.querySelectorAll('.stamp-option');
+            stampOptions.forEach(opt => opt.removeAttribute('data-selected'));
+            const currentOption = Array.from(stampOptions).find(opt => {
+              const onclick = opt.getAttribute('onclick');
+              return onclick && onclick.includes(stampIconUrl);
+            });
+            if (currentOption) currentOption.setAttribute('data-selected', 'true');
+          } catch(_) {}
+        } else if (isStampPer) {
+          try {
+            const pti = document.getElementById('perStampTotalInput');
+            if (pti) pti.value = String(perStampTotal);
+            buildPerStripUI();
+            updatePerStripPreviewAndDownload();
+          } catch(_) {}
+        }
       }
       if (n === 7) {
         // step 7: enable next only if strip text present
@@ -1007,7 +1228,7 @@
           <strong>Barva karty:</strong> <span style="display:inline-block; width:12px; height:12px; background:${pickedColor || '#ffffff'}; border:1px solid #e5e7eb; vertical-align:middle;"></span> ${pickedColor || '#ffffff'}<br>
           <strong>Levý horní roh:</strong> ${topMode === 'napis' ? 'Text' : 'Logo'}<br>
           ${topMode === 'napis' ? `<strong>Text:</strong> ${escapeHtml(napisText)}` : `<strong>Logo URL:</strong> ${escapeHtml(logoUrl)}`}<br>
-          <strong>Typ karty:</strong> ${cardType === 'bodova' ? 'Bodová' : cardType === 'procentni' ? 'Procentní' : cardType === 'razitkova' ? 'Razítková' : ''}<br>
+          <strong>Typ karty:</strong> ${cardType === 'bodova' ? 'Bodová' : cardType === 'procentni' ? 'Procentní' : cardType === 'razitkova' ? 'Razítková' : cardType === 'revolution' ? 'Revolution' : ''}<br>
           <strong>Vzhled stripu:</strong> ${selectedStripUrl ? (customStripObjectUrl ? 'Vlastní' : 'Předvolený') : '—'} ${selectedStripUrl ? `<img src="${selectedStripUrl}" alt="Strip" style="display:inline-block; width:60px; height:14px; object-fit:cover; border-radius:2px; border:1px solid #e5e7eb; vertical-align:middle; margin-left:6px;">` : ''}<br>
           <strong>Text na stripu:</strong> ${showStrip ? escapeHtml(stripText) : 'Nezobrazovat'}<br>
           ${showStrip ? `<strong>Umístění textu:</strong> ${stripTextPos}<br>` : ''}
@@ -1041,6 +1262,231 @@
       pickedColor = color;
       const next = getCurrentNextBtn();
       if (next) next.disabled = false;
+    }
+
+    // Razítková – handlers
+    function pickStampMode(mode, el) {
+      stampMode = (mode === 'standard' || mode === 'perStamp' || mode === 'preset') ? mode : null;
+      const next = getCurrentNextBtn();
+      if (next) next.disabled = !stampMode;
+      const preNote = document.getElementById('stampPresetNote');
+      if (preNote) preNote.style.display = (stampMode === 'preset') ? 'block' : 'none';
+      const perNote = document.getElementById('stampPerNote');
+      if (perNote) perNote.style.display = (stampMode === 'perStamp') ? 'block' : 'none';
+      const pr = document.getElementById('stampModePresetBtn');
+      const sb = document.getElementById('stampModeStandardBtn');
+      const pb = document.getElementById('stampModePerBtn');
+      if (pr) pr.classList.toggle('selected', stampMode === 'preset');
+      if (sb) sb.classList.toggle('selected', stampMode === 'standard');
+      if (pb) pb.classList.toggle('selected', stampMode === 'perStamp');
+    }
+
+    function onStampTotalChange(input) {
+      const v = parseInt(input && input.value, 10);
+      const n = isNaN(v) ? stampTotal : Math.max(1, Math.min(20, v));
+      stampTotal = n;
+      try {
+        const val = document.getElementById('stampVal');
+        if (val) val.textContent = `${stampTotal} / ${stampTotal}`;
+      } catch (_) {}
+      // Only render strip if we're in razitkova mode
+      if (cardType === 'razitkova') {
+        renderStrip();
+      }
+    }
+
+    function pickStampIcon(url, el) {
+      try {
+        if (stampCustomObjectUrl) { try { URL.revokeObjectURL(stampCustomObjectUrl); } catch(_) {} stampCustomObjectUrl = null; }
+      } catch(_) {}
+      stampIconUrl = url || defaultStampUrl;
+      try {
+        // Update selection for stamp-option elements
+        const allOptions = document.querySelectorAll('.stamp-option');
+        allOptions.forEach(opt => opt.removeAttribute('data-selected'));
+        if (el && el.classList.contains('stamp-option')) {
+          el.setAttribute('data-selected', 'true');
+        }
+      } catch(_) {}
+      // Only render strip if we're in razitkova mode
+      if (cardType === 'razitkova') {
+        renderStrip();
+      }
+    }
+
+    function onStampCustomIconChange(input) {
+      try {
+        const file = input && input.files && input.files[0];
+        if (!file) return;
+        if (stampCustomObjectUrl) { try { URL.revokeObjectURL(stampCustomObjectUrl); } catch(_) {} }
+        const objUrl = URL.createObjectURL(file);
+        stampCustomObjectUrl = objUrl;
+        stampIconUrl = objUrl;
+        try {
+          // Update selection for custom upload
+          const allOptions = document.querySelectorAll('.stamp-option');
+          allOptions.forEach(opt => opt.removeAttribute('data-selected'));
+          const customOption = input.closest('.stamp-option');
+          if (customOption) customOption.setAttribute('data-selected', 'true');
+        } catch(_) {}
+        // Only render strip if we're in razitkova mode
+        if (cardType === 'razitkova') {
+          renderStrip();
+        }
+      } catch(_) {}
+    }
+
+    function onStampSizeChange(input) {
+      const v = parseInt(input && input.value, 10);
+      const size = isNaN(v) ? 100 : Math.max(1, v);
+      stampSize = size;
+      try {
+        const label = document.getElementById('stampSizeVal');
+        if (label) label.textContent = size + 'px';
+      } catch(_) {}
+      // Only render strip if we're in razitkova mode
+      if (cardType === 'razitkova') {
+        renderStrip();
+      }
+    }
+
+    function onStampOpacityChange(input) {
+      const v = parseInt(input && input.value, 10);
+      const pct = isNaN(v) ? 100 : Math.max(0, Math.min(100, v));
+      stampOpacity = pct / 100;
+      try {
+        const l = document.getElementById('stampOpacityVal');
+        if (l) l.textContent = `${pct}%`;
+      } catch(_) {}
+      // Only render strip if we're in razitkova mode
+      if (cardType === 'razitkova') {
+        renderStrip();
+      }
+    }
+
+    function onStampGapChange(input) {
+      const v = parseInt(input && input.value, 10);
+      stampGap = isNaN(v) ? 2 : Math.max(2, Math.min(30, v));
+      // Only render strip if we're in razitkova mode
+      if (cardType === 'razitkova') {
+        renderStrip();
+      }
+    }
+
+    // --- Per-stamp (custom for each) handlers ---
+    function onPerStampTotalChange(input) {
+      const v = parseInt(input && input.value, 10);
+      const n = isNaN(v) ? perStampTotal : Math.max(1, Math.min(20, v));
+      perStampTotal = n;
+      // Ensure arrays cover 0..n
+      if (perStripUrls.length < n + 1) perStripUrls.length = n + 1;
+      if (perStripSelectedStep > n) perStripSelectedStep = n;
+      buildPerStripUI();
+      updatePerStripPreviewAndDownload();
+    }
+
+    function onPerStripUploadChange(index, input) {
+      try {
+        const file = input && input.files && input.files[0];
+        if (!file) return;
+        // Revoke old URL if exists
+        if (perStripUrls[index]) {
+          try { URL.revokeObjectURL(perStripUrls[index]); } catch(_) {}
+        }
+        const url = URL.createObjectURL(file);
+        perStripUrls[index] = url;
+        if (perStripSelectedStep === index) {
+          updatePerStripPreviewAndDownload();
+        }
+      } catch(_) {}
+    }
+
+    function onPerStripStepChange(sel) {
+      const v = parseInt(sel && sel.value, 10);
+      perStripSelectedStep = isNaN(v) ? 0 : Math.max(0, Math.min(perStampTotal, v));
+      updatePerStripPreviewAndDownload();
+    }
+
+    function buildPerStripUI() {
+      try {
+        const sel = document.getElementById('perStripStepSelect');
+        const grid = document.getElementById('perStripUploads');
+        if (sel) {
+          sel.innerHTML = '';
+          for (let i = 0; i <= perStampTotal; i++) {
+            const opt = document.createElement('option');
+            opt.value = String(i);
+            opt.textContent = 'Stav ' + i;
+            sel.appendChild(opt);
+          }
+          sel.value = String(Math.max(0, Math.min(perStampTotal, perStripSelectedStep)));
+        }
+        if (grid) {
+          let html = '';
+          for (let i = 0; i <= perStampTotal; i++) {
+            html += `
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                <label style="font-size:13px; color:#374151; font-weight:600;">Stav ${i}</label>
+                <input type="file" accept="image/*" onchange="onPerStripUploadChange(${i}, this)" style="padding:8px; border:1px solid #e5e7eb; border-radius:8px;">
+              </div>`;
+          }
+          grid.innerHTML = html;
+        }
+      } catch(_) {}
+    }
+
+    function updatePerStripPreviewAndDownload() {
+      try {
+        const topPrev = document.getElementById('perStripTopPreview');
+        const dl = document.getElementById('perStripDownloadBtn');
+        const img = document.getElementById('stripResultImg');
+        const cv = document.getElementById('stripCanvas');
+        const fallback = (selectedStripUrl && selectedStripUrl.trim())
+          ? selectedStripUrl
+          : 'https://static.wixstatic.com/media/1cf87e_3ae4f6a9c66a44ef9aa950f489356001~mv2.png';
+        const url = perStripUrls[perStripSelectedStep] || fallback;
+        if (topPrev) topPrev.src = url;
+        if (dl) {
+          dl.href = url;
+          // Prefer real download for local blob/data URLs; otherwise open in new tab
+          const isLocal = url.startsWith('blob:') || url.startsWith('data:');
+          if (isLocal) {
+            dl.removeAttribute('target');
+            dl.download = `strip_step_${perStripSelectedStep}.png`;
+          } else {
+            dl.removeAttribute('download');
+            dl.setAttribute('target', '_blank');
+            dl.setAttribute('rel', 'noopener');
+          }
+        }
+        // In per-stamp mode, use the chosen per-step image on the card and hide canvas
+        if (img && (cardType === 'razitkova' && stampMode === 'perStamp')) {
+          img.src = url;
+          img.style.display = 'block';
+          if (cv) cv.style.display = 'none';
+        }
+      } catch(_) {}
+    }
+
+    function onPerStripDownloadClick(e) {
+      try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+      const fallback = (selectedStripUrl && selectedStripUrl.trim())
+        ? selectedStripUrl
+        : 'https://static.wixstatic.com/media/1cf87e_3ae4f6a9c66a44ef9aa950f489356001~mv2.png';
+      const url = perStripUrls[perStripSelectedStep] || fallback;
+      // For blob/data URLs trigger real download without leaving the page
+      if (url.startsWith('blob:') || url.startsWith('data:')) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `strip_step_${perStripSelectedStep}.png`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { try { document.body.removeChild(a); } catch(_) {} }, 0);
+        return false;
+      }
+      // Cross-origin URLs: open in new tab so UI is not blocked
+      try { window.open(url, '_blank', 'noopener,noreferrer'); } catch(_) {}
+      return false;
     }
 
     function pickPresetColor(color, el) {
@@ -1095,6 +1541,81 @@
       const next = getCurrentNextBtn();
       if (next) next.disabled = false;
       applyCardType(type);
+      // Update compact description panel
+      updateTypeDescription(type);
+      const panel = document.getElementById('typeDescPanel');
+      if (panel) panel.style.display = 'block';
+    }
+
+    // --- Step 4: Dynamic type descriptions ---
+    function updateTypeDescription(type) {
+      const shortEl = document.getElementById('typeDescShort');
+      const moreEl = document.getElementById('typeDescMore');
+      const toggle = document.getElementById('typeDescToggle');
+      if (!shortEl || !moreEl || !toggle) return;
+
+      const COPY = {
+        razitkova: {
+          short: 'Zákazník sbírá razítka za návštěvy; po zaplnění získá odměnu.',
+          more: `
+            <ul>
+              <li>+ Maximálně jednoduché – každý zákazník hned chápe, jak se dostat k odměně.</li>
+              <li>+ Silná motivace dokončit – lidé se vrátí, aby zaplnili poslední políčka.</li>
+              <li>- Neodměňuje vyšší útratu – za službu za 500 Kč i 1500 Kč je stále jen jedno razítko.</li>
+            </ul>
+          `
+        },
+        bodova: {
+          short: 'Zákazník sbírá body podle útraty (např. 1 Kč = 1 bod) a mění je za služby nebo slevy.',
+          more: `
+            <ul>
+              <li>+ Odměňuje velké útraty – motivuje k nákupu dražších služeb a produktů.</li>
+              <li>+ Flexibilní odměny – sami určíte hodnotu služeb v bodech a chráníte marži.</li>
+              <li>- Složitější pro zákazníka – hodnota bodů není vždy jasná, motivace může klesat.</li>
+            </ul>
+          `
+        },
+        procentni: {
+          short: 'Okamžitý cashback z každé útraty (např. 5 %) jako kredit na další nákup.',
+          more: `
+            <ul>
+              <li>+ Nejatraktivnější pro zákazníka – peníze zpět jsou jasné a silné lákadlo.</li>
+              <li>+ Podporuje okamžitý návrat – kredit motivuje k další návštěvě.</li>
+              <li>+ Nekonečná potřeba vyvarovat se ztrátě peněz na kartě = další návštěva.</li>
+              <li>+ Uživatel má tendenci více utrácet pro dosažení vyšší slevy a statusu.</li>
+              <li>– Chybí snaha dosáhnout většího cíle.</li>
+            </ul>
+          `
+        },
+        revolution: {
+          short: 'Zákazník dostane za každou útratu část peněz zpět na kartu. V momentě, kdy dosáhne určité částky, může naspořené peníze použít na některou ze služeb nebo produktů. (Funguje to podobně jako razítková karta, ale zákazník je více propojen díky pocitu, že místo střádání razítek střádá peníze.)',
+          more: `
+            <p>Revoluční kombinace – zákazníkovi se načítají procenta z útraty (např. 10 %) a ty může použít až po dosažení cílové částky (např. ceny střihu). Průběžně vidí svůj pokrok i bonusové peníze, které se mu hromadí.</p>
+            <ul>
+              <li>+ Chrání marži – odměnu dáváte až poté, co zákazník utratí dostatek peněz.</li>
+              <li>+ Maximálně motivuje – kombinuje hodnotu peněz (cashback) a jasný vizuální cíl.</li>
+              <li>+ Uživatel se cítí průběžně odměňován, ale odměnu získá až na konci.</li>
+              <li>+ Uživatel má tendenci více utrácet pro vyšší slevu a status.</li>
+            </ul>
+          `
+        }
+      };
+
+      const c = COPY[type] || COPY['revolution'];
+      shortEl.innerHTML = c.short;
+      moreEl.innerHTML = c.more;
+      // Reset to compact state
+      moreEl.style.display = 'none';
+      toggle.textContent = 'Více informací';
+    }
+
+    function toggleTypeDesc() {
+      const moreEl = document.getElementById('typeDescMore');
+      const toggle = document.getElementById('typeDescToggle');
+      if (!moreEl || !toggle) return;
+      const isHidden = (moreEl.style.display === 'none' || moreEl.style.display === '');
+      moreEl.style.display = isHidden ? 'block' : 'none';
+      toggle.textContent = isHidden ? 'Méně informací' : 'Více informací';
     }
 
     function onNapisInput() {
@@ -1297,7 +1818,7 @@
           const el = document.createElement('div');
           el.style.fontFamily = napisFont || 'Arial';
           el.style.color = napisColor || '#ff0000';
-          el.style.lineHeight = '1.1';
+          el.style.lineHeight = 'normal';
           el.style.width = '100%';
           el.style.fontWeight = 'bold';
           el.style.margin = '0';
@@ -1314,7 +1835,7 @@
           wrap.style.width = '100%';
           wrap.style.display = 'flex';
           wrap.style.flexDirection = 'column';
-          wrap.style.lineHeight = '1.1';
+          wrap.style.lineHeight = 'normal';
           wrap.style.fontFamily = napisFont || 'Arial';
           wrap.style.color = napisColor || '#ff0000';
           wrap.style.fontWeight = 'bold';
@@ -1361,12 +1882,14 @@
       try {
         let size = 24;
         el.style.fontSize = size + 'px';
+        el.style.lineHeight = (size * 1.2) + 'px';
         el.style.whiteSpace = 'nowrap';
         for (let i = 0; i < 30; i++) {
           if (el.scrollWidth <= maxW && el.scrollHeight <= maxH) break;
           size -= 1;
           if (size < 8) break;
           el.style.fontSize = size + 'px';
+          el.style.lineHeight = (size * 1.2) + 'px';
         }
       } catch (_) {}
     }
@@ -1375,14 +1898,20 @@
       try {
         const lines = Array.from(wrap.children);
         let size = 18;
-        lines.forEach(el => el.style.fontSize = size + 'px');
+        lines.forEach(el => {
+          el.style.fontSize = size + 'px';
+          el.style.lineHeight = (size * 1.2) + 'px';
+        });
         for (let i = 0; i < 30; i++) {
           const tooWide = lines.some(el => el.scrollWidth > maxW);
           const tooTall = wrap.scrollHeight > maxH;
           if (!tooWide && !tooTall) break;
           size -= 1;
           if (size < 8) break;
-          lines.forEach(el => el.style.fontSize = size + 'px');
+          lines.forEach(el => {
+            el.style.fontSize = size + 'px';
+            el.style.lineHeight = (size * 1.2) + 'px';
+          });
         }
       } catch (_) {}
     }
@@ -1554,6 +2083,22 @@
       const img = document.getElementById('stripResultImg');
       // Image (strip background) is always visible; toggle only the text overlay
       if (img) img.style.display = 'block';
+      
+      // Render stamps on canvas if we're in razitkova mode (matching WIX.txt logic)
+      if (cardType === 'razitkova' && stampMode !== 'perStamp') {
+        const stripUrl = img ? img.src : null;
+        if (stripUrl) {
+          renderStripOnCanvas(stripUrl);
+        }
+      } else {
+        // Clear canvas when not in razitkova mode
+        const cv = document.getElementById('stripCanvas');
+        if (cv) {
+          const ctx = cv.getContext('2d');
+          ctx.clearRect(0, 0, cv.width, cv.height);
+        }
+      }
+      
       if (!st) return;
       if (showStrip) {
         st.style.display = 'flex';
@@ -1572,7 +2117,7 @@
         // Apply color and size
         st.style.color = stripTextColor || '#000000';
         st.style.fontWeight = '700';
-        const sizePx = (stripTextSize === 'S') ? 14 : (stripTextSize === 'L') ? 22 : 18;
+        const sizePx = (stripTextSize === 'XS') ? 12 : (stripTextSize === 'S') ? 14 : (stripTextSize === 'L') ? 22 : 18;
         st.style.fontSize = sizePx + 'px';
       } else {
         st.style.display = 'none';
@@ -1615,6 +2160,92 @@
 
       // Uložit výšku pro generování pozadí
       stripBandHeight = h;
+      // Apply same geometry to canvas overlay
+      const cv = document.getElementById('stripCanvas');
+      if (cv) {
+        cv.style.top = top + 'px';
+        cv.style.height = h + 'px';
+      }
+      // strip background will be re-rendered after this via setStripBackground()
+    }
+
+    // Canvas helpers for strip composition (pattern + razítka)
+    function loadImage(url) {
+      return new Promise((resolve, reject) => {
+        const im = new Image();
+        im.onload = () => resolve(im);
+        im.onerror = reject;
+        im.src = url;
+      });
+    }
+
+    async function renderStripOnCanvas(patternUrl) {
+      const card = document.getElementById('fakeCard');
+      const img = document.getElementById('stripResultImg');
+      const cv = document.getElementById('stripCanvas');
+      if (!cv || !img || !card) return;
+      const w = card ? card.clientWidth : 257;
+      const h = stripBandHeight && stripBandHeight > 0 ? stripBandHeight : Math.round(w * (246/624));
+      // Ensure canvas pixel size matches CSS size
+      cv.width = w;
+      cv.height = h;
+      const ctx = cv.getContext('2d');
+      ctx.clearRect(0, 0, w, h);
+
+      // Draw stamps only if card type is 'razitkova' (matching WIX.txt logic)
+      if (cardType === 'razitkova') {
+        try {
+          const iconUrl = (stampIconUrl && stampIconUrl.trim()) ? stampIconUrl : defaultStampUrl;
+          const stampImg = await loadImage(iconUrl);
+          
+          // Use WIX.txt logic: distribute stamps across rows dynamically
+          const n = stampTotal;
+          const row1Count = Math.ceil(n / 2);
+          const row2Count = n - row1Count;
+          const maxCols = Math.max(row1Count, row2Count);
+          
+          // Use stampSize directly without clamping; may overflow if too large (as requested)
+          const actualSize = Math.max(1, stampSize);
+          const gap = Math.max(2, Math.min(30, stampGap)); // use stampGap variable
+          
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, Math.min(1, stampOpacity));
+          
+          // Draw first row
+          if (row1Count > 0) {
+            const row1W = row1Count * actualSize + (row1Count - 1) * gap;
+            const row1StartX = Math.floor((w - row1W) / 2);
+            const row1Y = Math.floor((h / 2) - (actualSize + gap / 2));
+            
+            for (let i = 0; i < row1Count; i++) {
+              const x = row1StartX + i * (actualSize + gap);
+              ctx.drawImage(stampImg, x, row1Y, actualSize, actualSize);
+            }
+          }
+          
+          // Draw second row
+          if (row2Count > 0) {
+            const row2W = row2Count * actualSize + (row2Count - 1) * gap;
+            const row2StartX = Math.floor((w - row2W) / 2);
+            const row2Y = Math.floor((h / 2) + (gap / 2));
+            
+            for (let i = 0; i < row2Count; i++) {
+              const x = row2StartX + i * (actualSize + gap);
+              ctx.drawImage(stampImg, x, row2Y, actualSize, actualSize);
+            }
+          }
+          
+          ctx.restore();
+          
+          // Update stamp counter display
+          try {
+            const stampValElem = document.getElementById('stampVal');
+            if (stampValElem) stampValElem.textContent = `${stampTotal} / ${stampTotal}`;
+          } catch(_) {}
+        } catch (e) {
+          // If any image fails, leave canvas empty; the strip image below will still show the pattern
+        }
+      }
     }
 
     function pickTextColor(color, el) {
@@ -1663,11 +2294,11 @@
         case 1: return 2;
         case 2: return 3;
         case 3: return 4; // po výběru stripu jít na výběr typu karty
-        case 4: return 8; // po výběru typu karty hned barva slevových textů
-        case 5: return 6; // unreachable, but ensure skip
-        case 6: return showStrip ? 7 : 9; // po potvrzení stripu buď editor, nebo rovnou shrnutí
+        case 4: return (cardType === 'razitkova') ? 5 : 8; // u razítkové nejdřív režim razítek
+        case 5: return (cardType === 'razitkova') ? 6 : 8; // u razítkové vždy na detail (standard i per)
+        case 6: return (cardType === 'razitkova') ? (showStrip ? 7 : 9) : 8;
         case 7: return 9; // po úpravě textu na stripu jít na shrnutí
-        case 8: return 6; // po barvě slevových textů potvrzení stripu
+        case 8: return (cardType === 'razitkova' && stampMode === 'standard') ? 9 : 6; // u razítkové standard -> rovnou shrnutí, jinak potvrzení stripu
         case 9: return 9;
         default: return currentStep + 1;
       }
@@ -1675,11 +2306,11 @@
 
     function prevStepNum() {
       switch (currentStep) {
-        case 9: return showStrip ? 7 : 6; // ze shrnutí zpět na editor stripu / potvrzení stripu
-        case 8: return 4; // z barvy slevových textů zpět na typ karty
+        case 9: return (cardType === 'razitkova' && stampMode === 'standard') ? 8 : (showStrip ? 7 : 6); // u razítkové standard zpět na barvu, jinak editor/confirm
+        case 8: return (cardType === 'razitkova' ? (stampMode === 'standard' ? 6 : 4) : 4);
         case 7: return 6;
-        case 6: return 8; // z potvrzení stripu zpět na barvu slevových textů
-        case 5: return 4; // unreachable
+        case 6: return 5;
+        case 5: return 4;
         case 4: return 3;
         case 3: return 2;
         case 2: return 1;
@@ -1810,6 +2441,7 @@
 
     function applyCardType(type) {
       console.log('applyCardType called with type:', type);
+      currentCardType = type;
       // schovat vše specifické
       const dis = document.getElementById('discountLevelDisplay');
       const sav = document.getElementById('savedAmountDisplay');
@@ -1821,9 +2453,13 @@
 
       // nastavit výchozí text na stripu podle typu a ukázat správné bloky
       let defaultStripText = '';
-      if (type === 'procentni') {
+      if (type === 'procentni' || type === 'revolution') {
         if (dis) dis.style.display = 'block';
-        if (sav) sav.style.display = 'block';
+        if (sav) {
+          sav.style.display = 'block';
+          const sl = sav.querySelector('.saved-label');
+          if (sl) sl.textContent = (type === 'revolution') ? 'NASPOSPOŘENO' : 'Ušetřil';
+        }
         defaultStripText = 'Sleva';
       } else if (type === 'razitkova') {
         console.log('Setting razitkova type, stc element:', stc);
@@ -1833,7 +2469,7 @@
           const lab = document.getElementById('stampLabel');
           const val = document.getElementById('stampVal');
           if (lab) lab.textContent = 'Razítka';
-          if (val) val.textContent = '0 / 10';
+          if (val) val.textContent = '10 / 10';
           console.log('Updated stamp label and value');
         } else {
           console.error('stampCounterDisplay element not found!');
@@ -1862,6 +2498,9 @@
       const st = document.getElementById('stripTextElem');
       // Styling now controlled by renderStrip() with user-selected settings
       renderStrip();
+      // Ensure strip background/canvas updates for razítková immediately
+      setStripBackground();
+      // strip background (and razítka) will be re-rendered in setStripBackground()
       
       // Debug: Check stampCounterDisplay after all strip functions
       const stcAfter = document.getElementById('stampCounterDisplay');
@@ -1870,13 +2509,26 @@
 
     function setStripBackground() {
       const img = document.getElementById('stripResultImg');
+      const cv = document.getElementById('stripCanvas');
       if (!img) return;
       // Use selected strip (preset or custom), fallback to WIX-like base
-      const src = (selectedStripUrl && selectedStripUrl.trim())
+      const base = (selectedStripUrl && selectedStripUrl.trim())
         ? selectedStripUrl
         : 'https://static.wixstatic.com/media/1cf87e_3ae4f6a9c66a44ef9aa950f489356001~mv2.png';
-      img.src = src;
-      img.style.display = 'block';
+      if (currentCardType === 'razitkova' && stampMode === 'perStamp') {
+        const url = perStripUrls[perStripSelectedStep] || base;
+        img.src = url;
+        img.style.display = 'block';
+        if (cv) cv.style.display = 'none';
+      } else {
+        img.src = base;
+        img.style.display = 'block';
+        if (cv) cv.style.display = (currentCardType === 'razitkova') ? 'block' : 'none';
+        if (currentCardType === 'razitkova') {
+          // Draw pattern + razítka on canvas; pattern also visible via img below
+          renderStripOnCanvas(base);
+        }
+      }
     }
 
     // Reflow při změně velikosti okna/viewportu
