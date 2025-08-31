@@ -380,6 +380,12 @@
     .strip-card {
       width: 82px; height: 124px; border-radius: 8px; border: 2px solid #e5e7eb; background: #f9fafb; overflow: hidden;
       padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; scroll-snap-align: start;
+      transition: all 0.2s ease-in-out;
+    }
+    .strip-card.selected {
+      border-color: #4f46e5; /* Použijeme hlavní fialovou pro konzistenci */
+      transform: scale(1.05); /* Mírné zvětšení pro zdůraznění */
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15); /* Výraznější stín */
     }
     .strip-card img { width: 100%; height: 100%; object-fit: cover; }
     .strip-nav-btn { position:absolute; top:50%; transform: translateY(-50%); width:32px; height:32px; border-radius:50%;
@@ -1102,7 +1108,14 @@
           <div id="perStripUploads" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; align-items:start;"></div>
         </div>
 
-
+        <div id="step6StripPanel">
+        <div class="q-title">Zobrazovat text na stripu?</div>
+        <div class="q-sub">Vyberte možnost</div>
+        <div class="options-row">
+          <button class="option" onclick="pickShowStrip(true, this)">Ano</button>
+          <button class="option" onclick="pickShowStrip(false, this)">Ne</button>
+        </div>
+      </div>
 
       <div class="q-actions">
         <button class="btn btn-back" onclick="goBack()">Zpět</button>
@@ -1112,61 +1125,80 @@
 
     <!-- KROK 7: Ohraničení razítek -->
     <div class="question-panel" data-step="7" id="step-7" style="display:none;">
-      <div class="q-title">Ohraničení razítek</div>
-      <div class="q-sub">Zvolte, zda chcete zobrazit ohraničení okolo razítek a upravte jeho vzhled.</div>
-      <div class="options-row" style="margin-bottom:14px;">
-        <button id="borderPreviewOnlyBtn" class="option selected" onclick="toggleBorderPreviewOnly(this)">Zobrazit bez razítek</button>
-      </div>
-      <div class="options-row" style="margin-bottom:12px;">
-        <button id="borderToggleYes" class="option" onclick="pickStampBorderEnabled(true, this)">Zobrazovat</button>
-        <button id="borderToggleNo" class="option" onclick="pickStampBorderEnabled(false, this)">Nezobrazovat</button>
-      </div>
-      <div id="stampBorderPanel" style="display:none;">
-        <div class="q-sub" style="margin-bottom:8px;">Tvar ohraničení</div>
-        <div class="options-row" style="margin-bottom:12px;">
-          <button id="borderShapeCircleBtn" class="option" onclick="pickStampBorderShape('circle', this)" title="Kruh" aria-label="Kruh">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
-              <circle cx="14" cy="14" r="10" stroke="currentColor" stroke-width="2" fill="none" />
-            </svg>
-          </button>
-          <button id="borderShapeRoundedBtn" class="option" onclick="pickStampBorderShape('rounded', this)" title="Zaoblený čtverec" aria-label="Zaoblený čtverec">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
-              <rect x="6" y="6" width="16" height="16" rx="5" stroke="currentColor" stroke-width="2" fill="none" />
-            </svg>
-          </button>
-          <!-- Obrys razítka (outline of selected stamp icon) -->
-          <button id="borderShapeIconBtn" class="option" onclick="pickStampBorderShape('icon', this)" title="Obrys razítka" aria-label="Obrys razítka">
-            <img id="borderShapeIconImg" src="" alt="Obrys razítka" style="display:block; width:28px; height:28px; object-fit:contain;" />
-          </button>
-          <button id="borderShapeSquareBtn" class="option" onclick="pickStampBorderShape('square', this)" title="Čtverec" aria-label="Čtverec">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
-              <rect x="6" y="6" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" />
-            </svg>
-          </button>
-        </div>
-        <div style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center; align-items:flex-end; margin-bottom:12px;">
-          <div style="display:flex; flex-direction:column; gap:6px; min-width:160px;">
-            <label style="font-size:13px; color:#374151; font-weight:600;">Tloušťka čáry (px)</label>
-            <input type="number" id="stampBorderSizeInput" min="1" max="12" value="2" oninput="onStampBorderSizeChange(this)" style="height:38px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; text-align:center;">
-          </div>
-          <div style="display:flex; flex-direction:column; gap:6px; min-width:200px;">
-            <label style="font-size:13px; color:#374151; font-weight:600;">Vzdálenost od razítka (px)</label>
-            <input type="number" id="stampBorderOffsetInput" min="-20" max="40" value="-3" oninput="onStampBorderOffsetChange(this)" style="height:38px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; text-align:center;">
-          </div>
-          <div style="display:flex; flex-direction:column; gap:6px; min-width:160px;">
-            <label style="font-size:13px; color:#374151; font-weight:600;">Průhlednost (%)</label>
-            <input type="number" id="stampBorderOpacityInput" min="0" max="100" value="100" oninput="onStampBorderOpacityChange(this)" style="height:38px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; text-align:center;">
-          </div>
-          <div style="display:flex; flex-direction:column; gap:6px; min-width:180px;">
-            <label style="font-size:13px; color:#374151; font-weight:600;">Barva</label>
-            <input type="color" id="stampBorderColorInput" value="#000000" oninput="onStampBorderColorChange(this)" style="height:38px; padding:0; border:1px solid #e5e7eb; border-radius:8px;">
-          </div>
-        </div>
+      <div class="q-title">Nastavení ohraničení</div>
+      <div class="q-sub">Chcete u razítek zobrazovat ohraničení?</div>
+      <div class="options-row">
+        <button id="borderToggleYes" class="option" onclick="pickStampBorderEnabled(true, this)">Zobrazovat ohraničení</button>
+        <button id="borderToggleNo" class="option" onclick="pickStampBorderEnabled(false, this)">Nezobrazovat ohraničení</button>
       </div>
       <div class="q-actions">
         <button class="btn btn-back" onclick="goBack()">Zpět</button>
-        <button class="btn btn-next" onclick="goNext()">Pokračovat</button>
+        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
       </div>
+    </div>
+
+    <div class="question-panel" data-step="7.5" id="step-7b" style="display:none;">
+        <div class="q-title">Vzhled ohraničení</div>
+        <div class="q-sub">Zvolte, jak chcete ohraničení zobrazit v náhledu.</div>
+        <div class="options-row" style="margin-bottom:14px;">
+            <button class="option selected" onclick="setStampPreviewMode('partial', this)">Zobrazit částečně</button>
+            <button class="option" onclick="setStampPreviewMode('none', this)">Zobrazit bez razítek</button>
+            <button class="option" onclick="setStampPreviewMode('all', this)">Zobrazit s razítky</button>
+        </div>
+        <div id="stampBorderPanel" style="display:block;">
+            <div class="q-sub" style="margin-bottom:8px;">Tvar ohraničení</div>
+            <div class="options-row" style="margin-bottom:12px;">
+                <button id="borderShapeOutlineBtn" class="option selected" onclick="pickStampBorderShape('outline', this)" title="Obrys" aria-label="Obrys">
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+                        <path d="M14 24C19.5228 24 24 19.5228 24 14C24 8.47715 19.5228 4 14 4C8.47715 4 4 8.47715 4 14C4 19.5228 8.47715 24 14 24ZM14 21C17.866 21 21 17.866 21 14C21 10.134 17.866 7 14 7C10.134 7 7 10.134 7 14C7 17.866 10.134 21 14 21Z" fill="currentColor"/>
+                    </svg>
+                </button>
+                <button id="borderShapeIconBtn" class="option" onclick="pickStampBorderShape('icon', this)" title="Silueta razítka" aria-label="Silueta razítka">
+                    <img id="borderShapeIconImg" src="" alt="Silueta razítka" style="display:block; width:28px; height:28px; object-fit:contain;" />
+                </button>
+                <button id="borderShapeCircleBtn" class="option" onclick="pickStampBorderShape('circle', this)" title="Kruh" aria-label="Kruh">
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+                        <circle cx="14" cy="14" r="10" stroke="currentColor" stroke-width="2" fill="none" />
+                    </svg>
+                </button>
+                <button id="borderShapeRoundedBtn" class="option" onclick="pickStampBorderShape('rounded', this)" title="Zaoblený čtverec" aria-label="Zaoblený čtverec">
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+                        <rect x="6" y="6" width="16" height="16" rx="5" stroke="currentColor" stroke-width="2" fill="none" />
+                    </svg>
+                </button>
+                <button id="borderShapeSquareBtn" class="option" onclick="pickStampBorderShape('square', this)" title="Čtverec" aria-label="Čtverec">
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+                        <rect x="6" y="6" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" />
+                    </svg>
+                </button>
+                <button id="borderShapeCustomBtn" class="option" onclick="pickStampBorderShape('custom', this)" title="Nahrát vlastní">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </button>
+            </div>
+            <input type="file" id="stampBorderFileInput" style="display:none;" accept="image/*" onchange="onStampBorderFileChange(this)">
+            <div style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center; align-items:flex-end; margin-bottom:12px;">
+                <div style="display:flex; flex-direction:column; gap:6px; min-width:160px;">
+                    <label style="font-size:13px; color:#374151; font-weight:600;">Tloušťka čáry (px)</label>
+                    <input type="number" id="stampBorderSizeInput" min="1" max="12" value="2" oninput="onStampBorderSizeChange(this)" style="height:38px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; text-align:center;">
+                </div>
+                <div style="display:flex; flex-direction:column; gap:6px; min-width:200px;">
+                    <label style="font-size:13px; color:#374151; font-weight:600;">Vzdálenost od razítka (px)</label>
+                    <input type="number" id="stampBorderOffsetInput" min="-20" max="40" value="-3" oninput="onStampBorderOffsetChange(this)" style="height:38px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; text-align:center;">
+                </div>
+                <div style="display:flex; flex-direction:column; gap:6px; min-width:160px;">
+                    <label style="font-size:13px; color:#374151; font-weight:600;">Průhlednost (%)</label>
+                    <input type="number" id="stampBorderOpacityInput" min="0" max="100" value="100" oninput="onStampBorderOpacityChange(this)" style="height:38px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; text-align:center;">
+                </div>
+                <div style="display:flex; flex-direction:column; gap:6px; min-width:180px;">
+                    <label style="font-size:13px; color:#374151; font-weight:600;">Barva</label>
+                    <input type="color" id="stampBorderColorInput" value="#000000" oninput="onStampBorderColorChange(this)" style="height:38px; padding:0; border:1px solid #e5e7eb; border-radius:8px;">
+                </div>
+            </div>
+        </div>
+        <div class="q-actions">
+            <button class="btn btn-back" onclick="goBack()">Zpět</button>
+            <button class="btn btn-next" onclick="goNext()">Pokračovat</button>
+        </div>
     </div>
 
     <!-- KROK 8: Text na stripu -->
@@ -1298,6 +1330,7 @@
 
           // --- Global state ---
           let currentStep = 1;
+          let stepHistory = [];
           let cardType = '';
           let pickedColor = null;
           let textColor = '#000000';
@@ -1323,17 +1356,21 @@
           let stampOpacity = 1;
           let stampSize = 48;
           let stampGap = 6;
-          let stampIconUrl = '';
+          let stampIconUrl = 'https://static.wixstatic.com/media/1cf87e_f7284a8ad6d1438c9e79eb3d0818890a~mv2.png';
           let stampCustomObjectUrl = null;
-          let stampBorderEnabled = false;
+          let stampBorderEnabled = true;
           let stampBorderSize = 1; // Změněno na 1
           let stampBorderOffset = 1; // Nastaveno na výchozí hodnotu z inputu
           let stampBorderOpacity = 50; // Změněno na 50
           let stampBorderColor = '#374151'; // Změněno na tmavě šedou
-          let stampBorderShape = 'icon'; // Změněno na 'icon'
-          let stampBorderPreviewOnly = false;
+          let stampBorderShape = 'outline';
+          let stampPreviewMode = 'partial';
+          // TOTO PŘIDEJ
+          let stampBorderCustomUrl = null;
+          let currentCustomBorderImg = null;
+          // KONEC PŘIDÁNÍ
           let currentStampImg = null;
-          let defaultStampUrl = '';
+          let defaultStampUrl = 'https://static.wixstatic.com/media/1cf87e_f7284a8ad6d1438c9e79eb3d0818890a~mv2.png';
           let perStampTotal = 10;
           let perStripSelectedStep = 0;
           let perStripUrls = [];
@@ -1437,30 +1474,33 @@
 
     // Helper to draw stamp border according to current settings
     function drawStampBorder(ctx, x, y, size) {
+      if (stampBorderShape === 'custom') {
+        if (currentCustomBorderImg) {
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, Math.min(1, (stampBorderOpacity || 100) / 100));
+          ctx.drawImage(currentCustomBorderImg, x, y, size, size);
+          ctx.restore();
+        }
+        return;
+      }
       try {
         const lw = Math.max(1, stampBorderSize);
-        // Interpret offset as the exact gap (in px) between the stamp edge
-        // and the INNER edge of the border. 0 => flush (nalepené),
-        // positive => gap outside the stamp, negative => border overlaps the stamp.
         const g = Number.isFinite(stampBorderOffset) ? stampBorderOffset : 0;
         ctx.save();
         ctx.globalAlpha = Math.max(0, Math.min(1, (stampBorderOpacity || 0) / 100));
         ctx.strokeStyle = stampBorderColor || '#000000';
         ctx.lineWidth = lw;
         if (stampBorderShape === 'circle') {
-          // Inner edge radius = size/2 + g  => path radius = inner + lw/2
           const r = Math.max(lw / 2, (size / 2) + g + (lw / 2));
           ctx.beginPath();
           ctx.arc(x + size / 2, y + size / 2, r, 0, Math.PI * 2);
           ctx.stroke();
         } else if (stampBorderShape === 'rounded') {
-          // Inner edge rectangle expands by g on all sides; path is offset by lw/2 from inner edge
           const w0 = Math.max(1, (size + 2 * g) - lw);
           const h0 = w0;
           const x0 = (x - g) + (lw / 2);
           const y0 = (y - g) + (lw / 2);
-          const base = Math.min(w0, h0);
-          const radBase = Math.max(2, Math.min(base / 2, (size + 2 * g) * 0.25));
+          const radBase = Math.max(2, Math.min(w0/2, (size + 2 * g) * 0.25));
           ctx.beginPath();
           ctx.moveTo(x0 + radBase, y0);
           ctx.lineTo(x0 + w0 - radBase, y0);
@@ -1473,15 +1513,13 @@
           ctx.quadraticCurveTo(x0, y0, x0 + radBase, y0);
           ctx.closePath();
           ctx.stroke();
-        } else if (stampBorderShape === 'icon') {
-          // Outline of the selected stamp icon: colored overlay, slightly enlarged
+        } else if (stampBorderShape === 'icon' || stampBorderShape === 'outline') {
           const baseImg = currentStampImg;
           if (baseImg) {
-            // Inner shape size reacts to offset g; add lw to enlarge slightly
             const innerSize = Math.max(1, Math.round((size + 2 * g) + lw));
             const ox = Math.round(x + (size - innerSize) / 2);
             const oy = Math.round(y + (size - innerSize) / 2);
-            // Prepare tinted icon on offscreen canvas
+            
             const off = document.createElement('canvas');
             off.width = innerSize; off.height = innerSize;
             const octx = off.getContext('2d');
@@ -1490,29 +1528,34 @@
             octx.globalCompositeOperation = 'source-in';
             octx.fillStyle = stampBorderColor || '#000000';
             octx.fillRect(0, 0, innerSize, innerSize);
-            octx.globalCompositeOperation = 'source-over';
-            // Approximate stroke by drawing tinted image around the center in 8 directions
-            const tmax = Math.max(1, Math.round(lw));
-            for (let t = 1; t <= tmax; t++) {
-              ctx.drawImage(off, ox - t, oy);        // left
-              ctx.drawImage(off, ox + t, oy);        // right
-              ctx.drawImage(off, ox, oy - t);        // up
-              ctx.drawImage(off, ox, oy + t);        // down
-              ctx.drawImage(off, ox - t, oy - t);    // diag up-left
-              ctx.drawImage(off, ox + t, oy - t);    // diag up-right
-              ctx.drawImage(off, ox - t, oy + t);    // diag down-left
-              ctx.drawImage(off, ox + t, oy + t);    // diag down-right
+            
+            if (stampBorderShape === 'icon') { // Silueta
+              const tmax = Math.max(1, Math.round(lw));
+              for (let t = 1; t <= tmax; t++) {
+                ctx.drawImage(off, ox - t, oy); ctx.drawImage(off, ox + t, oy);
+                ctx.drawImage(off, ox, oy - t); ctx.drawImage(off, ox, oy + t);
+                ctx.drawImage(off, ox - t, oy - t); ctx.drawImage(off, ox + t, oy - t);
+                ctx.drawImage(off, ox - t, oy + t); ctx.drawImage(off, ox + t, oy + t);
+              }
+            } else { // Obrys
+                const outlineCanvas = document.createElement('canvas');
+                const padding = lw * 2;
+                outlineCanvas.width = innerSize + padding;
+                outlineCanvas.height = innerSize + padding;
+                const outCtx = outlineCanvas.getContext('2d');
+                const tmax = Math.max(1, Math.round(lw));
+                for (let t = 1; t <= tmax; t++) {
+                    outCtx.drawImage(off, padding/2 - t, padding/2); outCtx.drawImage(off, padding/2 + t, padding/2);
+                    outCtx.drawImage(off, padding/2, padding/2 - t); outCtx.drawImage(off, padding/2, padding/2 + t);
+                    outCtx.drawImage(off, padding/2 - t, padding/2 - t); outCtx.drawImage(off, padding/2 + t, padding/2 - t);
+                    outCtx.drawImage(off, padding/2 - t, padding/2 + t); outCtx.drawImage(off, padding/2 + t, padding/2 + t);
+                }
+                outCtx.globalCompositeOperation = 'destination-out';
+                outCtx.drawImage(off, padding/2, padding/2);
+                ctx.drawImage(outlineCanvas, ox - padding/2, oy - padding/2);
             }
-            // Do not draw center to keep hollow outline look
-          } else {
-            // Fallback: circle when icon not loaded
-            const r = Math.max(lw / 2, (size / 2) + g + (lw / 2));
-            ctx.beginPath();
-            ctx.arc(x + size / 2, y + size / 2, r, 0, Math.PI * 2);
-            ctx.stroke();
           }
-        } else {
-          // square
+        } else { // 'square'
           const w0 = Math.max(1, (size + 2 * g) - lw);
           const h0 = w0;
           const x0 = (x - g) + (lw / 2);
@@ -1539,14 +1582,12 @@
     }
 
     function showStep(n) {
-      steps().forEach(p => { p.style.display = (Number(p.dataset.step) === n) ? 'block' : 'none'; });
+      steps().forEach(p => { p.style.display = (Number(p.dataset.step) === n || p.dataset.step === String(n)) ? 'block' : 'none'; });
       currentStep = n;
       updateNavState();
-      // Správa dočasného náhledu pro krok 2
       const tmpPrev = document.getElementById('topModePreview');
       if (tmpPrev) tmpPrev.style.display = 'none';
       if (n === 2) {
-        // výchozí volba: Text
         if (!topMode) topMode = 'napis';
         const opts = document.querySelectorAll('#step-2 .option');
         opts.forEach((o, i) => o.classList.toggle('selected', (topMode === 'napis' ? i === 0 : i === 1)));
@@ -1560,22 +1601,19 @@
           if (textarea) textarea.value = napisText;
           updateNapisUI();
           renderLogoSlot();
-          setTimeout(renderLogoSlot, 50); // Přidáno pro správné vykreslení textu
+          setTimeout(renderLogoSlot, 50);
           if (next) next.disabled = (napisText.trim().split('\n')[0].length === 0);
         } else {
           if (napisWrapper) napisWrapper.style.display = 'none';
           if (logoWrapper) logoWrapper.style.display = 'flex';
-          // ensure preview reflects current choice (clear text if no logo yet)
           renderLogoSlot();
           if (next) next.disabled = (logoUrl.trim().length === 0);
         }
         setTopModePreviewSrc();
       }
       if (n === 3) {
-        // Krok 3: výběr stripu (bez typu karty)
         const next = getCurrentNextBtn();
         if (next) next.disabled = false;
-        // Init strip selection to first option if not chosen yet
         try {
           const stripButtons = document.querySelectorAll('#step-3 .strip-card');
           if (!selectedStripUrl && stripButtons.length) {
@@ -1586,7 +1624,6 @@
             setStripBackground();
             renderStrip();
           } else {
-            // refresh selection highlight (handle custom vs preset)
             if (customStripObjectUrl) {
               const customBtn = document.getElementById('stripCustomBtn');
               if (customBtn) {
@@ -1600,7 +1637,6 @@
         } catch (_) {}
       }
       if (n === 4) {
-        // Krok 4: výběr typu karty (až po potvrzení stripu)
         if (!cardType) cardType = 'revolution';
         const cards = document.querySelectorAll('#step-4 .type-card');
         cards.forEach(btn => btn.classList.toggle('selected', btn.dataset.type === cardType));
@@ -1612,33 +1648,22 @@
         if (descPanel) descPanel.style.display = 'block';
       }
       if (n === 5.5) {
-        // Krok 5.5: Výběr režimu Revolution karty (preset/custom)
         const next = getCurrentNextBtn();
-        if (next) next.disabled = true; // Výchozí stav: zakázané, dokud se nevybere režim
-        
-        // Inicializace výběru režimu, pokud ještě není zvolen
         if (!revolutionMode) {
-            // Výchozí stav: nic není vybráno
-            document.getElementById('revolutionPresetNote').style.display = 'none';
-            document.getElementById('revolutionCustomPanel').style.display = 'none';
-        } else {
-            // Obnovení výchzího stavu
-            pickRevolutionMode(revolutionMode, document.querySelector(`#step-5b .option[data-mode="${revolutionMode}"]`));
+          const presetButton = document.querySelector('#step-5b .option[onclick*="\'preset\']');
+          pickRevolutionMode('preset', presetButton);
         }
-        
-        // Ujistíme se, že máme připravenu alespoň jednu úroveň
         if (revolutionLevels.length === 0) {
-            revolutionLevels.push({
-                name: 'Bronzový', 
-                discount: 5, 
-                threshold: 1000, 
-                color: '#CD7F32'
-            });
+          revolutionLevels.push({ name: 'Bronzový', discount: 5, threshold: 1000, color: '#CD7F32' });
         }
       }
-
+      if (n === 5.6) {
+        const noButton = document.querySelector('#step-5c .option[onclick*="false"]');
+        if (noButton && !noButton.classList.contains('selected')) {
+          pickRevolutionProgress(false, noButton);
+        }
+      }
       if (n === 5) {
-        // Krok 5: Podmíněně – buď režim razítek, nebo Bodová nastavení, nebo Procentní úrovně
         const isRazitkova = (cardType === 'razitkova');
         const isBodova = (cardType === 'bodova');
         const isProcentni = (cardType === 'procentni');
@@ -1651,7 +1676,6 @@
         const next = getCurrentNextBtn();
         if (isRazitkova) {
           if (next) next.disabled = !stampMode;
-          // UI init for razítka
           const preNote = document.getElementById('stampPresetNote');
           if (preNote) preNote.style.display = (stampMode === 'preset') ? 'block' : 'none';
           const perNote = document.getElementById('stampPerNote');
@@ -1663,30 +1687,23 @@
           if (sBtn) sBtn.classList.toggle('selected', stampMode === 'standard');
           if (pBtn) pBtn.classList.toggle('selected', stampMode === 'perStamp');
         } else if (isBodova) {
-          // Init inputs from state
           try {
-            const pi = document.getElementById('bodPointsInput');
-            if (pi) pi.value = String(bodPoints);
-            const ri = document.getElementById('bodRateInput');
-            if (ri) ri.value = String(bodRate);
-            const ti = document.getElementById('bodTopTextInput');
-            if (ti) ti.value = bodTopMessage;
-            const bi = document.getElementById('bodBottomTextInput');
-            if (bi) bi.value = bodBottomMessage;
+            document.getElementById('bodPointsInput').value = String(bodPoints);
+            document.getElementById('bodRateInput').value = String(bodRate);
+            document.getElementById('bodTopTextInput').value = bodTopMessage;
+            document.getElementById('bodBottomTextInput').value = bodBottomMessage;
           } catch(_) {}
           updateBodovaPreview();
           updateBodovaNextEnabled();
         } else if (isProcentni) {
           renderProcentniLevels();
           updateProcentniPreview();
-          if (next) next.disabled = false; // Procentní karta je vždy validní
+          if (next) next.disabled = false;
         } else {
-          // If user somehow gets here for other types, just allow next
           if (next) next.disabled = false;
         }
       }
       if (n === 6) {
-        // Krok 6: buď panel pro standardní razítka, nebo dotaz na text na stripu
         const isStampStandard = (cardType === 'razitkova' && stampMode === 'standard');
         const isStampPer = (cardType === 'razitkova' && stampMode === 'perStamp');
         const std = document.getElementById('step6StampStandard');
@@ -1700,95 +1717,45 @@
         if (isStampStandard) {
           try {
             document.getElementById('stampTotalInput').value = String(stampTotal);
-            const opi = document.getElementById('stampOpacityInput');
-            if (opi) opi.value = String(Math.round(Math.max(0, Math.min(1, stampOpacity)) * 100));
-            const opl = document.getElementById('stampOpacityVal');
-            if (opl) opl.textContent = Math.round(Math.max(0, Math.min(1, stampOpacity)) * 100) + '%';
-            const szi = document.getElementById('stampSizeInput');
-            if (szi) szi.value = String(stampSize);
-            const szl = document.getElementById('stampSizeVal');
-            if (szl) szl.textContent = stampSize + 'px';
-            const sgi = document.getElementById('stampGapInput');
-            if (sgi) sgi.value = String(stampGap);
-            // Update stamp icon selection
+            document.getElementById('stampOpacityInput').value = String(Math.round(Math.max(0, Math.min(1, stampOpacity)) * 100));
+            document.getElementById('stampSizeInput').value = String(stampSize);
+            document.getElementById('stampGapInput').value = String(stampGap);
             const stampOptions = document.querySelectorAll('.stamp-option');
             stampOptions.forEach(opt => opt.removeAttribute('data-selected'));
-            const currentOption = Array.from(stampOptions).find(opt => {
-              const onclick = opt.getAttribute('onclick');
-              return onclick && onclick.includes(stampIconUrl);
-            });
+            const currentOption = Array.from(stampOptions).find(opt => (opt.getAttribute('onclick') || '').includes(stampIconUrl));
             if (currentOption) currentOption.setAttribute('data-selected', 'true');
-
-            // Initialize border UI
-            const yes = document.getElementById('borderToggleYes');
-            const no  = document.getElementById('borderToggleNo');
-            if (yes) yes.classList.toggle('selected', stampBorderEnabled === true);
-            if (no)  no.classList.toggle('selected', stampBorderEnabled === false);
-            const panel = document.getElementById('stampBorderPanel');
-            if (panel) panel.style.display = stampBorderEnabled ? 'block' : 'none';
-            const bsz = document.getElementById('stampBorderSizeInput');
-            if (bsz) bsz.value = String(stampBorderSize);
-            const bcol = document.getElementById('stampBorderColorInput');
-            if (bcol) bcol.value = stampBorderColor || '#000000';
-            const bop = document.getElementById('stampBorderOpacityInput');
-            if (bop) bop.value = String(stampBorderOpacity);
-            const c = document.getElementById('borderShapeCircleBtn');
-            const r = document.getElementById('borderShapeRoundedBtn');
-            const i = document.getElementById('borderShapeIconBtn');
-            const s = document.getElementById('borderShapeSquareBtn');
-            if (c) c.classList.toggle('selected', stampBorderShape === 'circle');
-            if (r) r.classList.toggle('selected', stampBorderShape === 'rounded');
-            if (i) i.classList.toggle('selected', stampBorderShape === 'icon');
-            if (s) s.classList.toggle('selected', stampBorderShape === 'square');
-            const iconImg = document.getElementById('borderShapeIconImg');
-            if (iconImg) iconImg.src = (stampIconUrl && stampIconUrl.trim()) ? stampIconUrl : defaultStampUrl;
           } catch(_) {}
         } else if (isStampPer) {
           try {
-            const pti = document.getElementById('perStampTotalInput');
-            if (pti) pti.value = String(perStampTotal);
+            document.getElementById('perStampTotalInput').value = String(perStampTotal);
             buildPerStripUI();
             updatePerStripPreviewAndDownload();
           } catch(_) {}
         }
       }
       if (n === 7) {
-        // Krok 7: inicializace UI pro ohraničení
+        const yes = document.getElementById('borderToggleYes');
+        const no  = document.getElementById('borderToggleNo');
+        if (yes) yes.classList.toggle('selected', stampBorderEnabled === true);
+        if (no)  no.classList.toggle('selected', stampBorderEnabled === false);
         const next = getCurrentNextBtn();
         if (next) next.disabled = false;
-        try {
-          const pOnly = document.getElementById('borderPreviewOnlyBtn');
-          if (pOnly) pOnly.classList.toggle('selected', !!stampBorderPreviewOnly);
-          const yes = document.getElementById('borderToggleYes');
-          const no  = document.getElementById('borderToggleNo');
-          if (yes) yes.classList.toggle('selected', stampBorderEnabled === true);
-          if (no)  no.classList.toggle('selected', stampBorderEnabled === false);
-          const panel = document.getElementById('stampBorderPanel');
-          if (panel) panel.style.display = stampBorderEnabled ? 'block' : 'none';
-          const bsz = document.getElementById('stampBorderSizeInput');
-          if (bsz) bsz.value = String(stampBorderSize);
-          const boff = document.getElementById('stampBorderOffsetInput');
-          if (boff) boff.value = String(stampBorderOffset);
-          const bcol = document.getElementById('stampBorderColorInput');
-          if (bcol) bcol.value = stampBorderColor || '#000000';
-          const bop = document.getElementById('stampBorderOpacityInput');
-          if (bop) bop.value = String(stampBorderOpacity);
-          const c = document.getElementById('borderShapeCircleBtn');
-          const r = document.getElementById('borderShapeRoundedBtn');
-          const s = document.getElementById('borderShapeSquareBtn');
-          if (c) c.classList.toggle('selected', stampBorderShape === 'circle');
-          if (r) r.classList.toggle('selected', stampBorderShape === 'rounded');
-          if (s) s.classList.toggle('selected', stampBorderShape === 'square');
-        } catch(_) {}
+      }
+      if (n === 7.5) {
+        pickStampBorderShape(stampBorderShape, document.querySelector(`#step-7b .option[onclick*="'${stampBorderShape}'"]`));
+        setStampPreviewMode(stampPreviewMode, document.querySelector(`#step-7b .option[onclick*="'${stampPreviewMode}'"]`));
+        
+        const panel = document.getElementById('stampBorderPanel');
+        if (panel) panel.style.display = 'block';
+        const next = getCurrentNextBtn();
+        if (next) next.disabled = false;
       }
       if (n === 8) {
-        // Text na stripu
         const next = getCurrentNextBtn();
         if (next) next.disabled = (stripText.trim().length === 0);
         updateStripMiniUI();
       }
       if (n === 9) {
-        // Barva textu
         const next = getCurrentNextBtn();
         if (next) next.disabled = !textColor;
       }
@@ -1806,7 +1773,7 @@
           ${showStrip ? `<strong>Velikost textu:</strong> ${stripTextSize}<br>` : ''}
           ${showStrip ? `<strong>Barva textu stripu:</strong> <span style="display:inline-block; width:12px; height:12px; background:${stripTextColor || '#000000'}; border:1px solid #e5e7eb; vertical-align:middle;"></span> ${stripTextColor || '#000000'}` : ''}
           ${(cardType === 'razitkova' && stampMode === 'standard') ? `<br><strong>Razítka:</strong> ${stampTotal} ks, velikost ${stampSize}px, rozestup ${stampGap}px, průhlednost ${Math.round(stampOpacity*100)}%<br>` : ''}
-          ${(cardType === 'razitkova' && stampMode === 'standard') ? (`<strong>Ohraničení razítek:</strong> ` + (stampBorderEnabled ? `${(stampBorderShape === 'icon' ? 'obrys razítka' : stampBorderShape)}, tloušťka ${stampBorderSize}px, vzdálenost ${stampBorderOffset}px, <span style=\"display:inline-block; width:12px; height:12px; background:${stampBorderColor}; border:1px solid #e5e7eb; vertical-align:middle;\"></span> ${stampBorderColor}, ${stampBorderOpacity}%` : 'Nezobrazovat')) : ''}
+          ${(cardType === 'razitkova' && stampMode === 'standard') ? (`<strong>Ohraničení razítek:</strong> ` + (stampBorderEnabled ? `${(stampBorderShape === 'icon' ? 'silueta razítka' : stampBorderShape === 'outline' ? 'obrys' : stampBorderShape)}, tloušťka ${stampBorderSize}px, vzdálenost ${stampBorderOffset}px, <span style=\"display:inline-block; width:12px; height:12px; background:${stampBorderColor}; border:1px solid #e5e7eb; vertical-align:middle;\"></span> ${stampBorderColor}, ${stampBorderOpacity}%` : 'Nezobrazovat')) : ''}
         `;
       }
     }
@@ -2365,66 +2332,82 @@
     function pickStampBorderEnabled(enabled, el) {
       stampBorderEnabled = !!enabled;
       try {
-        const yes = document.getElementById('borderToggleYes');
-        const no  = document.getElementById('borderToggleNo');
-        if (yes) yes.classList.toggle('selected', stampBorderEnabled === true);
-        if (no)  no.classList.toggle('selected', stampBorderEnabled === false);
-        const panel = document.getElementById('stampBorderPanel');
-        if (panel) panel.style.display = stampBorderEnabled ? 'block' : 'none';
+        document.querySelectorAll('#step-7 .option').forEach(btn => btn.classList.remove('selected'));
+        if (el) el.classList.add('selected');
+        const next = getCurrentNextBtn();
+        if (next) next.disabled = false;
       } catch(_) {}
-      if (cardType === 'razitkova') { renderStrip(); }
+    }
+
+    function onStampBorderFileChange(input) {
+      try {
+        const file = input && input.files && input.files[0];
+        if (!file) return;
+        if (stampBorderCustomUrl) {
+          try { URL.revokeObjectURL(stampBorderCustomUrl); } catch(_) {}
+        }
+        const objUrl = URL.createObjectURL(file);
+        stampBorderCustomUrl = objUrl;
+        if (cardType === 'razitkova') {
+          renderStrip();
+        }
+      } catch(e) {
+        console.error("Error handling custom border file:", e);
+      }
     }
 
     function pickStampBorderShape(shape, el) {
-      const allowed = ['circle', 'rounded', 'icon', 'square'];
+      const allowed = ['circle', 'rounded', 'icon', 'square', 'custom', 'outline'];
       if (!allowed.includes(shape)) return;
 
       stampBorderShape = shape;
+      const borderSettingsPanel = document.getElementById('stampBorderPanel');
 
-      // --- PŘIDANÁ LOGIKA PRO ZMĚNU STYLŮ ---
-      if (shape === 'icon') {
-          // Pokud je vybrán VÝCHOZÍ obrys, nastaví se jeho specifické styly
+      if (shape === 'custom') {
+        if (borderSettingsPanel) borderSettingsPanel.style.display = 'none';
+        document.getElementById('stampBorderFileInput').click();
+      } else {
+        if (borderSettingsPanel) borderSettingsPanel.style.display = 'block';
+        
+        if (shape === 'outline') {
+            stampBorderSize = 2;
+            stampBorderOpacity = 100;
+            stampBorderOffset = -2;
+            stampBorderColor = '#000000';
+        } else if (shape === 'icon') {
           stampBorderSize = 1;
           stampBorderOpacity = 50;
-          stampBorderOffset = 1; // <-- NOVĚ PŘIDÁNO
-      } else {
-          // Pokud je vybrán JAKÝKOLIV JINÝ tvar, nastaví se tyto styly
+          stampBorderOffset = 1;
+          stampBorderColor = '#374151';
+        } else { // Pro kruh, čtverec atd.
           stampBorderSize = 3;
           stampBorderOpacity = 100;
-          stampBorderOffset = -3; // <-- NOVĚ PŘIDÁNO
-      }
-      // Barva zůstává pro všechny stejná (tmavě šedá)
-      stampBorderColor = '#374151';
+          stampBorderOffset = -3;
+          stampBorderColor = '#374151';
+        }
 
-      // Aktualizace UI prvků (inputů), aby odpovídaly novým hodnotám
-      try {
+        try {
           document.getElementById('stampBorderSizeInput').value = stampBorderSize;
           document.getElementById('stampBorderOpacityInput').value = stampBorderOpacity;
           document.getElementById('stampBorderColorInput').value = stampBorderColor;
-          document.getElementById('stampBorderOffsetInput').value = stampBorderOffset; // <-- NOVĚ PŘIDÁNO
-      } catch(_) {}
-      // --- KONEC PŘIDANÉ LOGIKY ---
+          document.getElementById('stampBorderOffsetInput').value = stampBorderOffset;
+        } catch(_) {}
+      }
 
       try {
-        const c = document.getElementById('borderShapeCircleBtn');
-        const r = document.getElementById('borderShapeRoundedBtn');
-        const i = document.getElementById('borderShapeIconBtn');
-        const s = document.getElementById('borderShapeSquareBtn');
-        if (c) c.classList.toggle('selected', shape === 'circle');
-        if (r) r.classList.toggle('selected', shape === 'rounded');
-        if (i) i.classList.toggle('selected', shape === 'icon');
-        if (s) s.classList.toggle('selected', shape === 'square');
+        document.querySelectorAll('#step-7b #stampBorderPanel .options-row .option').forEach(btn => btn.classList.remove('selected'));
+        if(el) el.classList.add('selected');
       } catch(_) {}
 
       if (cardType === 'razitkova') { renderStrip(); }
     }
 
-    function toggleBorderPreviewOnly(el) {
-      stampBorderPreviewOnly = !stampBorderPreviewOnly;
+    function setStampPreviewMode(mode, el) {
+      stampPreviewMode = mode; // 'partial', 'none', 'all'
       try {
-        const btn = el || document.getElementById('borderPreviewOnlyBtn');
-        if (btn) btn.classList.toggle('selected', stampBorderPreviewOnly === true);
-      } catch(_) {}
+        document.querySelectorAll('#step-7b .options-row .option').forEach(btn => btn.classList.remove('selected'));
+        if (el) el.classList.add('selected');
+      } catch (_) {}
       if (cardType === 'razitkova') { renderStrip(); }
     }
 
@@ -2635,21 +2618,24 @@
     }
 
     function pickCardType(type, el) {
+        if (type === 'razitkova' && !stampMode) {
+            stampMode = 'standard';
+        }
       cardType = type;
-
-      // --- ZDE JE KLÍČOVÁ ÚPRAVA ---
-      // Pokud je vybrána razítková karta a ještě není nastaven režim,
-      // nastavíme výchozí 'standard', aby se ihned zobrazil náhled razítek.
-      if (type === 'razitkova' && !stampMode) {
-        stampMode = 'standard';
-      }
-      // --- KONEC ÚPRAVY ---
 
       document.querySelectorAll('#step-4 .type-card').forEach(b => b.classList.remove('selected'));
       if (el) el.classList.add('selected');
       const next = getCurrentNextBtn();
       if (next) next.disabled = false;
       applyCardType(type);
+      // Okamžité zobrazení razítek při výběru razítkové karty
+      if (type === 'razitkova') {
+        setTimeout(() => {
+          positionStrip();
+          setStripBackground();
+          renderStrip();
+        }, 10);
+      }
       // Update compact description panel
       updateTypeDescription(type);
       const panel = document.getElementById('typeDescPanel');
@@ -2730,15 +2716,18 @@
     function onNapisInput() {
       const ta = document.getElementById('napisTextarea');
       let v = (ta?.value || '').replace(/\r/g, '');
-      // Enforce max 2 lines and no auto-wrap: keep at most one newline
+      // Omezení na 2 řádky
       const parts = v.split('\n');
       if (parts.length > 2) {
         v = parts.slice(0, 2).join('\n');
-        if (ta) ta.value = v; // reflect truncation in UI
+        if (ta) ta.value = v;
       }
       napisText = v;
-      renderLogoSlot();
-      setTopModePreviewSrc(); // hide sample overlay as soon as user types
+
+      // Odložíme volání o 50ms, aby se stihl připravit layout a font
+      setTimeout(renderLogoSlot, 50);
+
+      setTopModePreviewSrc(); // Skryje placeholder obrázek
       const next = getCurrentNextBtn();
       const first = v.split('\n')[0].trim();
       if (next) next.disabled = (first.length === 0);
@@ -2932,6 +2921,15 @@
         
         // Zbytek funkce je téměř stejný, jen použijeme správný název fontu
         slot.innerHTML = '';
+        
+        // DEBUG: Zkontrolujeme hodnoty
+        console.log('renderLogoSlot DEBUG:', {
+            topMode: topMode,
+            napisText: napisText,
+            hasText: !!(napisText || '').trim(),
+            condition: topMode === 'napis' && (napisText || '').trim()
+        });
+        
         if (topMode === 'napis' && (napisText || '').trim()) {
             const text = (napisText || '').replace(/\r/g, '');
             const parts = text.split('\n');
@@ -3303,90 +3301,90 @@
     }
 
     async function renderStripOnCanvas(patternUrl) {
+      if (stampBorderShape === 'custom' && stampBorderCustomUrl) {
+        try {
+          currentCustomBorderImg = await loadImage(stampBorderCustomUrl);
+        } catch(e) {
+          console.error("Failed to load custom border image:", e);
+          currentCustomBorderImg = null;
+        }
+      } else {
+        currentCustomBorderImg = null;
+      }
+
       const card = document.getElementById('fakeCard');
-      const img = document.getElementById('stripResultImg');
       const cv = document.getElementById('stripCanvas');
-      if (!cv || !img || !card) return;
-      const w = card ? card.clientWidth : 257;
-      const h = stripBandHeight && stripBandHeight > 0 ? stripBandHeight : Math.round(w * (246/624));
-      // Ensure canvas pixel size matches CSS size
+      if (!cv || !card) return;
+      const w = card.clientWidth;
+      const h = stripBandHeight > 0 ? stripBandHeight : Math.round(w * (246/624));
       cv.width = w;
       cv.height = h;
       const ctx = cv.getContext('2d');
       ctx.clearRect(0, 0, w, h);
 
-      // Draw stamps only if card type is 'razitkova' (matching WIX.txt logic)
       if (cardType === 'razitkova') {
         try {
-          const iconUrl = (stampIconUrl && stampIconUrl.trim()) ? stampIconUrl : defaultStampUrl;
+          const iconUrl = stampIconUrl || defaultStampUrl;
           const stampImg = await loadImage(iconUrl);
-          // cache for 'Obrys razítka' shape and keep the preview icon in sync
           currentStampImg = stampImg;
+          
           try {
             const iconPrev = document.getElementById('borderShapeIconImg');
             if (iconPrev) iconPrev.src = iconUrl;
           } catch(_) {}
           
-          // Use WIX.txt logic: distribute stamps across rows dynamically
           const n = stampTotal;
-          const row1Count = Math.ceil(n / 2);
-          const row2Count = n - row1Count;
-          const maxCols = Math.max(row1Count, row2Count);
-          
-          // Use stampSize directly without clamping; may overflow if too large (as requested)
+          let stampsToDraw = n;
+          let shouldDrawBorder = stampBorderEnabled && currentStep >= 7;
+
+          if (currentStep === 7.5) {
+            if (stampPreviewMode === 'none') stampsToDraw = 0;
+            else if (stampPreviewMode === 'partial') stampsToDraw = Math.ceil(n / 2);
+          }
+
+          const totalRow1Count = Math.ceil(n / 2);
+          const totalRow2Count = n - totalRow1Count;
           const actualSize = Math.max(1, stampSize);
-          const gap = Math.max(2, Math.min(30, stampGap)); // use stampGap variable
+          const gap = Math.max(2, stampGap);
           
           ctx.save();
           ctx.globalAlpha = Math.max(0, Math.min(1, stampOpacity));
           
-          // Draw first row
-          if (row1Count > 0) {
-            const row1W = row1Count * actualSize + (row1Count - 1) * gap;
+          if (totalRow1Count > 0) {
+            const row1W = totalRow1Count * actualSize + (totalRow1Count - 1) * gap;
             const row1StartX = Math.floor((w - row1W) / 2);
             const row1Y = Math.floor((h / 2) - (actualSize + gap / 2));
-            
-            for (let i = 0; i < row1Count; i++) {
+            for (let i = 0; i < totalRow1Count; i++) {
               const x = row1StartX + i * (actualSize + gap);
-              // Draw border first (under the stamp)
-              if (stampBorderEnabled) {
+              if (shouldDrawBorder) {
                 drawStampBorder(ctx, x, row1Y, actualSize);
               }
-              // Then draw the stamp image (unless border-only preview in step 7)
-              if (!(currentStep === 7 && stampBorderPreviewOnly === true)) {
+              const currentStampIndex = i;
+              if (currentStampIndex < stampsToDraw) {
                 ctx.drawImage(stampImg, x, row1Y, actualSize, actualSize);
               }
             }
           }
           
-          // Draw second row
-          if (row2Count > 0) {
-            const row2W = row2Count * actualSize + (row2Count - 1) * gap;
+          if (totalRow2Count > 0) {
+            const row2W = totalRow2Count * actualSize + (totalRow2Count - 1) * gap;
             const row2StartX = Math.floor((w - row2W) / 2);
             const row2Y = Math.floor((h / 2) + (gap / 2));
-            
-            for (let i = 0; i < row2Count; i++) {
+            for (let i = 0; i < totalRow2Count; i++) {
               const x = row2StartX + i * (actualSize + gap);
-              // Draw border first (under the stamp)
-              if (stampBorderEnabled) {
+              if (shouldDrawBorder) {
                 drawStampBorder(ctx, x, row2Y, actualSize);
               }
-              // Then draw the stamp image (unless border-only preview in step 7)
-              if (!(currentStep === 7 && stampBorderPreviewOnly === true)) {
+              const currentStampIndex = totalRow1Count + i;
+              if (currentStampIndex < stampsToDraw) {
                 ctx.drawImage(stampImg, x, row2Y, actualSize, actualSize);
               }
             }
           }
-          
           ctx.restore();
           
-          // Update stamp counter display
-          try {
-            const stampValElem = document.getElementById('stampVal');
-            if (stampValElem) stampValElem.textContent = `${stampTotal} / ${stampTotal}`;
-          } catch(_) {}
         } catch (e) {
-          // If any image fails, leave canvas empty; the strip image below will still show the pattern
+          console.error("Chyba při vykreslování razítek:", e);
         }
       }
     }
@@ -3434,60 +3432,48 @@
     }
 
     function nextStepNum() {
-        switch (currentStep) {
-            case 1: return 2;
-            case 2: return 3;
-            case 3: return 4;
-            case 4:
-                if (cardType === 'revolution') return 5.5;
-                return 5;
-            case 5: // Bodová, Procentíní, Razítková (nastavení)
-                if (cardType === 'razitkova') return 6; // Razítková jde na svůj speciální krok 6
-                // Bodová a Procentíní jdou na obecnou otázku o textu na stripu
-                return 6.5; 
-            case 5.5: // Revolution (nastavení úrovní)
-                return 5.6;
-            case 5.6: // Revolution (dotaz na viz. progres a jeho nastavení)
-                return 6.5; // Po dokončení jdeme na obecnou otázku o textu na stripu
-            case 6: // Pouze pro Razítkovou (detailní nastavení)
-                if (stampMode === 'standard') return 7;
-                // Preset a Per-Stamp jdou na obecnou otázku
-                return 6.5;
-            case 6.5: // Obecná otázka "Zobrazovat text na stripu?"
-                return showStrip ? 8 : 9;
-            case 7: // Ohraničení (jen pro Razítkovou)
-                return 10;
-            case 8: // Editor textu na stripu
-                return 9;
-            case 9: // Barva textu
-                return 10;
-            default: return currentStep + 1;
-        }
+      switch (currentStep) {
+        case 1: return 2;
+        case 2: return 3;
+        case 3: return 4;
+        case 4:
+          if (cardType === 'revolution') return 5.5;
+          return 5;
+        case 5:
+          return 6;
+        case 5.5: return 5.6;
+        case 5.6: return 6;
+        case 6:
+          if (cardType === 'razitkova' && stampMode === 'standard') {
+            return 7;
+          }
+          return showStrip ? 8 : 9;
+        case 7:
+          return stampBorderEnabled ? 7.5 : 10;
+        case 7.5:
+          return 10;
+        case 8:
+          return 9;
+        case 9:
+          return 10;
+        default: return currentStep + 1;
+      }
     }
 
     function prevStepNum() {
         switch (currentStep) {
-            case 10: // Zpět ze Shrnutí
+            case 10:
                 if (cardType === 'razitkova' && stampMode === 'standard') return 7;
-                return 9;
-            case 9: // Zpět z Barvy textu
-                return showStrip ? 8 : 6.5;
-            case 8: // Zpět z Editoru textu
-                return 6.5;
-            case 7: // Zpět z Ohraničení
-                return 6;
-            case 6.5: // Zpět z obecné otázky o textu
+                return showStrip ? 9 : 6;
+            case 9: return showStrip ? 8 : 6;
+            case 8: return 6;
+            case 7: return 6;
+            case 6:
                 if (cardType === 'revolution') return 5.6;
-                if (cardType === 'razitkova') return 6;
                 return 5;
-            case 6: // Zpět z nastavení razítek
-                return 5;
-            case 5.6: // Zpět z dotazu na vizuální progres
-                return 5.5;
-            case 5.5: // Zpět z nastavení Revolution
-                return 4;
-            case 5: // Zpět z nastavení Bodové/Procentíní/Razítkové
-                return 4;
+            case 5.6: return 5.5;
+            case 5.5: return 4;
+            case 5: return 4;
             case 4: return 3;
             case 3: return 2;
             case 2: return 1;
@@ -3508,13 +3494,41 @@
       if (currentStep === 5 && cardType === 'bodova') {
         if (!isBodovaValid()) return;
       }
+      // Procentní: validace kroku 5
+      if (currentStep === 5 && cardType === 'procentni') {
+        if (!procentniLevels || procentniLevels.length === 0) return;
+        // Kontrola, že všechny úrovně mají vyplněné názvy a slevy
+        for (let level of procentniLevels) {
+          if (!level.name || level.name.trim() === '' || level.discount == null || level.discount < 0) return;
+        }
+      }
+      // Revolution: validace kroku 5.5
+      if (currentStep === 5.5) {
+        if (!revolutionMode) return;
+      }
+      // Revolution: validace kroku 5.6
+      if (currentStep === 5.6) {
+        if (revolutionShowProgress == null) return;
+        // Pokud je zapnutý progres a custom režim, kontrolujeme povinná pole
+        if (revolutionShowProgress && revolutionGfxMode === 'custom') {
+          if (!revolutionBonusMin || revolutionBonusMin <= 0) return;
+          if (!revolutionMilestones || revolutionMilestones <= 1) return;
+        }
+      }
       if (currentStep === 8 && !stripText.trim()) return;
+    
+    stepHistory.push(currentStep); // PŘIDANÝ ŘÁDEK
       showStep(nextStepNum());
     }
 
     function goBack() {
-      if (currentStep === 1) return;
-      showStep(prevStepNum());
+        if (stepHistory.length > 0) {
+            const lastStep = stepHistory.pop(); // Získáme poslední krok z historie
+            showStep(lastStep);
+        } else if (currentStep > 1) {
+            // Fallback, pokud by byla historie prázdná
+            showStep(currentStep - 1);
+        }
     }
 
     function finishWizard() {
