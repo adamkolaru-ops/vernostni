@@ -45,7 +45,7 @@
       display: grid;
       grid-template-columns: 360px minmax(520px, 1fr);
       gap: 24px;
-      align-items: start;
+      align-items: start; /* OPRAVA: Zarovnání na začátek (flush s vrchem fake card) */
     }
 
     /* (PC) Scale control removed */
@@ -326,7 +326,7 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.08);
       position: relative;
       z-index: 2;
-      margin-top: 5cm; /* PC: offset to align roughly with fake card center */
+      /* margin-top: 5cm; byl odstraněn pro zarovnání s vrchem fake card */
       border: 2px solid #d1d5db; /* výraznější ohraničení */
       padding: 6px 14px 14px; /* menší horní odsazení pro nadpis a popis */
     }
@@ -351,6 +351,13 @@
     .q-actions { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
     .btn {
       appearance: none; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 700; font-size: 14px;
+      cursor: pointer; /* OPRAVA: Explicitní kurzor pro celé tlačítko */
+      user-select: none; /* Zabrání výběru textu */
+      display: inline-block; /* Zajistí správnou hit area */
+      text-align: center; /* Vycentrování textu */
+      line-height: 1.2; /* Správná výška řádku */
+      min-width: 100px; /* Minimální šířka pro lepší hit area */
+      transition: all 0.2s ease; /* Plynulé přechody */
     }
     .btn-next { background: #4f46e5; color: #fff; box-shadow: 0 4px 10px rgba(79,70,229,.25); }
     .btn-next:disabled { opacity: .6; }
@@ -1673,24 +1680,35 @@
         setTopModePreviewSrc();
       }
       if (n === 2.5) {
+        // PŘEDVYPLNĚNÍ BARVY Z KROKU 2 A AKTIVACE TLAČÍTKA
+        const customColorInput = document.getElementById('customTextColor');
+        if (customColorInput) {
+          customColorInput.value = napisColor; // Použij barvu z nápisu
+        }
+        if (!textColor) {
+          textColor = napisColor; // Nastav jako výchozí
+        }
+        setTextColor(textColor);
+
+        const nextBtn = getCurrentNextBtn();
+        if (nextBtn) {
+          nextBtn.disabled = !textColor; // Povolit, pokud je barva nastavena
+        }
+        // KONEC ÚPRAVY
+
         if (pickedColor) {
           const colorRow = document.getElementById('textColorRow');
           if (colorRow) {
-            // Odstraní předchozí přidanou barvu, pokud existuje (při procházení zpět a vpřed)
             const oldSwatch = document.getElementById('cardColorSwatch');
             if (oldSwatch) {
               oldSwatch.remove();
             }
-
-            // Vytvoří nové políčko s barvou karty
             const cardColorSwatch = document.createElement('div');
             cardColorSwatch.id = 'cardColorSwatch';
             cardColorSwatch.className = 'swatch';
             cardColorSwatch.style.background = pickedColor;
             cardColorSwatch.title = 'Barva karty';
             cardColorSwatch.setAttribute('onclick', `pickTextColor('${pickedColor}', this)`);
-            
-            // Vloží ho na první místo
             colorRow.prepend(cardColorSwatch);
           }
         }
@@ -1840,13 +1858,91 @@
         if (next) next.disabled = false;
       }
       if (n === 7.5) {
-        pickStampBorderShape(stampBorderShape, document.querySelector(`#step-7b .option[onclick*="'${stampBorderShape}'"]`));
-        setStampPreviewMode(stampPreviewMode, document.querySelector(`#step-7b .option[onclick*="'${stampPreviewMode}'"]`));
+        // DEFINITIVNÍ OPRAVA: Vždy nastavíme výchozí hodnoty a zajistíme funkční navigaci
+        if (!stampBorderShape) {
+          stampBorderShape = 'outline';
+        }
+        if (!stampPreviewMode) {
+          stampPreviewMode = 'partial';
+        }
+
+        // Najdeme a označíme výchozí tlačítka BEZ volání funkčních handlerů
+        try {
+          // NEJDŘÍVE označíme režim náhledu (horní řada tlačítek)
+          const previewButtons = document.querySelectorAll('#step-7b > .options-row .option');
+          previewButtons.forEach(btn => btn.classList.remove('selected'));
+          const previewButton = document.querySelector(`#step-7b > .options-row .option[onclick*="'${stampPreviewMode}'"]`);
+          if (previewButton) previewButton.classList.add('selected');
+          
+          // POTÉ označíme tvar ohraničení (dolní řada tlačítek)
+          const shapeButtons = document.querySelectorAll('#step-7b #stampBorderPanel .options-row .option');
+          shapeButtons.forEach(btn => btn.classList.remove('selected'));
+          const shapeButton = document.getElementById('borderShapeOutlineBtn');
+          if (shapeButton) {
+            shapeButton.classList.add('selected');
+            // OPRAVA: Skutečně zavoláme funkci pro inicializaci výchozího ohraničení
+            pickStampBorderShape('outline', shapeButton);
+          }
+          
+        } catch(e) {
+          console.warn('Chyba při označování tlačítek v kroku 7.5:', e);
+        }
         
+        // Zobrazíme panel
         const panel = document.getElementById('stampBorderPanel');
         if (panel) panel.style.display = 'block';
-        const next = getCurrentNextBtn();
-        if (next) next.disabled = false;
+        
+        // DEFINITIVNÍ ŘEŠENÍ: Tlačítka navigace jsou VŽDY funkční
+        const forceEnableNavigation = () => {
+          // Přímé vyhledání tlačítek v kroku 7.5
+          const step7bElement = document.getElementById('step-7b');
+          if (step7bElement) {
+            const nextBtn = step7bElement.querySelector('.btn-next');
+            const backBtn = step7bElement.querySelector('.btn-back');
+            
+            if (nextBtn) {
+              nextBtn.disabled = false;
+              nextBtn.style.pointerEvents = 'auto';
+              nextBtn.style.opacity = '1';
+              nextBtn.style.cursor = 'pointer';
+              // Přepsání onclick pro jistotu
+              nextBtn.onclick = () => goNext();
+            }
+            
+            if (backBtn) {
+              backBtn.disabled = false;
+              backBtn.style.pointerEvents = 'auto';
+              backBtn.style.opacity = '1';
+              backBtn.style.cursor = 'pointer';
+              // Přepsání onclick pro jistotu
+              backBtn.onclick = () => goBack();
+            }
+          }
+          
+          // EXTRA KONTROLA: Znovu označíme tvar ohraničení pro jistotu
+          const shapeButton = document.getElementById('borderShapeOutlineBtn');
+          if (shapeButton && !shapeButton.classList.contains('selected')) {
+            shapeButton.classList.add('selected');
+          }
+        };
+        
+        // Spustíme okamžitě
+        forceEnableNavigation();
+        
+        // A ještě jednou po krátké prodlevě
+        setTimeout(forceEnableNavigation, 50);
+        
+        // A ještě jednou po delší prodlevě pro jistotu
+        setTimeout(forceEnableNavigation, 200);
+        
+        // INTERVAL: Každou sekundu zkontrolujeme, zda jsou tlačítka funkční
+        const step7bInterval = setInterval(() => {
+          if (currentStep === 7.5) {
+            forceEnableNavigation();
+          } else {
+            clearInterval(step7bInterval); // Ukončíme interval, když už nejsme v kroku 7.5
+          }
+        }, 1000);
       }
       if (n === 8) {
         const next = getCurrentNextBtn();
@@ -2540,7 +2636,27 @@
         if(el) el.classList.add('selected');
       } catch(_) {}
 
-      if (cardType === 'razitkova') { renderStrip(); }
+      // OCHRANA: Zajistíme, že navigace zůstane funkční i po renderStrip
+      if (cardType === 'razitkova') { 
+        try {
+          renderStrip(); 
+        } catch(e) {
+          console.warn('Chyba při renderStrip v pickStampBorderShape:', e);
+        }
+        // Po renderStrip znovu zajistíme funkční navigaci
+        setTimeout(() => {
+          const next = getCurrentNextBtn();
+          const back = getCurrentBackBtn();
+          if (next) {
+            next.disabled = false;
+            next.style.pointerEvents = 'auto';
+          }
+          if (back) {
+            back.disabled = false;
+            back.style.pointerEvents = 'auto';
+          }
+        }, 100);
+      }
     }
 
     function setStampPreviewMode(mode, el) {
@@ -2549,7 +2665,28 @@
         document.querySelectorAll('#step-7b .options-row .option').forEach(btn => btn.classList.remove('selected'));
         if (el) el.classList.add('selected');
       } catch (_) {}
-      if (cardType === 'razitkova') { renderStrip(); }
+      
+      // OCHRANA: Zajistíme, že navigace zůstane funkční i po renderStrip
+      if (cardType === 'razitkova') { 
+        try {
+          renderStrip(); 
+        } catch(e) {
+          console.warn('Chyba při renderStrip v setStampPreviewMode:', e);
+        }
+        // Po renderStrip znovu zajistíme funkční navigaci
+        setTimeout(() => {
+          const next = getCurrentNextBtn();
+          const back = getCurrentBackBtn();
+          if (next) {
+            next.disabled = false;
+            next.style.pointerEvents = 'auto';
+          }
+          if (back) {
+            back.disabled = false;
+            back.style.pointerEvents = 'auto';
+          }
+        }, 100);
+      }
     }
 
     function onStampBorderSizeChange(input) {
@@ -2759,9 +2896,13 @@
     }
 
     function pickCardType(type, el) {
-        if (type === 'razitkova' && !stampMode) {
-            stampMode = 'standard';
-        }
+      // PŘIDÁNA LOGIKA PRO VÝCHOZÍ NASTAVENÍ RAZÍTKOVÉ KARTY
+      if (type === 'razitkova') {
+          stampMode = 'preset'; // Předvyplní "Předpřipravené"
+          designChoice = 'preset'; // Předvyplní "Vybrat z předpřipravených"
+      }
+      // KONEC ÚPRAVY
+
       cardType = type;
 
       document.querySelectorAll('#step-4 .type-card').forEach(b => b.classList.remove('selected'));
@@ -2769,7 +2910,6 @@
       const next = getCurrentNextBtn();
       if (next) next.disabled = false;
       applyCardType(type);
-      // Okamžité zobrazení razítek při výběru razítkové karty
       if (type === 'razitkova') {
         setTimeout(() => {
           positionStrip();
@@ -2777,7 +2917,6 @@
           renderStrip();
         }, 10);
       }
-      // Update compact description panel
       updateTypeDescription(type);
       const panel = document.getElementById('typeDescPanel');
       if (panel) panel.style.display = 'block';
@@ -3659,13 +3798,14 @@
           if (cardType === 'razitkova' && stampMode === 'standard') {
             return 7;
           }
-          return showStrip ? 8 : 9;
+          return showStrip ? 8 : 10; // OPRAVA: Pokud se text na stripu nezobrazuje, jdi rovnou na shrnutí (10)
         case 7:
           return stampBorderEnabled ? 7.5 : 10;
         case 7.5:
           return 10;
-        // Krok 9 byl přesunut do kroku 2.5, proto zde není case 8
-        case 9:
+        case 8: // TENTO ŘÁDEK PŘIDÁN
+          return 10;
+        case 9: // Tento případ je nyní zbytečný, ale neškodí
           return 10;
         default: return currentStep + 1;
       }
@@ -3748,13 +3888,15 @@
     }
 
     function goBack() {
-        if (stepHistory.length > 0) {
-            const lastStep = stepHistory.pop(); // Získáme poslední krok z historie
-            showStep(lastStep);
-        } else if (currentStep > 1) {
-            // Fallback, pokud by byla historie prázdná
-            showStep(currentStep - 1);
-        }
+      // OPRAVENÁ A ODOLNEJŠÍ VERZE
+      if (stepHistory.length > 0) {
+        const lastStep = stepHistory.pop();
+        showStep(lastStep);
+      } else {
+        // Fallback, který používá logiku pro předchozí krok, místo jednoduchého odečtení
+        const prev = prevStepNum();
+        showStep(prev);
+      }
     }
 
     function finishWizard() {
