@@ -169,7 +169,7 @@
     /* UŠETŘIL (vpravo) */
     .saved-amount {
       position: absolute;
-      top: 170px;
+      top: 163px;
       right: 10px;
       text-align: right;
       display: none;
@@ -183,16 +183,16 @@
     /* DISCOUNT LEVEL (vpravo nahoře) - pro procentní i revolution kartu */
     .discount-level {
       position: absolute;
-      top: 22px;
-      right: 10px;
-      width: 95px;
+      top: 28px;
+      right: 15px;
+      width: 140px;
       text-align: right;
       display: none;
       color: var(--discountColor, #000);
       z-index: 2;
     }
     .discount-level-rows { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; }
-    .discount-level-values { display: flex; justify-content: space-between; font-size: 14px; margin-top: 2px; font-weight: 600; }
+    .discount-level-values { display: flex; justify-content: space-between; align-items: center; font-size: 14px; margin-top: 2px; font-weight: 600; }
     
     /* Specifické barvy pro zobrazení Revolution statusů na kartě */
     .revolution-status-gold { color: #A47F11; font-weight: 700; }
@@ -230,7 +230,7 @@
     /* RAZÍTKA (vpravo dole) */
     .stamp-counter {
       position: absolute;
-      top: 170px;
+      top: 163px;
       right: 10px;
       text-align: right;
       display: none;
@@ -244,7 +244,7 @@
     /* BODY (vpravo nahoře) */
     .body-level {
       position: absolute;
-      top: 22px;
+      top: 27px;
       right: 10px;
       width: 95px;
       text-align: right;
@@ -253,12 +253,12 @@
       z-index: 2;
     }
     .body-level-rows { display: flex; justify-content: flex-end; font-size: 11px; font-weight: 600; text-transform: uppercase; }
-    .body-level-values { display: flex; justify-content: flex-end; font-size: 14px; margin-top: 2px; font-weight: 600; }
+    .body-level-values { display: flex; justify-content: flex-end; font-size: 14px; margin-top: 0px; font-weight: 600; }
 
     /* BODY dole (vpravo) */
     .body-bottom {
       position: absolute;
-      top: 170px;
+      top: 163px;
       right: 10px;
       text-align: right;
       display: none;
@@ -537,8 +537,8 @@
         <!-- DISCOUNT LEVEL -->
         <div class="discount-level" id="discountLevelDisplay">
           <div class="discount-level-rows">
-            <div id="discountLabel1">STATUS</div>
-            <div id="discountLabel2">SLEVA</div>
+            <div id="discountLabel1">SLEVA</div>
+            <div id="discountLabel2">MIN.</div>
           </div>
           <div class="discount-level-values">
             <div id="statusVal">VIP</div>
@@ -844,6 +844,61 @@
       </div>
     </div>
 
+    <!-- KROK 2.5: Barva textu -->
+    <div class="question-panel" data-step="2.5" id="step-2-5" style="display:none;">
+      <div class="q-title">Barva textů na kartě</div>
+      <div class="q-sub">Tato barva se použije na zobrazení slev, bodů a dalších informací.</div>
+      <div class="color-row" id="textColorRow">
+        <!-- Neutrals for text -->
+        <div class="swatch" style="background:#000000" title="Černá" onclick="pickTextColor('#000000', this)"></div>
+        <div class="swatch" style="background:#111827" title="Témně šedá" onclick="pickTextColor('#111827', this)"></div>
+        <div class="swatch" style="background:#374151" title="Tmavá šedá" onclick="pickTextColor('#374151', this)"></div>
+        <div class="swatch" style="background:#6B7280" title="Šedá" onclick="pickTextColor('#6B7280', this)"></div>
+        <div class="swatch" style="background:#9CA3AF" title="Světle šedá" onclick="pickTextColor('#9CA3AF', this)"></div>
+        <div class="swatch" style="background:#FFFFFF" title="Bílá" onclick="pickTextColor('#FFFFFF', this)"></div>
+        <!-- Accent colors for emphasis -->
+        <div class="swatch" style="background:#EF4444" title="Červená" onclick="pickTextColor('#EF4444', this)"></div>
+        <div class="swatch" style="background:#F97316" title="Oranžová" onclick="pickTextColor('#F97316', this)"></div>
+        <div class="swatch" style="background:#F59E0B" title="Amber" onclick="pickTextColor('#F59E0B', this)"></div>
+        <div class="swatch" style="background:#EAB308" title="Žlutá" onclick="pickTextColor('#EAB308', this)"></div>
+        <div class="swatch" style="background:#22C55E" title="Zelená" onclick="pickTextColor('#22C55E', this)"></div>
+        <div class="swatch" style="background:#10B981" title="Smaragdová" onclick="pickTextColor('#10B981', this)"></div>
+        <div class="swatch" style="background:#06B6D4" title="Cyan" onclick="pickTextColor('#06B6D4', this)"></div>
+        <div class="swatch" style="background:#3B82F6" title="Modrá" onclick="pickTextColor('#3B82F6', this)"></div>
+        <div class="swatch" style="background:#2563EB" title="Tmavší modrá" onclick="pickTextColor('#2563EB', this)"></div>
+        <div class="swatch" style="background:#6366F1" title="Indigo" onclick="pickTextColor('#6366F1', this)"></div>
+        <div class="swatch" style="background:#8B5CF6" title="Fialová" onclick="pickTextColor('#8B5CF6', this)"></div>
+        <div class="swatch" style="background:#A855F7" title="Purple" onclick="pickTextColor('#A855F7', this)"></div>
+        <div class="swatch" style="background:#D946EF" title="Fuchsiová" onclick="pickTextColor('#D946EF', this)"></div>
+        <div class="swatch" style="background:#EC4899" title="Růžová" onclick="pickTextColor('#EC4899', this)"></div>
+        <!-- Custom -->
+        <div class="custom-color">
+          <label for="customTextColor">Vlastní</label>
+          <input type="color" id="customTextColor" value="#000000" onchange="pickCustomTextColor(this.value)">
+        </div>
+      </div>
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()">Zpět</button>
+        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
+      </div>
+    </div>
+
+    <div class="question-panel" data-step="4.5" id="step-4-5" style="display:none;">
+      <div class="q-title">Vyberte si design karty</div>
+      <div class="q-sub">Můžete si vybrat z našich předpřipravených designů, nebo si navrhnout kartu zcela sami.</div>
+      <div class="options-row">
+        <button class="option" onclick="pickDesignChoice('preset', this)">Vybrat z předpřipravených designů (doporučeno)</button>
+        <button class="option" onclick="pickDesignChoice('custom', this)">Navrhnout vlastní kartu</button>
+      </div>
+      <div id="presetDisabledNote" style="display:none; margin-top:12px; font-size:12px; color:#6b7280; text-align:center;">
+        Tato volba je momentálně ve vývoji. Pro pokračování zvolte "Navrhnout vlastní kartu".
+      </div>
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()">Zpět</button>
+        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
+      </div>
+    </div>
+
     <!-- KROK 5: Podmíněný krok – Razítka režim NEBO Bodová nastavení -->
     <div class="question-panel" data-step="5" id="step-5" style="display:none;">
       <!-- Razítková: výběr režimu -->
@@ -930,23 +985,30 @@
         <div class="preset-levels-overview">
           <div class="preset-level">
             <div class="preset-level-name revolution-status-gold">GOLD</div>
-            <div class="preset-level-discount">7%</div>
+            <div class="preset-level-discount">10%</div>
             <div class="preset-level-threshold">od 2 000 Kč</div>
           </div>
           <div class="preset-level">
             <div class="preset-level-name revolution-status-dia">DIA</div>
-            <div class="preset-level-discount">10%</div>
+            <div class="preset-level-discount">15%</div>
             <div class="preset-level-threshold">od 6 000 Kč</div>
           </div>
           <div class="preset-level">
             <div class="preset-level-name revolution-status-vip">VIP</div>
-            <div class="preset-level-discount">13%</div>
+            <div class="preset-level-discount">20%</div>
             <div class="preset-level-threshold">od 10 000 Kč</div>
           </div>
         </div>
       </div>
 
       <div id="revolutionCustomPanel" style="display:none; margin-top: 15px;">
+
+        <div style="display:flex; justify-content:center; margin-bottom: 20px; border-bottom: 1px solid #e5e7eb; padding-bottom: 15px;">
+          <div style="display:flex; flex-direction:column; gap:6px;">
+              <label for="revMinWithdrawalAmount" style="font-size:13px; font-weight:600; color:#374151;">Minimální částka výběru (Kč)</label>
+              <input type="number" id="revMinWithdrawalAmount" value="500" min="1" oninput="updateFakeCardRevolutionLevel()" style="width:180px; text-align:center; height:38px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px;">
+          </div>
+        </div>
 
         <div id="revolutionNoProgressPanel">
           <div class="procentni-levels-panel">
@@ -982,8 +1044,8 @@
       <div class="q-title">Revolution – Vizuální progres</div>
       <div class="q-sub">Chcete zákazníkům zobrazovat vizuální progres k získání odměny?</div>
       <div class="options-row" style="margin-top: 15px;">
-        <button type="button" class="option" onclick="pickRevolutionProgress(true, this)">Ano, chci nahrát vlastní grafiku</button>
-        <button type="button" class="option" onclick="pickRevolutionProgress(false, this)">Ne, stačí textový status</button>
+        <button type="button" class="option" onclick="pickRevolutionProgress(true, this)">Zobrazovat grafiku</button>
+        <button type="button" class="option" onclick="pickRevolutionProgress(false, this)">Nezobrazovat grafiku</button>
       </div>
 
       <div id="revolutionWithProgressPanel" style="display:none;">
@@ -1209,17 +1271,36 @@
         <input type="text" id="stripInput" placeholder="Např. Desátá káva je na nás." oninput="onStripTextInput()" style="width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:8px;">
       </div>
       <!-- Minimal controls: position, color, size -->
-      <div class="strip-mini" style="justify-content:space-between;">
+      <div class="strip-mini" style="justify-content:space-between; flex-wrap:wrap;">
+        <div class="mini-group" id="stripFontGroup">
+          <span class="mini-label">Styl písma</span>
+          <select id="stripFont" onchange="onStripFontChange()" style="padding: 4px 6px; border:1px solid #e5e7eb; border-radius:6px;">
+            <option value="tan-nimbus-2-webfont">Karrli</option>
+            <option value="Rubik Spray Paint">Rubik Spray Paint</option>
+            <option value="Staatliches">Staatliches</option>
+            <option value="Plaster">Plaster</option>
+            <option value="Coiny">Coiny</option>
+            <option value="Arial" selected>Arial</option>
+            <option value="Georgia">Georgia</option>
+            <option value="Helvetica">Helvetica</option>
+            <option value="Tahoma">Tahoma</option>
+            <option value="Trebuchet MS">Trebuchet MS</option>
+            <option value="Verdana">Verdana</option>
+            <option value="Wix Bold Sans">Wix Bold Sans</option>
+            <option value="Wix Handwritten">Wix Handwritten</option>
+            <option value="Wix Fancy Cursive">Wix Fancy Cursive</option>
+          </select>
+        </div>
         <div class="mini-group" id="stripPosGroup">
           <span class="mini-label">Umístění</span>
-          <button type="button" class="mini-btn" id="posTopBtn"   onclick="pickStripPos('top', this)" title="Nahoře">▲</button>
-          <button type="button" class="mini-btn" id="posCenterBtn"onclick="pickStripPos('center', this)" title="Uprostřed">■</button>
-          <button type="button" class="mini-btn" id="posBottomBtn"onclick="pickStripPos('bottom', this)" title="Dole">▼</button>
+          <button type="button" class="mini-btn" id="posTopBtn" onclick="pickStripPos('top', this)" title="Nahoře">▲</button>
+          <button type="button" class="mini-btn" id="posCenterBtn" onclick="pickStripPos('center', this)" title="Uprostřed">■</button>
+          <button type="button" class="mini-btn" id="posBottomBtn" onclick="pickStripPos('bottom', this)" title="Dole">▼</button>
         </div>
         <div class="mini-group" id="stripColorGroup">
           <span class="mini-label">Barva</span>
           <button type="button" class="mini-btn" onclick="toggleStripPalette()" title="Vyberte barvu">Vybrat</button>
-          <input type="color" id="stripColor" value="#000000" onmousedown="openStripPaletteFromColor(event)" onclick="return false;" onfocus="this.blur();" title="Zvolte barvu" style="width: 28px; height: 28px; border:none; background:transparent; padding:0;">
+          <input type="color" id="stripColor" value="#FFFFFF" onmousedown="openStripPaletteFromColor(event)" onclick="return false;" onfocus="this.blur();" title="Zvolte barvu" style="width: 28px; height: 28px; border:none; background:transparent; padding:0;">
         </div>
         <div class="mini-group" id="stripSizeGroup">
           <span class="mini-label">Velikost</span>
@@ -1227,6 +1308,12 @@
           <button type="button" class="mini-btn" onclick="pickStripSize('S', this)">S</button>
           <button type="button" class="mini-btn" onclick="pickStripSize('M', this)">M</button>
           <button type="button" class="mini-btn" onclick="pickStripSize('L', this)">L</button>
+        </div>
+        <div class="mini-group" id="stripBorderGroup">
+          <span class="mini-label">Ohraničení</span>
+          <button type="button" class="mini-btn" onclick="pickStripBorder(true, this)">Ano</button>
+          <button type="button" class="mini-btn" onclick="pickStripBorder(false, this)">Ne</button>
+          <input type="number" min="1" max="5" value="1" oninput="onStripBorderSizeChange(this)" style="width: 40px; text-align: center; padding: 4px; border:1px solid #e5e7eb; border-radius:6px;">
         </div>
       </div>
       <!-- Paleta barev pro text na stripu -->
@@ -1276,45 +1363,6 @@
       </div>
     </div>
 
-    <!-- KROK 9: Barva textu (slevové texty apod.) -->
-    <div class="question-panel" data-step="9" id="step-9" style="display:none;">
-      <div class="q-title">Barva textu</div>
-      <div class="q-sub">Pro slevové texty a informace (vpravo nahoře/dole)</div>
-      <div class="color-row">
-        <!-- Neutrals for text -->
-        <div class="swatch" style="background:#000000" title="Černá" onclick="pickTextColor('#000000', this)"></div>
-        <div class="swatch" style="background:#111827" title="Témně šedá" onclick="pickTextColor('#111827', this)"></div>
-        <div class="swatch" style="background:#374151" title="Tmavá šedá" onclick="pickTextColor('#374151', this)"></div>
-        <div class="swatch" style="background:#6B7280" title="Šedá" onclick="pickTextColor('#6B7280', this)"></div>
-        <div class="swatch" style="background:#9CA3AF" title="Světle šedá" onclick="pickTextColor('#9CA3AF', this)"></div>
-        <div class="swatch" style="background:#FFFFFF" title="Bílá" onclick="pickTextColor('#FFFFFF', this)"></div>
-        <!-- Accent colors for emphasis -->
-        <div class="swatch" style="background:#EF4444" title="Červená" onclick="pickTextColor('#EF4444', this)"></div>
-        <div class="swatch" style="background:#F97316" title="Oranžová" onclick="pickTextColor('#F97316', this)"></div>
-        <div class="swatch" style="background:#F59E0B" title="Amber" onclick="pickTextColor('#F59E0B', this)"></div>
-        <div class="swatch" style="background:#EAB308" title="Žlutá" onclick="pickTextColor('#EAB308', this)"></div>
-        <div class="swatch" style="background:#22C55E" title="Zelená" onclick="pickTextColor('#22C55E', this)"></div>
-        <div class="swatch" style="background:#10B981" title="Smaragdová" onclick="pickTextColor('#10B981', this)"></div>
-        <div class="swatch" style="background:#06B6D4" title="Cyan" onclick="pickTextColor('#06B6D4', this)"></div>
-        <div class="swatch" style="background:#3B82F6" title="Modrá" onclick="pickTextColor('#3B82F6', this)"></div>
-        <div class="swatch" style="background:#2563EB" title="Tmavší modrá" onclick="pickTextColor('#2563EB', this)"></div>
-        <div class="swatch" style="background:#6366F1" title="Indigo" onclick="pickTextColor('#6366F1', this)"></div>
-        <div class="swatch" style="background:#8B5CF6" title="Fialová" onclick="pickTextColor('#8B5CF6', this)"></div>
-        <div class="swatch" style="background:#A855F7" title="Purple" onclick="pickTextColor('#A855F7', this)"></div>
-        <div class="swatch" style="background:#D946EF" title="Fuchsiová" onclick="pickTextColor('#D946EF', this)"></div>
-        <div class="swatch" style="background:#EC4899" title="Růžová" onclick="pickTextColor('#EC4899', this)"></div>
-        <!-- Custom -->
-        <div class="custom-color">
-          <label for="customTextColor">Vlastní</label>
-          <input type="color" id="customTextColor" value="#000000" onchange="pickCustomTextColor(this.value)">
-        </div>
-      </div>
-      <div class="q-actions">
-        <button class="btn btn-back" onclick="goBack()">Zpět</button>
-        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
-      </div>
-    </div>
-
     <!-- KROK 10: Shrnutí -->
     <div class="question-panel" data-step="10" id="step-10" style="display:none;">
       <div class="q-title">Shrnutí</div>
@@ -1332,21 +1380,26 @@
           let currentStep = 1;
           let stepHistory = [];
           let cardType = '';
+          let designChoice = 'preset';
           let pickedColor = null;
           let textColor = '#000000';
           let topMode = null;
           let napisText = 'Text';
           let napisFont = 'tan-nimbus-2-webfont';
           let napisColor = '#000000';
+          let napisColorUserEdited = false;
           let napisAlign = 'left';
           let logoUrl = '';
           let selectedStripUrl = '';
           let customStripObjectUrl = null;
           let stripText = '';
           let stripTextUserEdited = false;
-          let stripTextPos = 'center';
-          let stripTextSize = 'M';
-          let stripTextColor = '#000000';
+          let stripTextPos = 'bottom';
+          let stripTextSize = 'XS';
+          let stripTextColor = '#FFFFFF';
+          let stripTextFont = 'Arial';
+          let stripTextBorder = false;
+          let stripTextBorderSize = 1;
           let showStrip = false;
           let manualScale = null;
 
@@ -1385,18 +1438,18 @@
 
           // Nastavení pro Procentní kartu
           let procentniLevels = [
-            { name: 'GOLD', discount: 7, spend: 2000, color: null },
-            { name: 'DIA', discount: 10, spend: 6000, color: null },
-            { name: 'VIP', discount: 13, spend: Infinity, color: null }
+            { name: 'GOLD', discount: 10, spend: 2000, color: null },
+            { name: 'DIA', discount: 15, spend: 6000, color: null },
+            { name: 'VIP', discount: 20, spend: Infinity, color: null }
           ];
           let procentniPreviewIndex = 0;
 
           // Nastavení pro Revolution kartu
           let revolutionMode = null; // 'preset' nebo 'custom'
           let revolutionLevels = [
-            { name: 'GOLD', discount: 7, threshold: 2000, color: null },
-            { name: 'DIA', discount: 10, threshold: 6000, color: null },
-            { name: 'VIP', discount: 13, threshold: Infinity, color: null }
+            { name: 'GOLD', discount: 10, threshold: 2000, color: null },
+            { name: 'DIA', discount: 15, threshold: 6000, color: null },
+            { name: 'VIP', discount: 20, threshold: Infinity, color: null }
           ];
           let revolutionPreviewIndex = 0;
           let revolutionShowProgress = false;
@@ -1588,6 +1641,14 @@
       const tmpPrev = document.getElementById('topModePreview');
       if (tmpPrev) tmpPrev.style.display = 'none';
       if (n === 2) {
+        // --- ZDE JE NOVÁ LOGIKA ---
+        // Pokud uživatel ještě ručně nezměnil barvu nápisu, nastavíme ji
+        // automaticky podle toho, jestli je pozadí karty tmavé.
+        if (!napisColorUserEdited) {
+            napisColor = isColorDark(pickedColor) ? '#FFFFFF' : '#000000';
+        }
+        // --- KONEC NOVÉ LOGIKY ---
+
         if (!topMode) topMode = 'napis';
         const opts = document.querySelectorAll('#step-2 .option');
         opts.forEach((o, i) => o.classList.toggle('selected', (topMode === 'napis' ? i === 0 : i === 1)));
@@ -1610,6 +1671,29 @@
           if (next) next.disabled = (logoUrl.trim().length === 0);
         }
         setTopModePreviewSrc();
+      }
+      if (n === 2.5) {
+        if (pickedColor) {
+          const colorRow = document.getElementById('textColorRow');
+          if (colorRow) {
+            // Odstraní předchozí přidanou barvu, pokud existuje (při procházení zpět a vpřed)
+            const oldSwatch = document.getElementById('cardColorSwatch');
+            if (oldSwatch) {
+              oldSwatch.remove();
+            }
+
+            // Vytvoří nové políčko s barvou karty
+            const cardColorSwatch = document.createElement('div');
+            cardColorSwatch.id = 'cardColorSwatch';
+            cardColorSwatch.className = 'swatch';
+            cardColorSwatch.style.background = pickedColor;
+            cardColorSwatch.title = 'Barva karty';
+            cardColorSwatch.setAttribute('onclick', `pickTextColor('${pickedColor}', this)`);
+            
+            // Vloží ho na první místo
+            colorRow.prepend(cardColorSwatch);
+          }
+        }
       }
       if (n === 3) {
         const next = getCurrentNextBtn();
@@ -1646,6 +1730,20 @@
         updateTypeDescription(cardType);
         const descPanel = document.getElementById('typeDescPanel');
         if (descPanel) descPanel.style.display = 'block';
+      }
+      if (n === 4.5) {
+        // Set default 'preset' and select it in UI
+        const presetBtn = document.querySelector('#step-4-5 .option[onclick*="\'preset\']');
+        const customBtn = document.querySelector('#step-4-5 .option[onclick*="\'custom\']');
+        
+        // If nothing is selected, default to preset
+        if (!presetBtn.classList.contains('selected') && !customBtn.classList.contains('selected')) {
+          designChoice = 'preset';
+          presetBtn.classList.add('selected');
+        }
+
+        const next = getCurrentNextBtn();
+        if (next) next.disabled = false; // Always enabled as there is a default
       }
       if (n === 5.5) {
         const next = getCurrentNextBtn();
@@ -2025,32 +2123,47 @@
     }
     
     function updateFakeCardRevolutionLevel() {
-        if (cardType !== 'revolution' || !revolutionLevels[revolutionPreviewIndex]) return;
-        
-        const level = revolutionLevels[revolutionPreviewIndex];
-        
+        if (cardType !== 'revolution') return;
+        const level = revolutionLevels[revolutionPreviewIndex] || revolutionLevels[0];
+        if (!level) return;
+
+        // Najdeme elementy
+        const discountLabel1 = document.getElementById('discountLabel1');
+        const discountLabel2 = document.getElementById('discountLabel2');
         const statusVal = document.getElementById('statusVal');
         const discountVal = document.getElementById('discountVal');
         const savedVal = document.getElementById('savedVal');
         const fakeCard = document.getElementById('fakeCard');
+        const minAmountInput = document.getElementById('revMinWithdrawalAmount');
 
-        if (statusVal) statusVal.textContent = level.name;
-        if (discountVal) discountVal.textContent = `${level.discount}%`;
+        // KROK 1: Nastavíme správné popisky pro Revolution kartu
+        if (discountLabel1) discountLabel1.textContent = 'SLEVA';
+        if (discountLabel2) discountLabel2.textContent = 'MIN.';
         
-        // Zobrazíme ukázkovou naspořenou částku pro náhled
-        if (savedVal) {
-            if (revolutionPreviewIndex === 0) {
-                savedVal.textContent = '780 Kč';
-            } else if (revolutionPreviewIndex === 1) {
-                savedVal.textContent = '2500 Kč';
-            } else {
-                savedVal.textContent = '7150 Kč';
-            }
+        // KROK 2: Nastavíme správné hodnoty
+        if (statusVal) statusVal.textContent = `${level.discount}% ${level.name}`;
+        if (discountVal) {
+            const minAmount = minAmountInput ? minAmountInput.value : '500';
+            discountVal.textContent = minAmount;
         }
         
-        // Změníme barvu karty podle úrovně
+        // KROK 2: Aplikujeme přesné posunutí a resetujeme posunutí z Procentní karty
+        if (discountLabel1) {
+            discountLabel1.style.position = 'relative';
+            discountLabel1.style.left = '50px'; // Posun "SLEVA"
+        }
+        if (statusVal) {
+            statusVal.style.position = 'relative';
+            statusVal.style.left = '27px'; // Posun "10% GOLD"
+        }
+
+        // Nastavení "NASPOŘENO" a barvy karty
+        if (savedVal) {
+            if (revolutionPreviewIndex === 0) { savedVal.textContent = '378 Kč'; } 
+            else if (revolutionPreviewIndex === 1) { savedVal.textContent = '2500 Kč'; } 
+            else { savedVal.textContent = '7150 Kč'; }
+        }
         if (fakeCard) {
-            // První úroveň použije hlavní barvu karty, další úrovně použijí svou vlastní barvu
             const colorToShow = level.color || pickedColor || '#ffffff';
             fakeCard.style.backgroundColor = colorToShow;
         }
@@ -2059,9 +2172,9 @@
     function initializeDefaultRevolutionLevels() {
         // Resetujeme Revolution úrovně na výchozí hodnoty
         revolutionLevels = [
-            { name: 'GOLD', discount: 7, threshold: 2000, color: null },
-            { name: 'DIA', discount: 10, threshold: 6000, color: '#9CA3AF' },
-            { name: 'VIP', discount: 13, threshold: Infinity, color: '#111827' }
+            { name: 'GOLD', discount: 10, threshold: 2000, color: null },
+            { name: 'DIA', discount: 15, threshold: 6000, color: null },
+            { name: 'VIP', discount: 20, threshold: Infinity, color: null }
         ];
         
         // Přidáme event listenery na nová políčka, pokud ještě nebyly přidány
@@ -2207,6 +2320,21 @@
       if (back) back.disabled = currentStep === 1;
     }
 
+    // --- Nová pomocná funkce pro detekci tmavé barvy ---
+    function isColorDark(hexColor) {
+        if (!hexColor) return false;
+        hexColor = hexColor.replace('#', '');
+        if (hexColor.length === 3) {
+            hexColor = hexColor.split('').map(char => char + char).join('');
+        }
+        const r = parseInt(hexColor.substring(0, 2), 16);
+        const g = parseInt(hexColor.substring(2, 4), 16);
+        const b = parseInt(hexColor.substring(4, 6), 16);
+        // Vypočet jasu (luminance) - hodnota pod 128 je považována za tmavou
+        const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
+        return luminance < 128;
+    }
+
     function clearSelected() {
       document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
     }
@@ -2217,6 +2345,19 @@
       pickedColor = color;
       const next = getCurrentNextBtn();
       if (next) next.disabled = false;
+
+      // --- ZDE JE KLÍČOVÁ ÚPRAVA ---
+      // Pokud je zvolená barva tmavá, automaticky nastavíme barvu textu na bílou.
+      // Jinak ji vrátíme na černou.
+      const newTextColor = isColorDark(color) ? '#FFFFFF' : '#000000';
+      textColor = newTextColor; // Aktualizujeme globální proměnnou
+      setTextColor(newTextColor); // Aplikujeme změnu na náhled karty
+
+      // Synchronizujeme i input pro výběr barvy v kroku 9, aby byla hodnota připravená
+      const customTextColorInput = document.getElementById('customTextColor');
+      if (customTextColorInput) {
+          customTextColorInput.value = newTextColor;
+      }
     }
 
     // Razítková – handlers
@@ -2642,6 +2783,23 @@
       if (panel) panel.style.display = 'block';
     }
 
+    function pickDesignChoice(choice, el) {
+      designChoice = choice;
+      document.querySelectorAll('#step-4-5 .option').forEach(o => o.classList.remove('selected'));
+      if (el) el.classList.add('selected');
+
+      const next = getCurrentNextBtn();
+      const note = document.getElementById('presetDisabledNote');
+
+      if (choice === 'preset') {
+        if (next) next.disabled = true; // Deaktivovat tlačítko
+        if (note) note.style.display = 'block'; // Zobrazit poznámku
+      } else {
+        if (next) next.disabled = false; // Aktivovat tlačítko
+        if (note) note.style.display = 'none'; // Skrýt poznámku
+      }
+    }
+
     // --- Step 4: Dynamic type descriptions ---
     function updateTypeDescription(type) {
       const shortEl = document.getElementById('typeDescShort');
@@ -2819,6 +2977,7 @@
     }
 
     function onNapisColorChange() {
+      napisColorUserEdited = true; // Označení, že uživatel ručně změnil barvu
       const inp = document.getElementById('napisColor');
       if (inp) {
         napisColor = inp.value || '#ff0000';
@@ -2847,6 +3006,7 @@
     }
 
     function pickTextPresetColor(color, el) {
+      napisColorUserEdited = true; // Označení, že uživatel ručně změnil barvu
       clearTextSelected();
       if (el) el.classList.add('selected');
       napisColor = color;
@@ -2863,6 +3023,7 @@
     }
 
     function pickTextCustomColor(color) {
+      napisColorUserEdited = true; // Označení, že uživatel ručně změnil barvu
       clearTextSelected();
       napisColor = color;
       const c = document.getElementById('napisColor');
@@ -3149,6 +3310,31 @@
       renderStrip();
     }
 
+    function onStripFontChange() {
+      const sel = document.getElementById('stripFont');
+      if (sel) {
+          stripTextFont = sel.value || 'Arial';
+          renderStrip();
+      }
+    }
+
+    function pickStripBorder(enabled, el) {
+      stripTextBorder = !!enabled;
+      // Zvýraznění aktivního tlačítka
+      try {
+        const group = document.getElementById('stripBorderGroup');
+        group.querySelectorAll('.mini-btn').forEach(b => b.classList.remove('selected'));
+        if (el) el.classList.add('selected');
+      } catch(_) {}
+      renderStrip();
+    }
+
+    function onStripBorderSizeChange(input) {
+      const v = parseInt(input.value, 10);
+      stripTextBorderSize = isNaN(v) ? 1 : Math.max(1, Math.min(5, v));
+      renderStrip();
+    }
+
     function onStripColorChange() {
       const ci = document.getElementById('stripColor');
       const val = ci && ci.value ? ci.value : '#000000';
@@ -3240,6 +3426,19 @@
         st.style.fontWeight = '700';
         const sizePx = (stripTextSize === 'XS') ? 12 : (stripTextSize === 'S') ? 14 : (stripTextSize === 'L') ? 22 : 18;
         st.style.fontSize = sizePx + 'px';
+
+        // --- ZDE JE NOVÁ LOGIKA PRO FONT A OHRANIČENÍ ---
+        st.style.fontFamily = stripTextFont;
+        st.style.textShadow = 'none'; // Nejprve resetujeme
+
+        if (stripTextBorder && stripTextBorderSize > 0) {
+            const size = stripTextBorderSize;
+            // Automaticky vybereme kontrastní barvu pro ohraničení
+            const borderColor = isColorDark(stripTextColor) ? '#FFFFFF' : '#000000';
+            st.style.textShadow = `-${size}px -${size}px 0 ${borderColor}, ${size}px -${size}px 0 ${borderColor}, -${size}px ${size}px 0 ${borderColor}, ${size}px ${size}px 0 ${borderColor}, -${size}px 0px 0 ${borderColor}, ${size}px 0px 0 ${borderColor}, 0px -${size}px 0 ${borderColor}, 0px ${size}px 0 ${borderColor}`;
+        }
+        // --- KONEC NOVÉ LOGIKY ---
+
       } else {
         st.style.display = 'none';
         st.textContent = '';
@@ -3433,10 +3632,23 @@
 
     function nextStepNum() {
       switch (currentStep) {
-        case 1: return 2;
-        case 2: return 3;
-        case 3: return 4;
-        case 4:
+        case 1: return 4; // ZMĚNA: Z kroku 1 (Barva) se nyní jde rovnou na krok 4 (Typ karty)
+
+        case 4: return 4.5; // Zůstává: Z Typu karty na Výběr designu
+
+        case 4.5: // Větvení podle výběru designu
+          if (designChoice === 'custom') {
+            return 2; // ZMĚNA: Pokud "vlastní", první krok je nyní krok 2 (Logo/Text)
+          } else {
+            // Pokud "předpřipravený", přeskočí se vše a jde se na finální nastavení
+            if (cardType === 'revolution') return 5.5;
+            return 5;
+          }
+
+        case 2: return 2.5; // Jdeme na výběr barvy textu
+        case 2.5: return 3; // Z výběru barvy textu jdeme na strip
+
+        case 3: // Po Stripu se jde na finální nastavení karty
           if (cardType === 'revolution') return 5.5;
           return 5;
         case 5:
@@ -3452,8 +3664,7 @@
           return stampBorderEnabled ? 7.5 : 10;
         case 7.5:
           return 10;
-        case 8:
-          return 9;
+        // Krok 9 byl přesunut do kroku 2.5, proto zde není case 8
         case 9:
           return 10;
         default: return currentStep + 1;
@@ -3461,24 +3672,39 @@
     }
 
     function prevStepNum() {
-        switch (currentStep) {
-            case 10:
-                if (cardType === 'razitkova' && stampMode === 'standard') return 7;
-                return showStrip ? 9 : 6;
-            case 9: return showStrip ? 8 : 6;
-            case 8: return 6;
-            case 7: return 6;
-            case 6:
-                if (cardType === 'revolution') return 5.6;
-                return 5;
-            case 5.6: return 5.5;
-            case 5.5: return 4;
-            case 5: return 4;
-            case 4: return 3;
-            case 3: return 2;
-            case 2: return 1;
-            default: return 1;
-        }
+      switch (currentStep) {
+        case 10:
+          // Speciální případ pro krok 10
+          if (cardType === 'razitkova' && stampMode === 'standard') return 7.5; // oprava cesty zpet
+          return showStrip ? 8 : 6;
+        case 8: return 6;
+        case 7: return 6;
+        case 6:
+          // Z kroku 6 se vracíme buď na revolution nastavení nebo běžné nastavení
+          if (cardType === 'revolution') return 5.6;
+          return 5;
+        case 5.6: return 5.5;
+        case 5.5: 
+          // Z nastavení revolution karty se vracíme buď na Strip (vlastní design) nebo na výběr designu
+          if (designChoice === 'custom') return 3;
+          else return 4.5;
+        case 5: 
+          // Z nastavení karty se vracíme buď na Strip (vlastní design) nebo na výběr designu
+          if (designChoice === 'custom') return 3;
+          else return 4.5;
+        case 4.5: 
+          // Z výběru designu se vracíme na typ karty
+          return 4;
+        case 4: 
+          // Z kroku 4 (Typ karty) se vracíme na Barvu
+          return 1;
+        case 3: return 2.5; // Ze stripu se vracíme na výběr barvy textu
+        case 2.5: return 2; // Z výběru barvy textu se vracíme na Logo/Text
+        case 2: 
+          // Z kroku 2 (Logo/Text) se vracíme na výběr designu
+          return 4.5;
+        default: return 1;
+      }
     }
 
     function goNext() {
@@ -3630,87 +3856,50 @@
     startIntro();
 
     function applyCardType(type) {
-      console.log('applyCardType called with type:', type);
-      cardType = type; // OPRAVA: Používáme globální `cardType`
-      // schovat vše specifické
-      const dis = document.getElementById('discountLevelDisplay');
-      const sav = document.getElementById('savedAmountDisplay');
-      const stc = document.getElementById('stampCounterDisplay');
-      const bl  = document.getElementById('bodyLevelDisplay');
-      const bb  = document.getElementById('bodyBottomDisplay');
-      console.log('stampCounterDisplay element:', stc);
-      [dis, sav, stc, bl, bb].forEach(el => { if (el) el.style.display = 'none'; });
+      cardType = type;
+      
+      // Skrytí všech specifických prvků
+      const allDisplays = [
+        document.getElementById('discountLevelDisplay'),
+        document.getElementById('savedAmountDisplay'),
+        document.getElementById('stampCounterDisplay'),
+        document.getElementById('bodyLevelDisplay'),
+        document.getElementById('bodyBottomDisplay')
+      ];
+      allDisplays.forEach(el => { if (el) el.style.display = 'none'; });
 
-      // nastavit výchozí text na stripu podle typu a ukázat správné bloky
-      let defaultStripText = '';
-      if (type === 'procentni' || type === 'revolution') {
-        if (dis) dis.style.display = 'block';
-        if (sav) {
-          sav.style.display = 'block';
-          const sl = sav.querySelector('.saved-label');
-          if (sl) sl.textContent = (type === 'revolution') ? 'NASPOŘENO' : 'Ušetřil';
-        }
-
-        // Inicializace úrovní pro Revolution kartu - pouze když poprvé nastavíme typ
-        if (type === 'revolution' && cardType !== 'revolution') {
-          // Výchozí režim je 'preset'
-          revolutionMode = 'preset';
-          initializeDefaultRevolutionLevels();
-          revolutionPreviewIndex = 0; // Zobrazíme první úroveň (GOLD)
-        }
-
-        defaultStripText = 'Sleva';
+      let defaultStripText = 'Zde může být váš text';
+      
+      // Zobrazení prvků a nastavení textu podle typu karty
+      if (type === 'procentni') {
+        document.getElementById('discountLevelDisplay').style.display = 'block';
+        document.getElementById('savedAmountDisplay').style.display = 'block';
+        document.querySelector('#savedAmountDisplay .saved-label').textContent = 'Ušetřil';
+        updateProcentniPreview(); // Přidáno pro okamžitý náhled Procentní karty
+      } else if (type === 'revolution') {
+        document.getElementById('discountLevelDisplay').style.display = 'block';
+        document.getElementById('savedAmountDisplay').style.display = 'block';
+        document.querySelector('#savedAmountDisplay .saved-label').textContent = 'NASPOŘENO';
+        updateFakeCardRevolutionLevel(); // Přidáno pro okamžitý náhled Revolution karty
+        defaultStripText = 'Naspořené peníze lze uplatnit nad ...';
       } else if (type === 'razitkova') {
-        console.log('Setting razitkova type, stc element:', stc);
-        if (stc) {
-          stc.style.display = 'block';
-          console.log('Set stc display to block, current style:', stc.style.display);
-          const lab = document.getElementById('stampLabel');
-          const val = document.getElementById('stampVal');
-          if (lab) lab.textContent = 'Razítka';
-          if (val) val.textContent = '10 / 10';
-          console.log('Updated stamp label and value');
-        } else {
-          console.error('stampCounterDisplay element not found!');
-        }
-        defaultStripText = 'Razítka';
+        document.getElementById('stampCounterDisplay').style.display = 'block';
       } else if (type === 'bodova') {
-        if (bl) bl.style.display = 'block';
-        if (bb) bb.style.display = 'block';
-        const blab = document.getElementById('bodyLabel1');
-        if (blab) blab.textContent = 'BODY';
-        // Aktualizuj texty dole z aktuálního stavu
-        try {
-          const t = document.getElementById('bodyBottomTop');
-          const b = document.getElementById('bodyBottomBot');
-          if (t) t.textContent = bodTopMessage || 'ZA 100B KÁVA ZDARMA';
-          if (b) b.textContent = bodBottomMessage || `${bodRate}Kč=1BOD`;
-        } catch(_) {}
-        defaultStripText = 'Body';
-      } else {
-        defaultStripText = '';
+        document.getElementById('bodyLevelDisplay').style.display = 'block';
+        document.getElementById('bodyBottomDisplay').style.display = 'block';
       }
 
-      // Použij výchozí strip text jen pokud ho uživatel neupravil
+      // Použít výchozí text, jen pokud ho uživatel ještě neupravil
       if (!stripTextUserEdited) {
         stripText = defaultStripText;
         const si = document.getElementById('stripInput');
         if (si) si.value = stripText;
       }
 
-      // Nezapínej text na stripu automaticky – řídí se až potvrzením na kroku 6
+      // Vykreslení změn
       positionStrip();
       setStripBackground();
-      const st = document.getElementById('stripTextElem');
-      // Styling now controlled by renderStrip() with user-selected settings
       renderStrip();
-      // Ensure strip background/canvas updates for razítková immediately
-      setStripBackground();
-      // strip background (and razítka) will be re-rendered in setStripBackground()
-      
-      // Debug: Check stampCounterDisplay after all strip functions
-      const stcAfter = document.getElementById('stampCounterDisplay');
-      console.log('After strip functions - stampCounterDisplay:', stcAfter, 'display:', stcAfter ? stcAfter.style.display : 'not found');
     }
 
     // --- Bodová – handlers & helpers ---
@@ -3923,14 +4112,32 @@
         const level = procentniLevels[procentniPreviewIndex];
         if (!level) return;
 
+        // Najdeme všechny potřebné elementy
+        const discountLabel1 = document.getElementById('discountLabel1');
         const statusVal = document.getElementById('statusVal');
+        const discountLabel2 = document.getElementById('discountLabel2');
         const discountVal = document.getElementById('discountVal');
         const fakeCard = document.getElementById('fakeCard');
 
+        // KROK 1: Obnovíme správné popisky
+        if (discountLabel1) discountLabel1.textContent = 'STATUS';
+        if (discountLabel2) discountLabel2.textContent = 'SLEVA';
+
+        // KROK 2: Nastavíme správné hodnoty
         if (statusVal) statusVal.textContent = level.name;
         if (discountVal) discountVal.textContent = `${level.discount}%`;
+
+        // KROK 3: Aplikujeme přesné posunutí
+        if (discountLabel1) {
+            discountLabel1.style.position = 'relative';
+            discountLabel1.style.left = '42px';
+        }
+        if (statusVal) {
+            statusVal.style.position = 'relative';
+            statusVal.style.left = '45px';
+        }
         
-        // Změníme barvu karty na barvu úrovně, nebo na hlavní barvu, pokud je to první úroveň
+        // KROK 4: Nastavíme barvu karty
         if (fakeCard) {
             const colorToShow = level.color || pickedColor || '#ffffff';
             fakeCard.style.backgroundColor = colorToShow;
