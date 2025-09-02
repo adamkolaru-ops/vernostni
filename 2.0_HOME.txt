@@ -520,6 +520,58 @@
       background-color: #e5edff;
       border-left: 3px solid #3b82f6;
     }
+    /* START PŘIDANÉHO KÓDU */
+    .pros-cons-list {
+      list-style: none;
+      padding: 0;
+      margin: 10px 0 0 0;
+      text-align: left;
+    }
+    .pros-cons-list li {
+      padding-left: 22px;
+      position: relative;
+      margin-bottom: 8px;
+      line-height: 1.4;
+      font-size: 12px;
+      color: #4b5563;
+    }
+    .pros-cons-list li::before {
+      position: absolute;
+      left: 0;
+      top: 1px;
+      font-weight: 700;
+      font-size: 16px;
+      line-height: 1;
+    }
+    .pros-cons-list li.pro::before {
+      content: '+';
+      color: #22c55e;
+    }
+    .pros-cons-list li.con::before {
+      content: '–';
+      color: #000000; 
+    }
+    .pros-cons-list .main-point {
+      font-weight: 700;
+      font-size: 1.15em; /* Zvětšení klíčového slova */
+      color: #374151;
+      display: inline;
+    }
+    /* KONEC PŘIDANÉHO KÓDU */
+    
+    /* PŘIDEJTE TENTO KÓD DO SEKCE <style> */
+    .custom-color.selected {
+      border-color: #4f46e5;
+      background-color: #eef2ff;
+    }
+    
+    /* PŘIDEJTE TENTO KÓD DO SEKCE <style> */
+    .type-item {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+    }
   </style>
 </head>
 <body>
@@ -694,6 +746,11 @@
             </button>
           </div>
         </div>
+        <div class="align-group">
+            <label class="mini-label">Velikost písma</label>
+            <input type="number" id="napisManualSizeInput" value="16" min="8" max="50" oninput="onNapisManualSizeChange(this)" style="width: 60px; padding: 6px 8px; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <button id="napisResetSizeBtn" class="toggle-btn" onclick="resetNapisSizeToAuto()" style="display: none;">Resetovat na Auto</button>
+        </div>
         <!-- Víceřádkové pole -->
         <textarea id="napisTextarea" placeholder="Zadejte text (max. 2 řádky, řádek 2 až po Enteru)" oninput="onNapisInput()" onkeydown="napisKeyDown(event)" rows="2" wrap="off" style="width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:8px; resize: none; overflow-y: hidden;"></textarea>
         <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
@@ -810,13 +867,14 @@
     <!-- KROK 4: Typ karty (až po potvrzení stripu) -->
     <div class="question-panel" data-step="4" id="step-4" style="display:none;">
       <div class="q-title">Vyberte typ karty</div>
-      <div class="q-sub">Zvolte jeden z typů: Revolution, Procentní, Bodová, Razítková</div>
+
       <div class="type-grid">
         <div class="type-item">
-          <div class="type-name">Revolution <span style="color:#22c55e; font-weight:normal;">(doporučeno)</span></div>
+          <div class="type-name">Revolution</div>
           <button class="type-card" data-type="revolution" onclick="pickCardType('revolution', this)" aria-label="Revolution">
             <img src="https://static.wixstatic.com/media/1cf87e_7bd4c3edcda74b0c966ecb5471f14d30~mv2.png" alt="Revolution">
           </button>
+          <div style="color:#22c55e; font-size:12px; margin-top:4px; text-align:center; font-weight:500;">Doporučujeme</div>
         </div>
         <div class="type-item">
           <div class="type-name">Procentní</div>
@@ -1397,6 +1455,10 @@
           let napisColorUserEdited = false;
           let napisAlign = 'left';
           let logoUrl = '';
+          
+          // PŘIDEJTE K OSTATNÍM GLOBÁLNÍM PROMĚNNÝM
+          let napisSizeMode = 'auto';
+          let napisManualSize = 16;
           let selectedStripUrl = '';
           let customStripObjectUrl = null;
           let stripText = '';
@@ -1671,6 +1733,18 @@
           renderLogoSlot();
           setTimeout(renderLogoSlot, 50);
           if (next) next.disabled = (napisText.trim().split('\n')[0].length === 0);
+
+          // START NAHRAZEŃÉHO KÓDU
+          // Nastavení UI pro velikost písma
+          const manualInput = document.getElementById('napisManualSizeInput');
+          const resetBtn = document.getElementById('napisResetSizeBtn');
+          if (manualInput) {
+              manualInput.value = napisManualSize;
+          }
+          if (resetBtn) {
+              resetBtn.style.display = (napisSizeMode === 'manual') ? 'inline-block' : 'none';
+          }
+          // KONEC NAHRAZEŃÉHO KÓDU
         } else {
           if (napisWrapper) napisWrapper.style.display = 'none';
           if (logoWrapper) logoWrapper.style.display = 'flex';
@@ -1679,22 +1753,26 @@
         }
         setTopModePreviewSrc();
       }
+      // NAHRAĎTE PŪVODNÍ `if (n === 2.5)` TÍMTO BLOKEM
       if (n === 2.5) {
-        // PŘEDVYPLNĚNÍ BARVY Z KROKU 2 A AKTIVACE TLAČÍTKA
+        // Vždy synchronizujeme výchozí barvu z barvy nápisu
+        textColor = napisColor;
+        
         const customColorInput = document.getElementById('customTextColor');
         if (customColorInput) {
-          customColorInput.value = napisColor; // Použij barvu z nápisu
+          customColorInput.value = toHex(textColor);
         }
-        if (!textColor) {
-          textColor = napisColor; // Nastav jako výchozí
-        }
+        
+        // Aplikujeme barvu na texty na kartě
         setTextColor(textColor);
 
+        // Aktualizujeme vizuální výběr (které tlačítko je "zakliklé")
+        updateTextColorSelectionUI();
+        
         const nextBtn = getCurrentNextBtn();
         if (nextBtn) {
-          nextBtn.disabled = !textColor; // Povolit, pokud je barva nastavena
+          nextBtn.disabled = !textColor;
         }
-        // KONEC ÚPRAVY
 
         if (pickedColor) {
           const colorRow = document.getElementById('textColorRow');
@@ -2940,65 +3018,77 @@
     }
 
     // --- Step 4: Dynamic type descriptions ---
+    const COPY = {
+      razitkova: {
+        short: 'Zákazník sbírá razítka za každou návštěvu (1 střih = 1 razítko). Po nasbírání plného počtu dostane odměnu.',
+        pros: [
+          { main: 'Maximálně jednoduché', detail: '– každý zákazník hned chápe, jak se dostat k odměně.' },
+          { main: 'Silná motivace dokončit', detail: '– lidé se vrátí, aby zaplnili poslední políčka.' }
+        ],
+        cons: [
+          { main: 'Neodměňuje vyšší útratu', detail: '– za službu za 500 Kč i 1500 Kč je stále jen jedno razítko.' }
+        ]
+      },
+      bodova: {
+        short: 'Zákazník sbírá body podle toho, kolik utratí (např. 1 Kč = 1 bod). Body pak mění za služby nebo slevy.',
+        pros: [
+          { main: 'Odměňuje velké útraty', detail: '– motivuje zákazníky k nákupu dražších služeb a produktů.' },
+          { main: 'Flexibilní odměny', detail: '– sami si určíte hodnotu služeb v bodech a chráníte si marži.' }
+        ],
+        cons: [
+          { main: 'Oddálený cíl', detail: '- zákazník může využít body až po nasbírání určitého množství.' }
+        ]
+      },
+      procentni: {
+        short: 'Zákazník dostane okamžitě zpět část peněz z každé útraty (např. 5 %) jako kredit na další nákup.',
+        pros: [
+          { main: 'Nejatraktivnější pro zákazníka', detail: '– peníze zpět jsou jasné a silné lákadlo.' },
+          { main: 'Podporuje okamžitý návrat', detail: '– motivuje k využití kreditu hned při další návštěvě.' }
+        ],
+        cons: [
+          { main: 'Chybí snaha dosáhnout většího cíle.', detail: '' }
+        ]
+      },
+      revolution: {
+        short: 'Zákazník získává procenta z každé útraty (např. 10%), ale může je použít až po dosažení stanovené částky. Vidí svůj pokrok a našetřené peníze průběžně.',
+        pros: [
+          { main: 'Chrání vaši marži', detail: '– odměnu dáváte až po překročení určité hranice (například si můžete nastavit, že ji získá až nad 500 Kč).' },
+          { main: 'Maximálně motivuje k větší útratě', detail: '– kombinuje hodnotu peněz (cashback) a jasný vizuální cíl (jako razítka). Tím si zákazníka skutečně "zaháčkujete".' },
+          { main: 'Motivuje k častějšímu navštěvování', detail: '- zákazník má pocit, že má peníze na kartě, které by měl utratit.' },
+          { main: 'Snižuje chuť přejít ke konkurenci', detail: '' }
+        ],
+        cons: []
+      }
+    };
+
     function updateTypeDescription(type) {
       const shortEl = document.getElementById('typeDescShort');
       const moreEl = document.getElementById('typeDescMore');
       const toggle = document.getElementById('typeDescToggle');
       if (!shortEl || !moreEl || !toggle) return;
 
-      const COPY = {
-        razitkova: {
-          short: 'Zákazník sbírá razítka za návštěvy; po zaplnění získá odměnu.',
-          more: `
-            <ul>
-              <li>+ Maximálně jednoduché – každý zákazník hned chápe, jak se dostat k odměně.</li>
-              <li>+ Silná motivace dokončit – lidé se vrátí, aby zaplnili poslední políčka.</li>
-              <li>- Neodměňuje vyšší útratu – za službu za 500 Kč i 1500 Kč je stále jen jedno razítko.</li>
-            </ul>
-          `
-        },
-        bodova: {
-          short: 'Zákazník sbírá body podle útraty (např. 1 Kč = 1 bod) a mění je za služby nebo slevy.',
-          more: `
-            <ul>
-              <li>+ Odměňuje velké útraty – motivuje k nákupu dražších služeb a produktů.</li>
-              <li>+ Flexibilní odměny – sami určíte hodnotu služeb v bodech a chráníte marži.</li>
-              <li>- Složitější pro zákazníka – hodnota bodů není vždy jasná, motivace může klesat.</li>
-            </ul>
-          `
-        },
-        procentni: {
-          short: 'Okamžitý cashback z každé útraty (např. 5 %) jako kredit na další nákup.',
-          more: `
-            <ul>
-              <li>+ Nejatraktivnější pro zákazníka – peníze zpět jsou jasné a silné lákadlo.</li>
-              <li>+ Podporuje okamžitý návrat – kredit motivuje k další návštěvě.</li>
-              <li>+ Nekonečná potřeba vyvarovat se ztrátě peněz na kartě = další návštěva.</li>
-              <li>+ Uživatel má tendenci více utrácet pro dosažení vyšší slevy a statusu.</li>
-              <li>– Chybí snaha dosáhnout většího cíle.</li>
-            </ul>
-          `
-        },
-        revolution: {
-          short: 'Zákazník dostane za každou útratu část peněz zpět na kartu. V momentě, kdy dosáhne určité částky, může naspořené peníze použít na některou ze služeb nebo produktů. (Funguje to podobně jako razítková karta, ale zákazník je více propojen díky pocitu, že místo střádání razítek střádá peníze.)',
-          more: `
-            <p>Revoluční kombinace – zákazníkovi se načítají procenta z útraty (např. 10 %) a ty může použít až po dosažení cílové částky (např. ceny střihu). Průběžně vidí svůj pokrok i bonusové peníze, které se mu hromadí.</p>
-            <ul>
-              <li>+ Chrání marži – odměnu dáváte až poté, co zákazník utratí dostatek peněz.</li>
-              <li>+ Maximálně motivuje – kombinuje hodnotu peněz (cashback) a jasný vizuální cíl.</li>
-              <li>+ Uživatel se cítí průběžně odměňován, ale odměnu získá až na konci.</li>
-              <li>+ Uživatel má tendenci více utrácet pro vyšší slevu a status.</li>
-            </ul>
-          `
-        }
-      };
+      const data = COPY[type] || COPY['revolution'];
 
-      const c = COPY[type] || COPY['revolution'];
-      shortEl.innerHTML = c.short;
-      moreEl.innerHTML = c.more;
-      // Reset to compact state
-      moreEl.style.display = 'none';
-      toggle.textContent = 'Více informací';
+      shortEl.innerHTML = data.short;
+
+      let moreHtml = '<ul class="pros-cons-list">';
+      if (data.pros && data.pros.length > 0) {
+        data.pros.forEach(item => {
+          moreHtml += `<li class="pro"><span class="main-point">${item.main}</span> ${item.detail || ''}</li>`;
+        });
+      }
+      if (data.cons && data.cons.length > 0) {
+        data.cons.forEach(item => {
+          moreHtml += `<li class="con"><span class="main-point">${item.main}</span> ${item.detail || ''}</li>`;
+        });
+      }
+      moreHtml += '</ul>';
+
+      moreEl.innerHTML = moreHtml;
+
+      // Always show expanded
+      moreEl.style.display = 'block';
+      if (toggle) toggle.style.display = 'none'; // Hide the toggle button
     }
 
     function toggleTypeDesc() {
@@ -3115,6 +3205,30 @@
       }
     }
 
+    // NAHRAĎTE PŪVODNÍ onNapisManualSizeChange TOUTO VERZÍ
+    function onNapisManualSizeChange(input) {
+        napisSizeMode = 'manual'; // Automaticky přepne na manuální režim
+        const size = parseInt(input.value, 10);
+        if (!isNaN(size) && size >= 8 && size <= 50) {
+            napisManualSize = size;
+            renderLogoSlot();
+        }
+        // Zobrazí tlačítko pro reset
+        const resetBtn = document.getElementById('napisResetSizeBtn');
+        if (resetBtn) resetBtn.style.display = 'inline-block';
+    }
+
+    // PŘIDEJTE TUTO NOVOU FUNKCI
+    function resetNapisSizeToAuto() {
+        napisSizeMode = 'auto';
+        // Skryje tlačítko pro reset
+        const resetBtn = document.getElementById('napisResetSizeBtn');
+        if (resetBtn) resetBtn.style.display = 'none';
+        
+        // Znovu vykresli slot, který teď použije automatickou velikost
+        renderLogoSlot();
+    }
+
     function onNapisColorChange() {
       napisColorUserEdited = true; // Označení, že uživatel ručně změnil barvu
       const inp = document.getElementById('napisColor');
@@ -3204,42 +3318,30 @@
       } catch (_) {}
     }
 
+    // NAHRAĎTE CELOU PŪVODNÍ FUNKCI renderLogoSlot TOUTO VERZÍ
     async function renderLogoSlot() {
         const slot = document.getElementById('logoSlot');
         if (!slot) return;
 
-        // ⭐ KROK 1: Zjistíme SKUTEČNÝ název fontu z HTML (z value atributu)
         const fontSelect = document.getElementById('napisFont');
         const correctFontName = fontSelect ? fontSelect.value : 'tan-nimbus-2-webfont';
 
-        // ⭐ KROK 2: Počkáme, dokud není tento konkrétní font načtený
         try {
             await document.fonts.load(`1em '${correctFontName}'`);
         } catch (e) {
             console.error('Font se nepodařilo načíst:', e);
         }
         
-        // Zbytek funkce je téměř stejný, jen použijeme správný název fontu
         slot.innerHTML = '';
-        
-        // DEBUG: Zkontrolujeme hodnoty
-        console.log('renderLogoSlot DEBUG:', {
-            topMode: topMode,
-            napisText: napisText,
-            hasText: !!(napisText || '').trim(),
-            condition: topMode === 'napis' && (napisText || '').trim()
-        });
         
         if (topMode === 'napis' && (napisText || '').trim()) {
             const text = (napisText || '').replace(/\r/g, '');
             const parts = text.split('\n');
             const maxW = slot?.clientWidth || 120;
             
-            if (parts.length === 1) {
-                const el = document.createElement('div');
-                // ⭐ KROK 3: Použijeme správný název fontu pro vykreslení
-                el.style.fontFamily = correctFontName || 'Arial'; 
-                el.style.color = napisColor || '#ff0000';
+            const baseStyle = (el) => {
+                el.style.fontFamily = correctFontName || 'Arial';
+                el.style.color = napisColor || '#000000';
                 el.style.lineHeight = 'normal';
                 el.style.width = '100%';
                 el.style.fontWeight = 'bold';
@@ -3248,40 +3350,44 @@
                 el.style.overflow = 'hidden';
                 el.style.whiteSpace = 'nowrap';
                 el.style.textAlign = napisAlign;
+            };
+            
+            if (parts.length === 1) {
+                const el = document.createElement('div');
+                baseStyle(el);
                 el.textContent = parts[0];
                 slot.appendChild(el);
-                autoSizeTextSingleLine(el, maxW, 45);
+
+                if (napisSizeMode === 'auto') {
+                    autoSizeTextSingleLine(el, maxW, 45);
+                } else {
+                    el.style.fontSize = napisManualSize + 'px';
+                    el.style.lineHeight = (napisManualSize * 1.2) + 'px';
+                }
             } else {
                 const wrap = document.createElement('div');
-                wrap.style.width = '100%';
+                baseStyle(wrap);
                 wrap.style.display = 'flex';
                 wrap.style.flexDirection = 'column';
-                wrap.style.lineHeight = 'normal';
-                // ⭐ KROK 3: Použijeme správný název fontu i zde
-                wrap.style.fontFamily = correctFontName || 'Arial';
-                wrap.style.color = napisColor || '#ff0000';
-                wrap.style.fontWeight = 'bold';
-                wrap.style.margin = '0';
-                wrap.style.padding = '0';
-                wrap.style.overflow = 'hidden';
-                wrap.style.textAlign = napisAlign;
 
                 const l1 = document.createElement('div');
                 const l2 = document.createElement('div');
-                [l1, l2].forEach((el) => {
-                    el.style.whiteSpace = 'nowrap';
-                    el.style.width = '100%';
-                    el.style.margin = '0';
-                    el.style.padding = '0';
-                    el.style.overflow = 'hidden';
-                    el.style.textAlign = 'inherit';
-                });
+                [l1, l2].forEach(el => baseStyle(el));
+                
                 l1.textContent = parts[0];
                 l2.textContent = parts[1] || '';
                 wrap.appendChild(l1);
                 wrap.appendChild(l2);
                 slot.appendChild(wrap);
-                autoSizeTwoLines(wrap, maxW, 56);
+
+                if (napisSizeMode === 'auto') {
+                    autoSizeTwoLines(wrap, maxW, 56);
+                } else {
+                    wrap.querySelectorAll('div').forEach(lineEl => {
+                        lineEl.style.fontSize = napisManualSize + 'px';
+                        lineEl.style.lineHeight = (napisManualSize * 1.2) + 'px';
+                    });
+                }
             }
         } else if (topMode === 'logo' && logoUrl.trim()) {
             const img = document.createElement('img');
@@ -3290,7 +3396,7 @@
             img.alt = 'Logo';
             slot.appendChild(img);
         }
-        
+            
         try {
             positionStrip();
             setStripBackground();
@@ -3727,13 +3833,43 @@
       }
     }
 
+    // PŘIDEJTE TUTO NOVOU FUNKCI
+    function updateTextColorSelectionUI() {
+      const swatches = document.querySelectorAll('#step-2-5 .swatch');
+      const customColorContainer = document.querySelector('#step-2-5 .custom-color');
+      let presetFound = false;
+
+      // Zrušíme všechny předchozí výběry
+      swatches.forEach(s => s.classList.remove('selected'));
+      if (customColorContainer) customColorContainer.classList.remove('selected');
+
+      // Zkusíme najít shodu v předvolených barvách
+      swatches.forEach(swatch => {
+        try {
+          const swatchColor = toHex(swatch.style.backgroundColor).toLowerCase();
+          const targetColor = toHex(textColor).toLowerCase();
+          if (swatchColor === targetColor) {
+            swatch.classList.add('selected');
+            presetFound = true;
+          }
+        } catch (e) { /* Ignorovat chyby při porovnávání */ }
+      });
+
+      // Pokud shoda není, označíme jako vybranou vlastní barvu
+      if (!presetFound && customColorContainer) {
+        customColorContainer.classList.add('selected');
+      }
+    }
+
+    // NAHRAĎTE PŪVODNÍ FUNKCE TĚMITO DVĚMA
     function pickTextColor(color, el) {
       textColor = color;
-      document.querySelectorAll('#step-8 .swatch').forEach(s => s.classList.remove('selected'));
-      if (el) el.classList.add('selected');
       setTextColor(color);
       const cc = document.getElementById('customTextColor');
       try { cc.value = toHex(color); } catch(e) {}
+      
+      updateTextColorSelectionUI(); // Přidáno pro sjednocení UI
+
       const next = getCurrentNextBtn();
       if (next) next.disabled = false;
     }
