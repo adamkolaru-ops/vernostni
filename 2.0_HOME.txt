@@ -572,6 +572,44 @@
       justify-content: space-between;
       height: 100%;
     }
+    
+    /* --- START PŘIDANÉHO KÓDU --- */
+    .preset-section {
+      display: none; /* Skryté by default */
+      margin-top: 15px;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 15px;
+    }
+    .preset-section h4 {
+      text-align: left;
+      font-size: 14px;
+      margin-bottom: 12px;
+      color: #374151;
+    }
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 16px;
+    }
+    .preset-card {
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+      background: #f9fafb;
+    }
+    .preset-card:hover {
+      border-color: #4f46e5;
+      transform: translateY(-4px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .preset-card img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    /* --- KONEC PŘIDANÉHO KÓDU --- */
   </style>
 </head>
 <body>
@@ -948,22 +986,6 @@
       </div>
     </div>
 
-    <div class="question-panel" data-step="4.5" id="step-4-5" style="display:none;">
-      <div class="q-title">Vyberte si design karty</div>
-      <div class="q-sub">Můžete si vybrat z našich předpřipravených designů, nebo si navrhnout kartu zcela sami.</div>
-      <div class="options-row">
-        <button class="option" onclick="pickDesignChoice('preset', this)">Vybrat z předpřipravených designů (doporučeno)</button>
-        <button class="option" onclick="pickDesignChoice('custom', this)">Navrhnout vlastní kartu</button>
-      </div>
-      <div id="presetDisabledNote" style="display:none; margin-top:12px; font-size:12px; color:#6b7280; text-align:center;">
-        Tato volba je momentálně ve vývoji. Pro pokračování zvolte "Navrhnout vlastní kartu".
-      </div>
-      <div class="q-actions">
-        <button class="btn btn-back" onclick="goBack()">Zpět</button>
-        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
-      </div>
-    </div>
-
     <!-- KROK 5: Podmíněný krok – Razítka režim NEBO Bodová nastavení -->
     <div class="question-panel" data-step="5" id="step-5" style="display:none;">
       <!-- Razítková: výběr režimu -->
@@ -1035,69 +1057,29 @@
       </div>
     </div>
 
-    <div class="question-panel" data-step="5.5" id="step-5b" style="display:none;">
-      <div class="q-title">Revolution – Vyberte si nastavení</div>
+    <div class="question-panel" data-step="4.5" id="step-4-5" style="display:none;">
+      <div class="q-title">Vyberte si nastavení</div>
       <div class="q-sub">Zvolte jednu z předpřipravených šablon nebo si vytvořte vlastní.</div>
       <div class="options-row" style="justify-content:center;">
-        <button type="button" class="option" onclick="pickRevolutionMode('preset', this)">Předpřipravené (doporučeno)</button>
-        <button type="button" class="option" onclick="pickRevolutionMode('custom', this)">Vlastní návrh</button>
+        <button type="button" class="option" onclick="pickDesignChoice('preset', this)">Předpřipravené (doporučeno)</button>
+        <button type="button" class="option" onclick="pickDesignChoice('custom', this)">Vlastní návrh</button>
       </div>
 
-      <div id="revolutionPresetNote" style="display:none; margin-top:20px; text-align:center;">
-        <div style="margin-bottom:15px; font-size:15px;">
-          <strong>Výchozí úrovně karty Revolution</strong>
-        </div>
-        <div class="preset-levels-overview">
-          <div class="preset-level">
-            <div class="preset-level-name revolution-status-gold">GOLD</div>
-            <div class="preset-level-discount">10%</div>
-            <div class="preset-level-threshold">od 2 000 Kč</div>
-          </div>
-          <div class="preset-level">
-            <div class="preset-level-name revolution-status-dia">DIA</div>
-            <div class="preset-level-discount">15%</div>
-            <div class="preset-level-threshold">od 6 000 Kč</div>
-          </div>
-          <div class="preset-level">
-            <div class="preset-level-name revolution-status-vip">VIP</div>
-            <div class="preset-level-discount">20%</div>
-            <div class="preset-level-threshold">od 10 000 Kč</div>
-          </div>
-        </div>
+      <!-- Nápis se zobrazí hned po výběru "Předpřipravené" -->
+      <div id="presetMessagePanel" class="q-sub" style="display: none; margin-top: 15px; text-align: center; color: #6b7280;">
+          Kartu si v dalších krocích můžete poupravit.
       </div>
 
-      <div id="revolutionCustomPanel" style="display:none; margin-top: 15px;">
-
-        <div style="display:flex; justify-content:center; margin-bottom: 20px; border-bottom: 1px solid #e5e7eb; padding-bottom: 15px;">
-          <div style="display:flex; flex-direction:column; gap:6px;">
-              <label for="revMinWithdrawalAmount" style="font-size:13px; font-weight:600; color:#374151;">Minimální částka výběru (Kč)</label>
-              <input type="number" id="revMinWithdrawalAmount" value="500" min="1" oninput="updateFakeCardRevolutionLevel()" style="width:180px; text-align:center; height:38px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px;">
+      <div id="presetSelectionPanel" class="preset-section" style="display: none;">
+          <h4>Kadeřnictví / Barber</h4>
+          <div class="preset-grid">
+              <div class="preset-card" onclick="applyPreset('revolution-kadernictvi')">
+                  <img src="https://static.wixstatic.com/media/1cf87e_c66475389057414f989c3da03d7fa38c~mv2.png" alt="Design Revolution">
+              </div>
           </div>
-        </div>
-
-        <div id="revolutionNoProgressPanel">
-          <div class="procentni-levels-panel">
-            <table class="procentni-levels-table">
-              <thead>
-                <tr>
-                  <th>Úroveň</th>
-                  <th>Název statusu</th>
-                  <th>Sleva (%)</th>
-                  <th>Cílová částka (Kč)</th>
-                  <th>Barva karty</th>
-                </tr>
-              </thead>
-              <tbody id="revolutionLevelsContainer"></tbody>
-            </table>
-            <div class="procentni-controls">
-              <button type="button" class="mini-btn" onclick="addRevolutionLevel()">+ Přidat úroveň</button>
-              <button type="button" class="mini-btn" id="removeRevolutionLevelBtn" onclick="removeRevolutionLevel()">– Odebrat</button>
-            </div>
-          </div>
-        </div>
-
-
       </div>
+
+
       
       <div class="q-actions">
         <button class="btn btn-back" onclick="goBack()">Zpět</button>
@@ -1460,6 +1442,10 @@
           let napisSizeMode = 'auto';
           let napisManualSize = 16;
           let selectedStripUrl = '';
+          
+          // Pro uložení stavu a preset logiku
+          let cardStateBeforePreset = null; // Pro uložení stavu
+          let presetApplied = false; // Příznak, zda je preset aktivní
           let customStripObjectUrl = null;
           let stripText = '';
           let stripTextUserEdited = false;
@@ -1527,6 +1513,54 @@
           let revolutionMilestones = 11;
           let revolutionGfxUrls = [];
           let revolutionGfxSelectedStep = 0;
+
+          // --- START PŘIDANÉHO KÓDU ---
+          function applyPreset(presetName) {
+            stopExampleSlideshow();
+            document.getElementById('examplePreview').style.display = 'none';
+            document.getElementById('fakeCard').style.display = 'block';
+
+            if (presetName === 'revolution-kadernictvi') {
+                presetApplied = true; // Nastavíme příznak, že je preset aktivní
+
+                // Předvyplníme globální proměnné
+                pickedColor = '#111827';
+                textColor = '#FFF3D1';
+                topMode = 'napis';
+                napisText = 'Your\nLogo';
+                napisFont = 'tan-nimbus-2-webfont';
+                napisColor = '#FFF3D1';
+                napisColorUserEdited = true; // Důležité, aby se nepřepsalo
+                revolutionShowProgress = true;
+                revolutionGfxMode = 'custom';
+                revolutionMilestones = 9;
+                revolutionGfxUrls = [
+                    'https://static.wixstatic.com/media/1cf87e_a021e374f19f41b5b50d7e6cf2448705~mv2.png', 'https://static.wixstatic.com/media/1cf87e_3b0da08ae4354d2a82df27e7e4d35faf~mv2.png',
+                    'https://static.wixstatic.com/media/1cf87e_868147e4411741fe88a2fcb90bd368a9~mv2.png', 'https://static.wixstatic.com/media/1cf87e_73f53948440b4a3b8accd0077395933b~mv2.png',
+                    'https://static.wixstatic.com/media/1cf87e_cc5e3831c2e34ba484eee2c96cab16b4~mv2.png', 'https://static.wixstatic.com/media/1cf87e_b681578544fe425eb26fdbef2a5b15c5~mv2.png',
+                    'https://static.wixstatic.com/media/1cf87e_dfd37ff7fa194329a94c63ab21070470~mv2.png', 'https://static.wixstatic.com/media/1cf87e_7a1fb509a3f44a20b6122015b366681b~mv2.png',
+                    'https://static.wixstatic.com/media/1cf87e_bac580fca3ef4fb9bdf601453d7c2289~mv2.png'
+                ];
+                
+                // Nastavíme nejvyšší stav (poslední) místo stavu 0
+                revolutionGfxSelectedStep = revolutionMilestones - 1; // 9-1 = 8 (poslední stav)
+                selectedStripUrl = revolutionGfxUrls[revolutionGfxSelectedStep] || revolutionGfxUrls[revolutionGfxUrls.length - 1];
+                showStrip = false;
+
+                // Vykreslení změn na kartě
+                (async () => {
+                    await setCardColor(pickedColor);
+                    await setTextColor(textColor);
+                    await renderLogoSlot();
+                    await setStripBackground();
+                    await renderStrip();
+                })();
+
+                // Aktivujeme tlačítko "Pokračovat"
+                document.querySelector('#step-4-5 .btn-next').disabled = false;
+            }
+          }
+          // --- KONEC PŘIDANÉHO KÓDU ---
 
           // --- Bodová handlers ---
           function pickBodRate(rate, el) {
@@ -1709,6 +1743,7 @@
       updateNavState();
       const tmpPrev = document.getElementById('topModePreview');
       if (tmpPrev) tmpPrev.style.display = 'none';
+      
       if (n === 2) {
         // --- ZDE JE NOVÁ LOGIKA ---
         // Pokud uživatel ještě ručně nezměnil barvu nápisu, nastavíme ji
@@ -1734,7 +1769,7 @@
           setTimeout(renderLogoSlot, 50);
           if (next) next.disabled = (napisText.trim().split('\n')[0].length === 0);
 
-          // START NAHRAZEŃÉHO KÓDU
+          // START NAHRAZENÉHO KÓDU
           // Nastavení UI pro velikost písma
           const manualInput = document.getElementById('napisManualSizeInput');
           const resetBtn = document.getElementById('napisResetSizeBtn');
@@ -1744,7 +1779,7 @@
           if (resetBtn) {
               resetBtn.style.display = (napisSizeMode === 'manual') ? 'inline-block' : 'none';
           }
-          // KONEC NAHRAZEŃÉHO KÓDU
+          // KONEC NAHRAZENÉHO KÓDU
         } else {
           if (napisWrapper) napisWrapper.style.display = 'none';
           if (logoWrapper) logoWrapper.style.display = 'flex';
@@ -1753,7 +1788,6 @@
         }
         setTopModePreviewSrc();
       }
-      // NAHRAĎTE PŪVODNÍ `if (n === 2.5)` TÍMTO BLOKEM
       if (n === 2.5) {
         // Vždy synchronizujeme výchozí barvu z barvy nápisu
         textColor = napisColor;
@@ -1828,30 +1862,76 @@
         if (descPanel) descPanel.style.display = 'block';
       }
       if (n === 4.5) {
-        // Set default 'preset' and select it in UI
+        // Defaultně je vybrán vlastní návrh (custom)
+        if (!designChoice) {
+          designChoice = 'custom';
+        }
+        
+        // Aktualizujeme UI podle aktuální volby
         const presetBtn = document.querySelector('#step-4-5 .option[onclick*="\'preset\']');
         const customBtn = document.querySelector('#step-4-5 .option[onclick*="\'custom\']');
         
-        // If nothing is selected, default to preset
-        if (!presetBtn.classList.contains('selected') && !customBtn.classList.contains('selected')) {
-          designChoice = 'preset';
+        // Odstraníme všechny selected třídy
+        document.querySelectorAll('#step-4-5 .option').forEach(o => o.classList.remove('selected'));
+        
+        // Označíme správné tlačítko podle aktuální volby
+        if (designChoice === 'preset' && presetBtn) {
           presetBtn.classList.add('selected');
+        } else if (designChoice === 'custom' && customBtn) {
+          customBtn.classList.add('selected');
+        }
+        
+        // Aktualizujeme zobrazení panelů
+        const presetPanel = document.getElementById('presetSelectionPanel');
+        const messagePanel = document.getElementById('presetMessagePanel');
+        
+        if (designChoice === 'preset') {
+          if (presetPanel) presetPanel.style.display = 'block';
+          if (messagePanel) messagePanel.style.display = 'block';
+        } else {
+          if (presetPanel) presetPanel.style.display = 'none';
+          if (messagePanel) messagePanel.style.display = 'none';
         }
 
         const next = getCurrentNextBtn();
         if (next) next.disabled = false; // Always enabled as there is a default
       }
       if (n === 5.5) {
-        const next = getCurrentNextBtn();
+        const presetButton = document.querySelector('#step-5b .option[onclick*="\'preset\']');
+        // Pokud ještě nebyla učiněna volba, defaultně vybereme "Předpřipravené"
         if (!revolutionMode) {
-          const presetButton = document.querySelector('#step-5b .option[onclick*="\'preset\']');
-          pickRevolutionMode('preset', presetButton);
-        }
-        if (revolutionLevels.length === 0) {
-          revolutionLevels.push({ name: 'Bronzový', discount: 5, threshold: 1000, color: '#CD7F32' });
+            pickRevolutionMode('preset', presetButton);
+        } else {
+            // Pokud už volba byla, jen obnovime UI
+            const customButton = document.querySelector('#step-5b .option[onclick*="\'custom\']');
+            pickRevolutionMode(revolutionMode, revolutionMode === 'preset' ? presetButton : customButton);
         }
       }
       if (n === 5.6) {
+        // Inicializace Revolution nastavení pro custom mode
+        if (cardType === 'revolution' && revolutionMode === 'custom') {
+          // Nastavíme základní Revolution parametry pro custom mode
+          if (!revolutionGfxMode) revolutionGfxMode = 'custom';
+          if (!revolutionMilestones) revolutionMilestones = 9;
+          if (!revolutionGfxUrls || revolutionGfxUrls.length === 0) {
+            revolutionGfxUrls = [
+              'https://static.wixstatic.com/media/1cf87e_a021e374f19f41b5b50d7e6cf2448705~mv2.png',
+              'https://static.wixstatic.com/media/1cf87e_3b0da08ae4354d2a82df27e7e4d35faf~mv2.png',
+              'https://static.wixstatic.com/media/1cf87e_868147e4411741fe88a2fcb90bd368a9~mv2.png',
+              'https://static.wixstatic.com/media/1cf87e_73f53948440b4a3b8accd0077395933b~mv2.png',
+              'https://static.wixstatic.com/media/1cf87e_cc5e3831c2e34ba484eee2c96cab16b4~mv2.png',
+              'https://static.wixstatic.com/media/1cf87e_b681578544fe425eb26fdbef2a5b15c5~mv2.png',
+              'https://static.wixstatic.com/media/1cf87e_dfd37ff7fa194329a94c63ab21070470~mv2.png',
+              'https://static.wixstatic.com/media/1cf87e_7a1fb509a3f44a20b6122015b366681b~mv2.png',
+              'https://static.wixstatic.com/media/1cf87e_bac580fca3ef4fb9bdf601453d7c2289~mv2.png'
+            ];
+          }
+          
+          // Vykreslení Revolution levelů a nastavení preview
+          renderRevolutionLevels();
+          setRevolutionPreview(0);
+        }
+        
         const noButton = document.querySelector('#step-5c .option[onclick*="false"]');
         if (noButton && !noButton.classList.contains('selected')) {
           pickRevolutionProgress(false, noButton);
@@ -2060,35 +2140,91 @@
       return el ? el.querySelector('.btn-back') : null;
     }
     
-    // --- Revolution karta handlers ---
-    function pickRevolutionMode(mode, el) {
-        revolutionMode = mode;
-        document.querySelectorAll('#step-5b .option').forEach(o => o.classList.remove('selected'));
+    // --- Design Choice Handler ---
+    function pickDesignChoice(choice, el) {
+        designChoice = choice;
+        document.querySelectorAll('#step-4-5 .option').forEach(o => o.classList.remove('selected'));
         if (el) el.classList.add('selected');
 
-        const presetNote = document.getElementById('revolutionPresetNote');
-        const customPanel = document.getElementById('revolutionCustomPanel');
-        const nextBtn = document.querySelector('#step-5b .btn-next');
+        const nextBtn = document.querySelector('#step-4-5 .btn-next');
+        const presetPanel = document.getElementById('presetSelectionPanel');
+        const messagePanel = document.getElementById('presetMessagePanel');
 
-        if (mode === 'preset') {
-            initializeDefaultRevolutionLevels(); // Ujistíme se, že máme výchozí úrovně
-            presetNote.style.display = 'block';
-            customPanel.style.display = 'none';
-            setRevolutionPreview(0);
+        if (choice === 'preset') {
+            // Uložíme aktuální stav karty IHNED při výběru "Předpřipravené"
+            if (!cardStateBeforePreset) {
+                cardStateBeforePreset = {
+                    pickedColor, textColor, topMode, napisText, napisFont, napisColor, selectedStripUrl, showStrip,
+                    revolutionShowProgress, revolutionGfxMode, revolutionMilestones, 
+                    revolutionGfxUrls: revolutionGfxUrls ? [...revolutionGfxUrls] : []
+                };
+                console.log('Stav uložen před presetem:', cardStateBeforePreset);
+            }
+            // Zobrazíme nápis hned po výběru "Předpřipravené"
+            if (messagePanel) messagePanel.style.display = 'block';
+            if (presetPanel) presetPanel.style.display = 'block';
+            nextBtn.disabled = true;
+        } else { // 'custom'
+            // Pokud byl aplikován preset, vrátíme původní stav
+            if (cardStateBeforePreset) {
+                console.log('Obnovuji původní stav:', cardStateBeforePreset);
+                
+                // Obnovíme všechny hodnoty
+                pickedColor = cardStateBeforePreset.pickedColor;
+                textColor = cardStateBeforePreset.textColor;
+                topMode = cardStateBeforePreset.topMode;
+                napisText = cardStateBeforePreset.napisText;
+                napisFont = cardStateBeforePreset.napisFont;
+                napisColor = cardStateBeforePreset.napisColor;
+                selectedStripUrl = cardStateBeforePreset.selectedStripUrl;
+                showStrip = cardStateBeforePreset.showStrip;
+                revolutionShowProgress = cardStateBeforePreset.revolutionShowProgress;
+                revolutionGfxMode = cardStateBeforePreset.revolutionGfxMode;
+                revolutionMilestones = cardStateBeforePreset.revolutionMilestones;
+                revolutionGfxUrls = cardStateBeforePreset.revolutionGfxUrls ? [...cardStateBeforePreset.revolutionGfxUrls] : [];
+                
+                presetApplied = false;
+                cardStateBeforePreset = null;
+                
+                // Vynutíme překreslení karty do původního stavu
+                (async () => {
+                    await setCardColor(pickedColor);
+                    await setTextColor(textColor);
+                    await renderLogoSlot();
+                    await setStripBackground();
+                    await renderStrip();
+                })();
+            }
+            // Skryjeme nápis při výběru "Vlastní návrh"
+            if (messagePanel) messagePanel.style.display = 'none';
+            if (presetPanel) presetPanel.style.display = 'none';
             nextBtn.disabled = false;
-        } else if (mode === 'custom') {
-            presetNote.style.display = 'none';
-            customPanel.style.display = 'block';
-            nextBtn.disabled = false;
-            
-            // TOTO JE KLÍČOVÁ OPRAVA: Nastavíme výchozí stav pro "Vlastní návrh"
-            // Výchozí je NEzobrazovat progres, takže simulujeme kliknutí na tlačítko "Ne".
-            const defaultProgressButton = document.querySelector('#revolutionCustomPanel .option[onclick*="pickRevolutionProgress(false"]');
-            pickRevolutionProgress(false, defaultProgressButton);
-            
-            renderRevolutionLevels();
-            setRevolutionPreview(0);
         }
+    }
+    
+    // --- Revolution karta handlers ---
+    function pickRevolutionMode(mode, el) {
+      revolutionMode = mode;
+      document.querySelectorAll('#step-5b .option').forEach(o => o.classList.remove('selected'));
+      if (el) el.classList.add('selected');
+
+      const presetPanel = document.getElementById('revolutionPresetPanel');
+      const customPanel = document.getElementById('revolutionCustomPanel');
+      const nextBtn = document.querySelector('#step-5b .btn-next');
+
+      if (mode === 'preset') {
+        presetPanel.style.display = 'block';
+        customPanel.style.display = 'none';
+        nextBtn.disabled = true; // Uživatel musí vybrat design, aby mohl dál
+      } else if (mode === 'custom') {
+        presetPanel.style.display = 'none';
+        customPanel.style.display = 'none'; // Skryjeme i custom panel - budeme konfigurovat až později
+        nextBtn.disabled = false; // Povolíme pokračování na standardní kroky
+        
+        // NEBUDEME předkonfigurovat Revolution nastavení - to se udělá až později v průběhu
+        // renderRevolutionLevels(); // Zrušeno
+        // setRevolutionPreview(0);   // Zrušeno
+      }
     }
 
     function pickRevolutionProgress(show, el) {
@@ -3000,23 +3136,6 @@
       if (panel) panel.style.display = 'block';
     }
 
-    function pickDesignChoice(choice, el) {
-      designChoice = choice;
-      document.querySelectorAll('#step-4-5 .option').forEach(o => o.classList.remove('selected'));
-      if (el) el.classList.add('selected');
-
-      const next = getCurrentNextBtn();
-      const note = document.getElementById('presetDisabledNote');
-
-      if (choice === 'preset') {
-        if (next) next.disabled = true; // Deaktivovat tlačítko
-        if (note) note.style.display = 'block'; // Zobrazit poznámku
-      } else {
-        if (next) next.disabled = false; // Aktivovat tlačítko
-        if (note) note.style.display = 'none'; // Skrýt poznámku
-      }
-    }
-
     // --- Step 4: Dynamic type descriptions ---
     const COPY = {
       razitkova: {
@@ -3905,83 +4024,41 @@
       return '#' + s.slice(1).split('').map(ch => ch + ch).join('');
     }
 
-    function nextStepNum() {
-      switch (currentStep) {
-        case 1: return 4; // ZMĚNA: Z kroku 1 (Barva) se nyní jde rovnou na krok 4 (Typ karty)
+function nextStepNum() {
+  switch (currentStep) {
+    case 1: return 4;   // Krok 1 (Barva) -> Krok 4 (Typ karty)
+    case 4: return 4.5; // Krok 4 (Typ karty) -> Krok 4.5 (Vlastní/Předpřipravený)
+    case 4.5: return 2; // Krok 4.5 -> Krok 2 (Logo/Text v rohu)
+    case 2: return 2.5; // Krok 2 -> Krok 2.5 (Barva textu)
+    
+    // Zbytek kroků necháme prozatím, jak byl
+    case 2.5: return 3;
+    case 3:
+      if (cardType === 'revolution') return 5.5;
+      return 5;
+    case 5: return 6;
+    case 5.5: return 5.6;
+    case 5.6: return 10;
+    default: return 10;
+  }
+}
 
-        case 4: return 4.5; // Zůstává: Z Typu karty na Výběr designu
-
-        case 4.5: // Větvení podle výběru designu
-          if (designChoice === 'custom') {
-            return 2; // ZMĚNA: Pokud "vlastní", první krok je nyní krok 2 (Logo/Text)
-          } else {
-            // Pokud "předpřipravený", přeskočí se vše a jde se na finální nastavení
-            if (cardType === 'revolution') return 5.5;
-            return 5;
-          }
-
-        case 2: return 2.5; // Jdeme na výběr barvy textu
-        case 2.5: return 3; // Z výběru barvy textu jdeme na strip
-
-        case 3: // Po Stripu se jde na finální nastavení karty
-          if (cardType === 'revolution') return 5.5;
-          return 5;
-        case 5:
-          return 6;
-        case 5.5: return 5.6;
-        case 5.6: return 6;
-        case 6:
-          if (cardType === 'razitkova' && stampMode === 'standard') {
-            return 7;
-          }
-          return showStrip ? 8 : 10; // OPRAVA: Pokud se text na stripu nezobrazuje, jdi rovnou na shrnutí (10)
-        case 7:
-          return stampBorderEnabled ? 7.5 : 10;
-        case 7.5:
-          return 10;
-        case 8: // TENTO ŘÁDEK PŘIDÁN
-          return 10;
-        case 9: // Tento případ je nyní zbytečný, ale neškodí
-          return 10;
-        default: return currentStep + 1;
-      }
-    }
-
-    function prevStepNum() {
-      switch (currentStep) {
-        case 10:
-          // Speciální případ pro krok 10
-          if (cardType === 'razitkova' && stampMode === 'standard') return 7.5; // oprava cesty zpet
-          return showStrip ? 8 : 6;
-        case 8: return 6;
-        case 7: return 6;
-        case 6:
-          // Z kroku 6 se vracíme buď na revolution nastavení nebo běžné nastavení
-          if (cardType === 'revolution') return 5.6;
-          return 5;
-        case 5.6: return 5.5;
-        case 5.5: 
-          // Z nastavení revolution karty se vracíme buď na Strip (vlastní design) nebo na výběr designu
-          if (designChoice === 'custom') return 3;
-          else return 4.5;
-        case 5: 
-          // Z nastavení karty se vracíme buď na Strip (vlastní design) nebo na výběr designu
-          if (designChoice === 'custom') return 3;
-          else return 4.5;
-        case 4.5: 
-          // Z výběru designu se vracíme na typ karty
-          return 4;
-        case 4: 
-          // Z kroku 4 (Typ karty) se vracíme na Barvu
-          return 1;
-        case 3: return 2.5; // Ze stripu se vracíme na výběr barvy textu
-        case 2.5: return 2; // Z výběru barvy textu se vracíme na Logo/Text
-        case 2: 
-          // Z kroku 2 (Logo/Text) se vracíme na výběr designu
-          return 4.5;
-        default: return 1;
-      }
-    }
+function prevStepNum() {
+  if (stepHistory.length > 0) {
+    return stepHistory.pop();
+  }
+  // Fallback, pokud by historie byla prázdná
+  switch (currentStep) {
+    case 4: return 1;
+    case 4.5: return 4;
+    case 2: return 4.5;
+    case 2.5: return 2;
+    case 3: return 2.5;
+    case 5: return 3;
+    case 5.5: return 3;
+    default: return 1;
+  }
+}
 
     function goNext() {
       // validation per step
