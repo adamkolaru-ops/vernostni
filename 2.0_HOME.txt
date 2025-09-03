@@ -490,7 +490,7 @@
       display: flex;
       justify-content: center;
       gap: 8px;
-      margin-top: 8px;
+      margin-top: 12px;
     }
     .procentni-level-color {
       display: flex;
@@ -1065,6 +1065,7 @@
             <button type="button" class="mini-btn" onclick="addProcentniLevel()">+ Přidat úroveň</button>
             <button type="button" class="mini-btn" id="removeProcentniLevelBtn" onclick="removeProcentniLevel()">– Odebrat</button>
           </div>
+          <div id="procentniWarnings" style="margin-top:8px; font-size:12px; color:#b45309; display:none;"></div>
         </div>
       </div>
 
@@ -1094,6 +1095,9 @@
           <div class="preset-grid">
               <div class="preset-card" onclick="applyPreset('revolution-kadernictvi')">
                   <img src="https://static.wixstatic.com/media/1cf87e_c66475389057414f989c3da03d7fa38c~mv2.png" alt="Revolution Kadeřnictví">
+              </div>
+              <div class="preset-card" onclick="applyPreset('revolution-kadernictvi-2')">
+                  <img src="https://static.wixstatic.com/media/1cf87e_cae0bddb2ce341a7ae5b0aed871f2360~mv2.png" alt="Revolution Kadeřnictví 2">
               </div>
               <div class="preset-card" onclick="applyPreset('revolution-blue')">
                   <img src="https://static.wixstatic.com/media/1cf87e_c66475389057414f989c3da03d7fa38c~mv2.png" alt="Revolution Blue">
@@ -1236,6 +1240,11 @@
                 <button type="button" class="mini-btn" onclick="addRevolutionLevel()">+ Přidat úroveň</button>
                 <button type="button" class="mini-btn" id="removeRevolutionLevelBtn" onclick="removeRevolutionLevel()">– Odebrat</button>
             </div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:6px; margin-top:6px;">
+                <label style="font-size:13px; font-weight:600; color:#374151;">Min. částka pro výběr (Kč)</label>
+                <input type="number" id="revBonusMinAmount" value="500" min="1" style="width:150px; text-align:center; height:38px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; margin-top: 5px;">
+                <div class="q-sub" style="margin-top:6px; text-align:center; max-width:600px;">Zákazníci mohou cashback vybrat až po dosažení této částky. Tato hodnota se používá i pro výpočet milníků vizuálního progresu.</div>
+            </div>
         </div>
          <div class="q-actions">
             <button class="btn btn-back" onclick="goBack()">Zpět</button>
@@ -1265,10 +1274,7 @@
         <div id="revolutionGfxCustomPanel" style="display:none; margin-top:15px; border-top: 1px solid #e5e7eb; padding-top: 15px;">
           <div style="display:flex; flex-direction:column; gap:12px; align-items: center;">
                           <div style="display:flex; flex-wrap:wrap; gap: 20px; align-items: flex-end; justify-content: center;">
-              <div>
-                <label style="font-size:13px; font-weight:600; color:#374151;">Min. částka pro výběr (Kč)</label>
-                <input type="number" id="revBonusMinAmount" value="500" min="1" style="width:150px; text-align:center; height:38px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; margin-top: 5px;">
-              </div>
+              <!-- Min. částka přesunuta do kroku 5.5 (Revolution – Nastavení úrovní) -->
               <div>
                 <label style="font-size:13px; font-weight:600; color:#374151;">Počet milníků (obrázků)</label>
                 <input type="number" id="revMilestoneCount" value="11" min="2" max="20" style="width:150px; text-align:center; height:38px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; margin-top: 5px;">
@@ -1280,14 +1286,14 @@
                   <a id="revGfxDownloadBtn" href="#" download="progress.png" class="mini-btn" onclick="return onRevolutionGfxDownloadClick(event)">Stáhnout</a>
                 </div>
               </div>
+              </div>
+              <div id="revMilestoneCalc" style="font-size:12px; color:#6b7280; text-align:center; min-height: 18px;"></div>
+              <div style="display:flex; justify-content:center; margin-bottom:12px;">
+                <img id="revGfxTopPreview" alt="Náhled progresu" style="max-width:100%; height:auto; border:1px solid #e5e7eb; border-radius:8px; display: none;">
+              </div>
+              <div id="revGfxUploads" style="width:100%; display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; align-items:start; margin-top:10px;"></div>
             </div>
-            <div id="revMilestoneCalc" style="font-size:12px; color:#6b7280; text-align:center; min-height: 18px;"></div>
-            <div style="display:flex; justify-content:center; margin-bottom:12px;">
-              <img id="revGfxTopPreview" alt="Náhled progresu" style="max-width:100%; height:auto; border:1px solid #e5e7eb; border-radius:8px; display: none;">
-            </div>
-            <div id="revGfxUploads" style="width:100%; display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; align-items:start; margin-top:10px;"></div>
           </div>
-        </div>
       </div>
       
        <div class="q-actions">
@@ -1683,6 +1689,33 @@
               napisText: 'Your\nLogo',
               napisFont: 'tan-nimbus-2-webfont',
               napisColor: '#FFF3D1',
+              napisColorUserEdited: true,
+              napisSizeMode: 'auto',
+              revolutionShowProgress: true,
+              revolutionGfxMode: 'custom',
+              revolutionMilestones: 9,
+              revolutionGfxUrls: [
+                'https://static.wixstatic.com/media/1cf87e_a021e374f19f41b5b50d7e6cf2448705~mv2.png',
+                'https://static.wixstatic.com/media/1cf87e_3b0da08ae4354d2a82df27e7e4d35faf~mv2.png',
+                'https://static.wixstatic.com/media/1cf87e_868147e4411741fe88a2fcb90bd368a9~mv2.png',
+                'https://static.wixstatic.com/media/1cf87e_73f53948440b4a3b8accd0077395933b~mv2.png',
+                'https://static.wixstatic.com/media/1cf87e_cc5e3831c2e34ba484eee2c96cab16b4~mv2.png',
+                'https://static.wixstatic.com/media/1cf87e_b681578544fe425eb26fdbef2a5b15c5~mv2.png',
+                'https://static.wixstatic.com/media/1cf87e_dfd37ff7fa194329a94c63ab21070470~mv2.png',
+                'https://static.wixstatic.com/media/1cf87e_7a1fb509a3f44a20b6122015b366681b~mv2.png',
+                'https://static.wixstatic.com/media/1cf87e_bac580fca3ef4fb9bdf601453d7c2289~mv2.png'
+              ],
+              showStrip: false,
+              stripText: 'Naspořené peníze lze uplatnit od 500 Kč.'
+            },
+            'revolution-kadernictvi-2': {
+              cardType: 'revolution',
+              pickedColor: '#113FA2',
+              textColor: '#AC7E02',
+              topMode: 'napis',
+              napisText: 'Your\nLogo',
+              napisFont: 'tan-nimbus-2-webfont',
+              napisColor: '#AC7E02',
               napisColorUserEdited: true,
               napisSizeMode: 'auto',
               revolutionShowProgress: true,
@@ -2184,7 +2217,7 @@ function applyPreset(presetName) {
         
         // 3. Vykreslíme finální podobu karty
         (async () => {
-            await setCardColor(pickedColor);
+            await setCardColor(pickedColor, { skipAutoTextColor: true });
             await setTextColor(textColor);
             await applyCardType(cardType);
             await renderLogoSlot();
@@ -2580,6 +2613,14 @@ function applyPreset(presetName) {
       if (n === 5.5) {
         renderRevolutionLevels();
         setRevolutionPreview(revolutionPreviewIndex);
+        // Live update of card preview when min amount changes in step 5.5
+        try {
+          const minInp = document.getElementById('revBonusMinAmount');
+          if (minInp && !minInp.dataset.revMinListener) {
+            minInp.addEventListener('input', () => { try { updateFakeCardRevolutionLevel(); } catch(_) {} });
+            minInp.dataset.revMinListener = 'true';
+          }
+        } catch(_) {}
         const next = getCurrentNextBtn();
         if (next) next.disabled = false;
       }
@@ -2646,8 +2687,10 @@ function applyPreset(presetName) {
           updateBodovaPreview();
           updateBodovaNextEnabled();
         } else if (isProcentni) {
+          loadProcentniFromStorage();
           renderProcentniLevels();
           updateProcentniPreview();
+          if (typeof showProcentniWarnings === 'function') showProcentniWarnings();
           if (next) next.disabled = false;
         } else {
           if (next) next.disabled = false;
@@ -2861,7 +2904,7 @@ function pickDesignChoice(choice, el, targetCardType) {
             });
 
             (async () => {
-                await setCardColor(pickedColor);
+                await setCardColor(pickedColor, { skipAutoTextColor: true });
                 await setTextColor(textColor);
                 await applyCardType(cardType);
                 await renderLogoSlot();
@@ -3089,15 +3132,13 @@ function pickDesignChoice(choice, el, targetCardType) {
             if (index === 0) {
                 tdColor.innerHTML = `<span>(Hlavní barva)</span>`;
             } else {
-                const colorDiv = document.createElement('div');
-                colorDiv.className = 'procentni-level-color';
+                // Jednoduché jedno pole pro barvu (bez palety tlačítek)
                 const colorInput = document.createElement('input');
                 colorInput.type = 'color';
                 colorInput.value = level.color || pickedColor || '#ffffff';
                 colorInput.onchange = (e) => onRevolutionLevelChange(index, 'color', e.target.value);
                 colorInput.onclick = (e) => e.stopPropagation();
-                colorDiv.appendChild(colorInput);
-                tdColor.appendChild(colorDiv);
+                tdColor.appendChild(colorInput);
             }
             tr.appendChild(tdColor);
             
@@ -3123,7 +3164,7 @@ function pickDesignChoice(choice, el, targetCardType) {
         const discountVal = document.getElementById('discountVal');
         const savedVal = document.getElementById('savedVal');
         const fakeCard = document.getElementById('fakeCard');
-        const minAmountInput = document.getElementById('revMinWithdrawalAmount');
+        const minAmountInput = document.getElementById('revBonusMinAmount');
 
         // KROK 1: Nastavíme správné popisky pro Revolution kartu
         if (discountLabel1) discountLabel1.textContent = 'SLEVA';
@@ -3157,6 +3198,116 @@ function pickDesignChoice(choice, el, targetCardType) {
             fakeCard.style.backgroundColor = colorToShow;
         }
     }
+
+    // Revolution – color helper (klikací swatche)
+    function setRevolutionLevelColor(index, color) {
+      try {
+        if (!revolutionLevels[index]) return;
+        revolutionLevels[index].color = color;
+        setRevolutionPreview(index);
+      } catch (_) {}
+    }
+
+    // --- Procentní karta – persistence, validation & color helpers ---
+    function saveProcentniToStorage() {
+      try {
+        localStorage.setItem('vernostni_procentni_levels', JSON.stringify(procentniLevels));
+        localStorage.setItem('vernostni_procentni_preview', String(procentniPreviewIndex));
+      } catch (_) {}
+    }
+
+    function loadProcentniFromStorage() {
+      try {
+        const raw = localStorage.getItem('vernostni_procentni_levels');
+        const idxRaw = localStorage.getItem('vernostni_procentni_preview');
+        if (raw) {
+          const arr = JSON.parse(raw);
+          if (Array.isArray(arr) && arr.length > 0) {
+            procentniLevels = arr.map((l) => ({
+              name: (l && typeof l.name === 'string') ? l.name : 'LEVEL',
+              discount: clampNumber(l && l.discount, 0, 100),
+              spend: normalizeSpend(l && l.spend),
+              color: (l && l.color) || null
+            }));
+            // Ujistíme se, že poslední úroveň má nekonečný rozsah
+            procentniLevels[procentniLevels.length - 1].spend = Infinity;
+          }
+        }
+        if (idxRaw !== null) {
+          const idx = parseInt(idxRaw, 10);
+          if (!isNaN(idx) && idx >= 0 && idx < procentniLevels.length) {
+            procentniPreviewIndex = idx;
+          }
+        }
+      } catch (_) {}
+    }
+
+    function clampNumber(n, min, max) {
+      const v = parseInt(n, 10);
+      if (isNaN(v)) return min;
+      return Math.max(min, Math.min(max, v));
+    }
+
+    function normalizeSpend(v) {
+      if (v === Infinity) return Infinity;
+      const n = parseInt(v, 10);
+      if (isNaN(n) || n < 0) return 0;
+      return n;
+    }
+
+    function validateProcentniLevels() {
+      const warnings = [];
+      // Sleva v rozsahu 0–100
+      procentniLevels.forEach((lvl, i) => {
+        if (typeof lvl.discount !== 'number' || lvl.discount < 0 || lvl.discount > 100) {
+          warnings.push(`Úroveň ${i + 1}: Sleva musí být v rozmezí 0–100 %.`);
+        }
+      });
+      // Monotónní nárůst hranic útrat (žádné překryvy)
+      for (let i = 1; i < procentniLevels.length; i++) {
+        const prev = procentniLevels[i - 1].spend;
+        const curr = procentniLevels[i].spend;
+        if (prev !== Infinity && curr !== Infinity && curr <= prev) {
+          warnings.push(`Úroveň ${i + 1}: Hranice útraty musí být větší než předchozí (${prev}).`);
+        }
+      }
+      // První úroveň začíná od 0 a poslední je "a více"
+      if (procentniLevels.length > 0) {
+        if (procentniLevels[0].spend === 0) {
+          // OK – první má "0 až ..."
+        }
+        const last = procentniLevels[procentniLevels.length - 1];
+        if (last.spend !== Infinity) {
+          warnings.push('Poslední úroveň musí být "a více" (nekonečný rozsah).');
+        }
+      }
+      return warnings;
+    }
+
+    function showProcentniWarnings() {
+      try {
+        const el = document.getElementById('procentniWarnings');
+        if (!el) return;
+        const warnings = validateProcentniLevels();
+        if (!warnings || warnings.length === 0) {
+          el.style.display = 'none';
+          el.innerHTML = '';
+          return;
+        }
+        const list = warnings.map(w => `<div style="display:flex;gap:6px;align-items:flex-start;"><span style="color:#d97706;">⚠️</span><span>${escapeHtml(w)}</span></div>`).join('');
+        el.innerHTML = list;
+        el.style.display = 'block';
+      } catch (_) {}
+    }
+
+    function setProcentniLevelColor(index, color) {
+      try {
+        if (!procentniLevels[index]) return;
+        procentniLevels[index].color = color;
+        setProcentniPreview(index);
+        if (typeof saveProcentniToStorage === 'function') saveProcentniToStorage();
+      } catch (_) {}
+    }
     
     function initializeDefaultRevolutionLevels() {
         // Resetujeme Revolution úrovně na výchozí hodnoty
@@ -3169,8 +3320,12 @@ function pickDesignChoice(choice, el, targetCardType) {
         // Přidáme event listenery na nová políčka, pokud ještě nebyly přidány
         const minAmountInput = document.getElementById('revBonusMinAmount');
         const milestonesInput = document.getElementById('revMilestoneCount');
-        if(minAmountInput && !minAmountInput.dataset.listenerAttached) {
-            minAmountInput.addEventListener('input', setupRevolutionGfxUploads);
+        if (minAmountInput && !minAmountInput.dataset.listenerAttached) {
+            // Při změně minima zároveň aktualizujeme náhled karty a re-inicializujeme milníky
+            minAmountInput.addEventListener('input', () => {
+                try { updateFakeCardRevolutionLevel(); } catch(_) {}
+                try { setupRevolutionGfxUploads(); } catch(_) {}
+            });
             minAmountInput.dataset.listenerAttached = 'true';
         }
         if(milestonesInput && !milestonesInput.dataset.listenerAttached) {
@@ -3328,24 +3483,25 @@ function pickDesignChoice(choice, el, targetCardType) {
       document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
     }
 
-    function setCardColor(color) {
+    function setCardColor(color, options = {}) {
       const card = document.getElementById('fakeCard');
       if (card) card.style.backgroundColor = color;
       pickedColor = color;
       const next = getCurrentNextBtn();
       if (next) next.disabled = false;
 
-      // --- ZDE JE KLÍČOVÁ ÚPRAVA ---
-      // Pokud je zvolená barva tmavá, automaticky nastavíme barvu textu na bílou.
-      // Jinak ji vrátíme na černou.
-      const newTextColor = isColorDark(color) ? '#FFFFFF' : '#000000';
-      textColor = newTextColor; // Aktualizujeme globální proměnnou
-      setTextColor(newTextColor); // Aplikujeme změnu na náhled karty
+      // Automatické nastavení barvy textu může být výslovně vypnuto parametrem.
+      const skipAuto = (options && options.skipAutoTextColor);
+      if (!skipAuto) {
+        const newTextColor = isColorDark(color) ? '#FFFFFF' : '#000000';
+        textColor = newTextColor; // Aktualizujeme globální proměnnou
+        setTextColor(newTextColor); // Aplikujeme změnu na náhled karty
 
-      // Synchronizujeme i input pro výběr barvy v kroku 9, aby byla hodnota připravená
-      const customTextColorInput = document.getElementById('customTextColor');
-      if (customTextColorInput) {
-          customTextColorInput.value = newTextColor;
+        // Synchronizujeme i input pro výběr barvy v kroku 9, aby byla hodnota připravená
+        const customTextColorInput = document.getElementById('customTextColor');
+        if (customTextColorInput) {
+            customTextColorInput.value = newTextColor;
+        }
       }
     }
 
@@ -4721,9 +4877,8 @@ function nextStepNum() {
             }
             return 5;
         case 5:
-            if (cardType === 'razitkova' && stampMode === 'standard') {
-                return 7;
-            }
+            // Show detailed stamp settings (step 6) when Razítková with Standard mode.
+            // Previously this incorrectly skipped to step 7, hiding the standard settings panel.
             return 6;
         case 5.5:
             // POKUD byl aplikován preset, přeskočíme krok 5.6 (Vizuální progres)
@@ -4817,7 +4972,7 @@ function prevStepNum() {
 
             // Vynutíme překreslení karty do původního stavu
             (async () => {
-                await setCardColor(pickedColor);
+                await setCardColor(pickedColor, { skipAutoTextColor: true });
                 await setTextColor(textColor);
                 await applyCardType(cardType);
                 await renderLogoSlot();
@@ -5088,12 +5243,20 @@ function applyCardType(type) {
       } else {
         const numValue = parseInt(value, 10);
         if (!isNaN(numValue) && numValue >= 0) {
-          procentniLevels[index][field] = numValue;
+          if (field === 'discount') {
+            // Clamp discount to 0–100
+            procentniLevels[index][field] = Math.max(0, Math.min(100, numValue));
+          } else {
+            procentniLevels[index][field] = numValue;
+          }
         }
       }
       
       // VŽDY přepneme náhled na upravovanou úroveň při jakékoliv změně
       setProcentniPreview(index);
+      // Uložení a validace po změně
+      if (typeof saveProcentniToStorage === 'function') saveProcentniToStorage();
+      if (typeof showProcentniWarnings === 'function') showProcentniWarnings();
     }
 
     function addProcentniLevel() {
@@ -5114,6 +5277,8 @@ function applyCardType(type) {
 
         renderProcentniLevels();
         setProcentniPreview(procentniLevels.length - 1); // Zobrazíme náhled nově přidané úrovně
+        if (typeof saveProcentniToStorage === 'function') saveProcentniToStorage();
+        if (typeof showProcentniWarnings === 'function') showProcentniWarnings();
     }
 
 
@@ -5130,6 +5295,8 @@ function applyCardType(type) {
           renderProcentniLevels();
           updateProcentniPreview();
         }
+        if (typeof saveProcentniToStorage === 'function') saveProcentniToStorage();
+        if (typeof showProcentniWarnings === 'function') showProcentniWarnings();
       }
     }
 
@@ -5137,6 +5304,7 @@ function applyCardType(type) {
         procentniPreviewIndex = index;
         renderProcentniLevels(); // Překreslíme, aby se zvýraznil správný řádek
         updateProcentniPreview();
+        if (typeof saveProcentniToStorage === 'function') saveProcentniToStorage();
     }
 
     function renderProcentniLevels() {
@@ -5160,7 +5328,7 @@ function applyCardType(type) {
             <input type="text" value="${escapeHtml(level.name)}" onchange="onProcentniLevelChange(${index}, 'name', this.value)" onclick="event.stopPropagation()">
           </td>
           <td>
-            <input type="number" value="${level.discount}" min="0" onchange="onProcentniLevelChange(${index}, 'discount', this.value)" onclick="event.stopPropagation()">
+            <input type="number" value="${level.discount}" min="0" max="100" onchange="onProcentniLevelChange(${index}, 'discount', this.value)" onclick="event.stopPropagation()">
           </td>
           <td>
             <div class="procentni-spending-cell">
@@ -5173,8 +5341,27 @@ function applyCardType(type) {
           </td>
           <td>
             ${index === 0 ? '<span>(Hlavní barva)</span>' : 
-            `<div class="procentni-level-color">
-                <input type="color" value="${level.color || pickedColor || '#ffffff'}" onchange="onProcentniLevelChange(${index}, 'color', this.value)" onclick="event.stopPropagation()">
+            `<div class=\"procentni-level-color\">
+                <div class=\"swatches-row\" style=\"display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px;\">
+                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#000000\" title=\"#000000\" onclick=\"setProcentniLevelColor(${index}, '#000000'); event.stopPropagation()\"></div>
+                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#111827\" title=\"#111827\" onclick=\"setProcentniLevelColor(${index}, '#111827'); event.stopPropagation()\"></div>
+                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#374151\" title=\"#374151\" onclick=\"setProcentniLevelColor(${index}, '#374151'); event.stopPropagation()\"></div>
+                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#6B7280\" title=\"#6B7280\" onclick=\"setProcentniLevelColor(${index}, '#6B7280'); event.stopPropagation()\"></div>
+                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#9CA3AF\" title=\"#9CA3AF\" onclick=\"setProcentniLevelColor(${index}, '#9CA3AF'); event.stopPropagation()\"></div>
+                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#FFFFFF\" title=\"#FFFFFF\" onclick=\"setProcentniLevelColor(${index}, '#FFFFFF'); event.stopPropagation()\"></div>
+                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#EF4444\" title=\"#EF4444\" onclick=\"setProcentniLevelColor(${index}, '#EF4444'); event.stopPropagation()\"></div>
+                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#F97316\" title=\"#F97316\" onclick=\"setProcentniLevelColor(${index}, '#F97316'); event.stopPropagation()\"></div>
+                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#F59E0B\" title=\"#F59E0B\" onclick=\"setProcentniLevelColor(${index}, '#F59E0B'); event.stopPropagation()\"></div>
+                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#EAB308\" title=\"#EAB308\" onclick=\"setProcentniLevelColor(${index}, '#EAB308'); event.stopPropagation()\"></div>
+                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#22C55E\" title=\"#22C55E\" onclick=\"setProcentniLevelColor(${index}, '#22C55E'); event.stopPropagation()\"></div>
+                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#10B981\" title=\"#10B981\" onclick=\"setProcentniLevelColor(${index}, '#10B981'); event.stopPropagation()\"></div>
+                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#06B6D4\" title=\"#06B6D4\" onclick=\"setProcentniLevelColor(${index}, '#06B6D4'); event.stopPropagation()\"></div>
+                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#3B82F6\" title=\"#3B82F6\" onclick=\"setProcentniLevelColor(${index}, '#3B82F6'); event.stopPropagation()\"></div>
+                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#2563EB\" title=\"#2563EB\" onclick=\"setProcentniLevelColor(${index}, '#2563EB'); event.stopPropagation()\"></div>
+                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#8B5CF6\" title=\"#8B5CF6\" onclick=\"setProcentniLevelColor(${index}, '#8B5CF6'); event.stopPropagation()\"></div>
+                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#EC4899\" title=\"#EC4899\" onclick=\"setProcentniLevelColor(${index}, '#EC4899'); event.stopPropagation()\"></div>
+                </div>
+                <input type=\"color\" value=\"${level.color || pickedColor || '#ffffff'}\" onchange=\"onProcentniLevelChange(${index}, 'color', this.value)\" onclick=\"event.stopPropagation()\">
              </div>`
             }
           </td>
@@ -5186,6 +5373,7 @@ function applyCardType(type) {
       if (removeBtn) {
         removeBtn.disabled = procentniLevels.length <= 1;
       }
+      if (typeof showProcentniWarnings === 'function') showProcentniWarnings();
     }
 
     function updateProcentniPreview() {
