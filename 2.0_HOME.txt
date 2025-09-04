@@ -4995,7 +4995,12 @@ function prevStepNum() {
   switch (currentStep) {
     case 4: return 1;
     case 4.5: return 4;
-    case 2: return 4.5;
+    case 2:
+      // Procentní a Bodová: přeskakujeme krok 4.5, návrat jde na krok 4
+      if (cardType === 'procentni' || cardType === 'bodova') {
+        return 4;
+      }
+      return 4.5;
     case 2.5: return 2;
     case 3: return 2.5;
     case 5: return 3;
