@@ -752,8 +752,7 @@
         </div>
       </div>
       <div class="q-actions">
-        <button class="btn btn-back" onclick="goBack()" disabled>Zpět</button>
-        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
+        <button class="btn btn-next" onclick="(function(){ try{ if(typeof stopExampleSlideshow==='function') stopExampleSlideshow(); }catch(_){} try{ var ex=document.getElementById('examplePreview'); if(ex) ex.style.display='none'; var fake=document.getElementById('fakeCard'); if(fake) fake.style.display='block'; }catch(_){} if(typeof pickedColor==='undefined'||!pickedColor){ setCardColor('#111827'); } goNext(); })()" style="font-size:18px; padding:14px 22px; width:100%;">ZAČNI VYTVÁŘET</button>
       </div>
     </div>
 
@@ -1063,18 +1062,17 @@
           </table>
           <div class="procentni-controls">
             <button type="button" class="mini-btn" onclick="addProcentniLevel()">+ Přidat úroveň</button>
-            <button type="button" class="mini-btn" id="removeProcentniLevelBtn" onclick="removeProcentniLevel()">– Odebrat</button>
           </div>
           <div id="procentniWarnings" style="margin-top:8px; font-size:12px; color:#b45309; display:none;"></div>
         </div>
       </div>
-
+      
       <div class="q-actions">
         <button class="btn btn-back" onclick="goBack()">Zpět</button>
         <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
       </div>
     </div>
-
+    
     <!-- Revolution Card Settings -->
     <div class="question-panel" data-step="4.5" id="step-4-5-revolution" style="display:none;">
       <div class="q-title">Vyberte si nastavení Revolution</div>
@@ -1120,10 +1118,121 @@
       </div>
     </div>
 
+    <!-- KROK 4.6 (Revolution): Zachovat nebo změnit barvu -->
+    <div class="question-panel" data-step="4.6" id="step-4-6-revolution" style="display:none;">
+      <div class="keep-color-section" id="keepColorSection-revolution" style="margin-top:16px;">
+        <div class="q-title">Chcete zachovat barvu karty?</div>
+        <div class="q-sub">Současná barva</div>
+        <div class="color-row">
+          <div class="swatch selected" id="currentColorSwatch-revolution" title="Současná barva" onclick="chooseCurrentColor('keepColorSection-revolution', this)"></div>
+        </div>
+        <div class="q-sub" style="margin-top:8px;">Změnit barvu na</div>
+        <div class="color-row">
+          <!-- Neutrals -->
+          <div class="swatch" style="background:#FFFFFF" title="Bílá" onclick="pickPresetColor('#FFFFFF', this)"></div>
+          <div class="swatch" style="background:#F3F4F6" title="Světle šedá" onclick="pickPresetColor('#F3F4F6', this)"></div>
+          <div class="swatch" style="background:#9CA3AF" title="Šedá" onclick="pickPresetColor('#9CA3AF', this)"></div>
+          <div class="swatch" style="background:#6B7280" title="Tmavší šedá" onclick="pickPresetColor('#6B7280', this)"></div>
+          <div class="swatch" style="background:#374151" title="Tmavá šedá" onclick="pickPresetColor('#374151', this)"></div>
+          <div class="swatch" style="background:#111827" title="Černá" onclick="pickPresetColor('#111827', this)"></div>
+          <!-- Reds / Warm -->
+          <div class="swatch" style="background:#FEE2E2" title="Světle červená" onclick="pickPresetColor('#FEE2E2', this)"></div>
+          <div class="swatch" style="background:#F43F5E" title="Růžovo-červená" onclick="pickPresetColor('#F43F5E', this)"></div>
+          <div class="swatch" style="background:#EF4444" title="Červená" onclick="pickPresetColor('#EF4444', this)"></div>
+          <div class="swatch" style="background:#DC2626" title="Tmavší červená" onclick="pickPresetColor('#DC2626', this)"></div>
+          <div class="swatch" style="background:#F97316" title="Oranžová" onclick="pickPresetColor('#F97316', this)"></div>
+          <div class="swatch" style="background:#F59E0B" title="Amber" onclick="pickPresetColor('#F59E0B', this)"></div>
+          <div class="swatch" style="background:#EAB308" title="Žlutá" onclick="pickPresetColor('#EAB308', this)"></div>
+          <!-- Greens -->
+          <div class="swatch" style="background:#84CC16" title="Limetková" onclick="pickPresetColor('#84CC16', this)"></div>
+          <div class="swatch" style="background:#22C55E" title="Zelená" onclick="pickPresetColor('#22C55E', this)"></div>
+          <div class="swatch" style="background:#10B981" title="Smaragdová" onclick="pickPresetColor('#10B981', this)"></div>
+          <div class="swatch" style="background:#14B8A6" title="Tyrkysová" onclick="pickPresetColor('#14B8A6', this)"></div>
+          <!-- Blues -->
+          <div class="swatch" style="background:#06B6D4" title="Cyan" onclick="pickPresetColor('#06B6D4', this)"></div>
+          <div class="swatch" style="background:#38BDF8" title="Nebesky modrá" onclick="pickPresetColor('#38BDF8', this)"></div>
+          <div class="swatch" style="background:#3B82F6" title="Modrá" onclick="pickPresetColor('#3B82F6', this)"></div>
+          <div class="swatch" style="background:#2563EB" title="Tmavší modrá" onclick="pickPresetColor('#2563EB', this)"></div>
+          <div class="swatch" style="background:#6366F1" title="Indigo" onclick="pickPresetColor('#6366F1', this)"></div>
+          <!-- Purples -->
+          <div class="swatch" style="background:#8B5CF6" title="Fialová" onclick="pickPresetColor('#8B5CF6', this)"></div>
+          <div class="swatch" style="background:#A855F7" title="Purple" onclick="pickPresetColor('#A855F7', this)"></div>
+          <div class="swatch" style="background:#D946EF" title="Fuchsiová" onclick="pickPresetColor('#D946EF', this)"></div>
+          <div class="swatch" style="background:#EC4899" title="Růžová" onclick="pickPresetColor('#EC4899', this)"></div>
+          <!-- Custom -->
+          <div class="custom-color">
+            <label for="customColorAfter45-revolution">Vlastní</label>
+            <input type="color" id="customColorAfter45-revolution" value="#ffffff" onchange="pickCustomColor(this.value)">
+          </div>
+        </div>
+      </div>
+      
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()">Zpět</button>
+        <button class="btn btn-next" onclick="goNext()">Pokračovat</button>
+      </div>
+    </div>
+
+    <!-- KROK 4.6 (Razítková): Zachovat nebo změnit barvu -->
+    <div class="question-panel" data-step="4.6" id="step-4-6-razitkova" style="display:none;">
+      <div class="keep-color-section" id="keepColorSection-razitkova" style="margin-top:16px;">
+        <div class="q-title">Chcete zachovat barvu karty?</div>
+        <div class="q-sub">Současná barva</div>
+        <div class="color-row">
+          <div class="swatch selected" id="currentColorSwatch-razitkova" title="Současná barva" onclick="chooseCurrentColor('keepColorSection-razitkova', this)"></div>
+        </div>
+        <div class="q-sub" style="margin-top:8px;">Změnit barvu na</div>
+        <div class="color-row">
+          <!-- Neutrals -->
+          <div class="swatch" style="background:#FFFFFF" title="Bílá" onclick="pickPresetColor('#FFFFFF', this)"></div>
+          <div class="swatch" style="background:#F3F4F6" title="Světle šedá" onclick="pickPresetColor('#F3F4F6', this)"></div>
+          <div class="swatch" style="background:#9CA3AF" title="Šedá" onclick="pickPresetColor('#9CA3AF', this)"></div>
+          <div class="swatch" style="background:#6B7280" title="Tmavší šedá" onclick="pickPresetColor('#6B7280', this)"></div>
+          <div class="swatch" style="background:#374151" title="Tmavá šedá" onclick="pickPresetColor('#374151', this)"></div>
+          <div class="swatch" style="background:#111827" title="Černá" onclick="pickPresetColor('#111827', this)"></div>
+          <!-- Reds / Warm -->
+          <div class="swatch" style="background:#FEE2E2" title="Světle červená" onclick="pickPresetColor('#FEE2E2', this)"></div>
+          <div class="swatch" style="background:#F43F5E" title="Růžovo-červená" onclick="pickPresetColor('#F43F5E', this)"></div>
+          <div class="swatch" style="background:#EF4444" title="Červená" onclick="pickPresetColor('#EF4444', this)"></div>
+          <div class="swatch" style="background:#DC2626" title="Tmavší červená" onclick="pickPresetColor('#DC2626', this)"></div>
+          <div class="swatch" style="background:#F97316" title="Oranžová" onclick="pickPresetColor('#F97316', this)"></div>
+          <div class="swatch" style="background:#F59E0B" title="Amber" onclick="pickPresetColor('#F59E0B', this)"></div>
+          <div class="swatch" style="background:#EAB308" title="Žlutá" onclick="pickPresetColor('#EAB308', this)"></div>
+          <!-- Greens -->
+          <div class="swatch" style="background:#84CC16" title="Limetková" onclick="pickPresetColor('#84CC16', this)"></div>
+          <div class="swatch" style="background:#22C55E" title="Zelená" onclick="pickPresetColor('#22C55E', this)"></div>
+          <div class="swatch" style="background:#10B981" title="Smaragdová" onclick="pickPresetColor('#10B981', this)"></div>
+          <div class="swatch" style="background:#14B8A6" title="Tyrkysová" onclick="pickPresetColor('#14B8A6', this)"></div>
+          <!-- Blues -->
+          <div class="swatch" style="background:#06B6D4" title="Cyan" onclick="pickPresetColor('#06B6D4', this)"></div>
+          <div class="swatch" style="background:#38BDF8" title="Nebesky modrá" onclick="pickPresetColor('#38BDF8', this)"></div>
+          <div class="swatch" style="background:#3B82F6" title="Modrá" onclick="pickPresetColor('#3B82F6', this)"></div>
+          <div class="swatch" style="background:#2563EB" title="Tmavší modrá" onclick="pickPresetColor('#2563EB', this)"></div>
+          <div class="swatch" style="background:#6366F1" title="Indigo" onclick="pickPresetColor('#6366F1', this)"></div>
+          <!-- Purples -->
+          <div class="swatch" style="background:#8B5CF6" title="Fialová" onclick="pickPresetColor('#8B5CF6', this)"></div>
+          <div class="swatch" style="background:#A855F7" title="Purple" onclick="pickPresetColor('#A855F7', this)"></div>
+          <div class="swatch" style="background:#D946EF" title="Fuchsiová" onclick="pickPresetColor('#D946EF', this)"></div>
+          <div class="swatch" style="background:#EC4899" title="Růžová" onclick="pickPresetColor('#EC4899', this)"></div>
+          <!-- Custom -->
+          <div class="custom-color">
+            <label for="customColorAfter45-razitkova">Vlastní</label>
+            <input type="color" id="customColorAfter45-razitkova" value="#ffffff" onchange="pickCustomColor(this.value)">
+          </div>
+        </div>
+      </div>
+      
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()">Zpět</button>
+        <button class="btn btn-next" onclick="goNext()">Pokračovat</button>
+      </div>
+    </div>
+
     <!-- Procentní Card Settings -->
     <div class="question-panel" data-step="4.5" id="step-4-5-procentni" style="display:none;">
       <div class="q-title">Vyberte si nastavení Procentní</div>
       <div class="q-sub">Zvolte jednu z předpřipravených šablon nebo si vytvořte vlastní.</div>
+{{ ... }}
       <div class="options-row" style="justify-content:center;">
         <button type="button" class="option" onclick="pickDesignChoice('preset', this, 'procentni')">Předpřipravené (doporučeno)</button>
         <button type="button" class="option" onclick="pickDesignChoice('custom', this, 'procentni')">Vlastní návrh</button>
@@ -1212,6 +1321,8 @@
               </div>
           </div>
       </div>
+      
+      <!-- (4.6 move) keep-color UI removed from 4.5 -->
       
       <div class="q-actions">
         <button class="btn btn-back" onclick="goBack()">Zpět</button>
@@ -2425,10 +2536,50 @@ function applyPreset(presetName) {
         const targetSection = document.getElementById(targetSectionId);
         if (targetSection) {
           targetSection.style.display = 'block';
+          // Inicializace sekce zachování barvy: nastavíme "Současná barva" na pickedColor a označíme ji
+          try {
+            const cur = document.getElementById(`currentColorSwatch-${cardType}`);
+            if (cur) {
+              const colorToUse = pickedColor || '#ffffff';
+              cur.style.background = colorToUse;
+              const container = document.getElementById(`keepColorSection-${cardType}`);
+              if (container) {
+                container.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+                cur.classList.add('selected');
+              }
+              const inp = document.getElementById(`customColorAfter45-${cardType}`);
+              if (inp) { try { inp.value = toHex(colorToUse); } catch(_) { inp.value = colorToUse; } }
+            }
+          } catch(_) {}
         } else {
           console.warn(`No section found for card type: ${cardType}, falling back to revolution`);
           const fallbackSection = document.getElementById('step-4-5-revolution');
           if (fallbackSection) fallbackSection.style.display = 'block';
+        }
+      } else if (n === 4.6) {
+        // Special handling for step 4.6 - card type-specific keep-color section
+        steps().forEach(p => { p.style.display = 'none'; });
+        const targetSectionId = `step-4-6-${cardType}`;
+        const targetSection = document.getElementById(targetSectionId);
+        if (targetSection) {
+          targetSection.style.display = 'block';
+          // Inicializace: nastavíme "Současná barva" na pickedColor a označíme ji
+          try {
+            const cur = document.getElementById(`currentColorSwatch-${cardType}`);
+            if (cur) {
+              const colorToUse = pickedColor || '#ffffff';
+              cur.style.background = colorToUse;
+              const container = document.getElementById(`keepColorSection-${cardType}`);
+              if (container) {
+                container.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+                cur.classList.add('selected');
+              }
+              const inp = document.getElementById(`customColorAfter45-${cardType}`);
+              if (inp) { try { inp.value = toHex(colorToUse); } catch(_) { inp.value = colorToUse; } }
+            }
+          } catch(_) {}
+        } else {
+          console.warn(`No 4.6 section found for card type: ${cardType}`);
         }
       } else {
         steps().forEach(p => { p.style.display = (Number(p.dataset.step) === n || p.dataset.step === String(n)) ? 'block' : 'none'; });
@@ -2926,7 +3077,22 @@ function pickDesignChoice(choice, el, targetCardType) {
         
         // Zakážeme "Pokračovat", dokud si uživatel nevybere konkrétní preset
         if (nextBtn) nextBtn.disabled = true; 
-    } else { // 'custom'
+        // Sync "Současná barva" swatch with current pickedColor and select it
+        try {
+          const cur = document.getElementById(`currentColorSwatch-${targetCardType}`);
+          if (cur) {
+            const colorToUse = pickedColor || '#ffffff';
+            cur.style.background = colorToUse;
+            const container = document.getElementById(`keepColorSection-${targetCardType}`);
+            if (container) {
+              container.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+              cur.classList.add('selected');
+            }
+            const inp = document.getElementById(`customColorAfter45-${targetCardType}`);
+            if (inp) { try { inp.value = toHex(colorToUse); } catch(_) { inp.value = colorToUse; } }
+          }
+        } catch(_) {}
+  } else { // 'custom'
         // Pokud existuje záloha (tzn. uživatel předtím zkoušel presety), obnovíme ji
         if (cardStateBeforePreset) {
             console.log('Obnovuji původní stav karty (přepnuto na Vlastní návrh).');
@@ -2969,9 +3135,24 @@ function pickDesignChoice(choice, el, targetCardType) {
         }
         
         if (messagePanel) messagePanel.style.display = 'none';
-        if (presetPanel) presetPanel.style.display = 'none';
-        if (nextBtn) nextBtn.disabled = false;
-    }
+      if (presetPanel) presetPanel.style.display = 'none';
+      if (nextBtn) nextBtn.disabled = false;
+      // Sync "Současná barva" swatch with current pickedColor and select it
+      try {
+        const cur = document.getElementById(`currentColorSwatch-${targetCardType}`);
+        if (cur) {
+          const colorToUse = pickedColor || '#ffffff';
+          cur.style.background = colorToUse;
+          const container = document.getElementById(`keepColorSection-${targetCardType}`);
+          if (container) {
+            container.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+            cur.classList.add('selected');
+          }
+          const inp = document.getElementById(`customColorAfter45-${targetCardType}`);
+          if (inp) { try { inp.value = toHex(colorToUse); } catch(_) { inp.value = colorToUse; } }
+        }
+      } catch(_) {}
+  }
 }
     
     // --- Revolution karta handlers ---
@@ -3544,6 +3725,10 @@ function pickDesignChoice(choice, el, targetCardType) {
       const next = getCurrentNextBtn();
       if (next) next.disabled = false;
 
+      // Udržuj zobrazení "Současná barva" ve shodě s aktuální barvou
+      try { const curRev = document.getElementById('currentColorSwatch-revolution'); if (curRev) curRev.style.background = color; } catch(_) {}
+      try { const curRaz = document.getElementById('currentColorSwatch-razitkova'); if (curRaz) curRaz.style.background = color; } catch(_) {}
+
       // Automatické nastavení barvy textu může být výslovně vypnuto parametrem.
       const skipAuto = (options && options.skipAutoTextColor);
       if (!skipAuto) {
@@ -3965,6 +4150,17 @@ function pickDesignChoice(choice, el, targetCardType) {
       stopExampleSlideshow();
       document.getElementById('examplePreview').style.display = 'none';
       document.getElementById('fakeCard').style.display = 'block';
+    }
+
+    // Zachovat současnou barvu – neovlivnit textColor z presetů
+    function chooseCurrentColor(sectionId, el) {
+      try {
+        const container = document.getElementById(sectionId);
+        if (container) container.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+        if (el) el.classList.add('selected');
+      } catch(_) {}
+      // Zachovat textColor nastavenou presetem
+      setCardColor(pickedColor, { skipAutoTextColor: true });
     }
 
     function pickTopMode(mode, el) {
@@ -4937,12 +5133,14 @@ function nextStepNum() {
     switch (currentStep) {
         case 1: return 4;
         case 4:
-            // Procentní a Bodová: přeskočíme mezikrok nastavení (4.5) a jdeme rovnou na „Co bude v levém horním rohu?“ (krok 2)
-            if (cardType === 'procentni' || cardType === 'bodova') {
-                return 2;
-            }
+            // Všechny typy jdou přes krok 4.5 (výběr předpřipraveného designu / vlastní návrh)
             return 4.5;
-        case 4.5: return 2;
+        case 4.5:
+            if (cardType === 'revolution' || cardType === 'razitkova') {
+                return 4.6;
+            }
+            return 2;
+        case 4.6: return 2;
         case 2: return 2.5;
         case 2.5:
             // Revolution: výběr stripu odkládáme až po kroku 5.6 (pokud zvolí Statická grafika)
@@ -4996,11 +5194,13 @@ function prevStepNum() {
     case 4: return 1;
     case 4.5: return 4;
     case 2:
-      // Procentní a Bodová: přeskakujeme krok 4.5, návrat jde na krok 4
-      if (cardType === 'procentni' || cardType === 'bodova') {
-        return 4;
+      // Revolution a Razítková: vracíme se nejprve na 4.6 (nový krok zachování barvy)
+      if (cardType === 'revolution' || cardType === 'razitkova') {
+        return 4.6;
       }
+      // Ostatní typy: vracíme se na 4.5 (volba preset/vlastní)
       return 4.5;
+    case 4.6: return 4.5;
     case 2.5: return 2;
     case 3: return 2.5;
     case 5: return 3;
