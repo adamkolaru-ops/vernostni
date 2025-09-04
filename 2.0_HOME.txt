@@ -1221,8 +1221,14 @@
 
     <div class="question-panel" data-step="5.5" id="step-5b" style="display:none;">
         <div class="q-title">Revolution – Nastavení úrovní</div>
-        <div class="q-sub">Nastavte slevy a limity pro přechod mezi úrovněmi.</div>
-        <div class="revolution-levels-panel" style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+      <div class="q-sub">Nastavte slevy a limity pro přechod mezi úrovněmi.</div>
+      <div class="revolution-levels-panel" style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:6px; margin-top:6px;">
+                <label style="font-size:13px; font-weight:600; color:#374151;">Min. částka pro výběr (Kč)</label>
+                <input type="number" id="revBonusMinAmount" value="500" min="1" style="width:150px; text-align:center; height:38px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; margin-top: 5px;">
+                <div class="q-sub" style="margin-top:6px; text-align:center; max-width:600px;">Zákazníci mohou cashback vybrat až po dosažení této částky. Tato hodnota se používá i pro výpočet milníků vizuálního progresu.</div>
+            </div>
+            <div style="border-top: 1px solid #e5e7eb; margin: 12px 0;"></div>
             <table class="revolution-levels-table">
                 <thead>
                     <tr>
@@ -1240,11 +1246,6 @@
                 <button type="button" class="mini-btn" onclick="addRevolutionLevel()">+ Přidat úroveň</button>
                 <button type="button" class="mini-btn" id="removeRevolutionLevelBtn" onclick="removeRevolutionLevel()">– Odebrat</button>
             </div>
-            <div style="display:flex; flex-direction:column; align-items:center; gap:6px; margin-top:6px;">
-                <label style="font-size:13px; font-weight:600; color:#374151;">Min. částka pro výběr (Kč)</label>
-                <input type="number" id="revBonusMinAmount" value="500" min="1" style="width:150px; text-align:center; height:38px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; margin-top: 5px;">
-                <div class="q-sub" style="margin-top:6px; text-align:center; max-width:600px;">Zákazníci mohou cashback vybrat až po dosažení této částky. Tato hodnota se používá i pro výpočet milníků vizuálního progresu.</div>
-            </div>
         </div>
          <div class="q-actions">
             <button class="btn btn-back" onclick="goBack()">Zpět</button>
@@ -1256,8 +1257,12 @@
       <div class="q-title">Revolution – Vizuální progres</div>
       <div class="q-sub">Chcete zákazníkům zobrazovat vizuální progres k získání odměny?</div>
       <div class="options-row" style="margin-top: 15px;">
-        <button type="button" class="option" onclick="pickRevolutionProgress(true, this)">Zobrazovat grafiku</button>
-        <button type="button" class="option" onclick="pickRevolutionProgress(false, this)">Nezobrazovat grafiku</button>
+        <button type="button" class="option" onclick="pickRevolutionProgress(true, this)">Dynamická grafika</button>
+        <button type="button" class="option" onclick="pickRevolutionProgress(false, this)">Statická grafika</button>
+      </div>
+      <div class="option-descriptions" style="margin-top:8px; text-align:center; font-size:12px; color:#6b7280;">
+        <div><strong>Dynamická grafika:</strong> Zákazníci uvidí vizuální postup směrem k odměně.</div>
+        <div style="margin-top:4px;"><strong>Statická grafika:</strong> Zobrazí se pouze fixní obrázek bez postupného vyplňování.</div>
       </div>
 
       <div id="revolutionWithProgressPanel" style="display:none;">
@@ -2018,6 +2023,9 @@ function applyPreset(presetName) {
 
         if (typeof presetData.showStrip !== 'undefined') showStrip = presetData.showStrip;
         if (typeof presetData.stripText !== 'undefined') stripText = presetData.stripText;
+        if (typeof presetData.stripTextPos !== 'undefined') stripTextPos = presetData.stripTextPos;
+        if (typeof presetData.stripTextSize !== 'undefined') stripTextSize = presetData.stripTextSize;
+        if (typeof presetData.stripTextColor !== 'undefined') stripTextColor = presetData.stripTextColor;
     }
     // Legacy explicit presets
     else if (presetName === 'revolution-kadernictvi') {
@@ -2556,19 +2564,43 @@ function applyPreset(presetName) {
         // aby se zachovala např. zelená barva nastavená v předchozích krocích
         if (!cardStateBeforePreset) {
             cardStateBeforePreset = {
+                // Základní hodnoty
+                cardType: cardType,
+                designChoice: designChoice,
                 pickedColor: pickedColor,
                 textColor: textColor,
                 topMode: topMode,
                 napisText: napisText,
                 napisFont: napisFont,
                 napisColor: napisColor,
+                napisSizeMode: napisSizeMode,
+                napisManualSize: napisManualSize,
+                napisAlign: napisAlign,
+                logoUrl: logoUrl,
+                // Nastavení stripu
                 selectedStripUrl: selectedStripUrl,
+                customStripObjectUrl: customStripObjectUrl,
                 showStrip: showStrip,
+                stripText: stripText,
+                stripTextUserEdited: stripTextUserEdited,
+                stripTextPos: stripTextPos,
+                stripTextSize: stripTextSize,
+                stripTextColor: stripTextColor,
+                stripTextFont: stripTextFont,
+                stripTextBorder: stripTextBorder,
+                stripTextBorderSize: stripTextBorderSize,
+                manualScale: manualScale,
+                // Revolution specifické hodnoty
                 revolutionShowProgress: revolutionShowProgress,
                 revolutionGfxMode: revolutionGfxMode,
+                revolutionBonusMin: revolutionBonusMin,
                 revolutionMilestones: revolutionMilestones,
                 revolutionGfxUrls: [...revolutionGfxUrls],
-                revolutionGfxSelectedStep: revolutionGfxSelectedStep
+                revolutionGfxSelectedStep: revolutionGfxSelectedStep,
+                // Uložíme také Revolution úrovně a náhled, aby se po návratu neaplikovaly barvy z presetů
+                revolutionLevels: (Array.isArray(revolutionLevels) ? revolutionLevels.map(l => ({ ...l })) : []),
+                revolutionPreviewIndex: revolutionPreviewIndex,
+                revolutionMode: revolutionMode
             };
             // Synchronizace s window pro debug
             window.cardStateBeforePreset = cardStateBeforePreset;
@@ -2904,10 +2936,32 @@ function pickDesignChoice(choice, el, targetCardType) {
             });
 
             (async () => {
+                const snap = JSON.parse(JSON.stringify(cardStateBeforePreset));
                 await setCardColor(pickedColor, { skipAutoTextColor: true });
                 await setTextColor(textColor);
                 await applyCardType(cardType);
+                // Po applyCardType znovu nastavíme strip hodnoty ze zálohy, aby se nepřepsaly defaulty
+                try {
+                  if (snap) {
+                    showStrip = snap.showStrip;
+                    stripText = snap.stripText;
+                    stripTextPos = snap.stripTextPos;
+                    stripTextSize = snap.stripTextSize;
+                    stripTextColor = snap.stripTextColor;
+                    stripTextUserEdited = snap.stripTextUserEdited;
+                    selectedStripUrl = snap.selectedStripUrl;
+                    customStripObjectUrl = snap.customStripObjectUrl;
+                  }
+                } catch(_) {}
+                // Re-render Revolution úrovní a obnovíme náhled podle zálohy (kvůli barvám úrovní)
+                try { if (snap && snap.cardType === 'revolution') { renderRevolutionLevels(); setRevolutionPreview(snap.revolutionPreviewIndex || 0); } } catch(_) {}
                 await renderLogoSlot();
+                // Dodatkové UI synchronizace po obnovení
+                try { updateNapisUI(); setTopModePreviewSrc(); } catch (_) {}
+                try { positionStrip(); setStripBackground(); renderStrip(); updateStripMiniUI(); } catch (_) {}
+                // Sync vstupů s obnovenými hodnotami
+                try { const si = document.getElementById('stripInput'); if (si) si.value = stripText; } catch(_) {}
+                try { const ta = document.getElementById('napisTextarea'); if (ta) ta.value = napisText; } catch(_) {}
             })();
 
             presetApplied = false;
@@ -3945,6 +3999,26 @@ function pickDesignChoice(choice, el, targetCardType) {
     }
 
     function pickCardType(type, el) {
+      // Pokud byl aktivní preset a máme zálohu, před přepnutím typu obnovíme původní stav
+      if (presetApplied && cardStateBeforePreset) {
+        console.log('Switching card type while preset is active – restoring original state first.');
+        Object.keys(cardStateBeforePreset).forEach(key => {
+          window[key] = cardStateBeforePreset[key];
+        });
+        (async () => {
+          await setCardColor(pickedColor, { skipAutoTextColor: true });
+          await setTextColor(textColor);
+          await renderLogoSlot();
+          // Plná synchronizace UI po obnovení
+          try { updateNapisUI(); setTopModePreviewSrc(); } catch (_) {}
+          try { positionStrip(); setStripBackground(); renderStrip(); updateStripMiniUI(); } catch (_) {}
+          // Sync vstupů s obnovenými hodnotami
+          try { const si = document.getElementById('stripInput'); if (si) si.value = stripText; } catch(_) {}
+          try { const ta = document.getElementById('napisTextarea'); if (ta) ta.value = napisText; } catch(_) {}
+        })();
+        presetApplied = false;
+        cardStateBeforePreset = null;
+      }
       // PŘIDÁNA LOGIKA PRO VÝCHOZÍ NASTAVENÍ RAZÍTKOVÉ KARTY
       if (type === 'razitkova') {
           stampMode = 'preset'; // Předvyplní "Předpřipravené"
@@ -4866,14 +4940,15 @@ function nextStepNum() {
         case 4.5: return 2;
         case 2: return 2.5;
         case 2.5:
-            // Pokud je Revolution s presetem, přeskoč výběr stripu
-            if (cardType === 'revolution' && presetApplied) {
-                return 5.5;
+            // Revolution: výběr stripu odkládáme až po kroku 5.6 (pokud zvolí Statická grafika)
+            if (cardType === 'revolution') {
+                return 5.5; // pokračujeme na Revolution nastavení úrovní
             }
             return 3;
         case 3:
             if (cardType === 'revolution') {
-                return 5.5;
+                // Sem se dostáváme až po 5.6 při volbě Statická grafika -> poté pokračujeme na otázku o textu
+                return 6;
             }
             return 5;
         case 5:
@@ -4887,6 +4962,10 @@ function nextStepNum() {
             }
             return 5.6; // Jinak pokračujeme na nastavení Vizuálního progresu
         case 5.6:
+            // Revolution: pokud zvolí Statická grafika, vložíme dodatečně krok 3 (výběr stripu)
+            if (cardType === 'revolution' && !revolutionShowProgress) {
+                return 3;
+            }
             return 6;
         case 6:
             if (cardType === 'razitkova') {
@@ -4972,10 +5051,32 @@ function prevStepNum() {
 
             // Vynutíme překreslení karty do původního stavu
             (async () => {
+                const snap = JSON.parse(JSON.stringify(cardStateBeforePreset));
                 await setCardColor(pickedColor, { skipAutoTextColor: true });
                 await setTextColor(textColor);
                 await applyCardType(cardType);
+                // Po applyCardType znovu nastavíme strip hodnoty ze zálohy, aby se nepřepsaly defaulty
+                try {
+                  if (snap) {
+                    showStrip = snap.showStrip;
+                    stripText = snap.stripText;
+                    stripTextPos = snap.stripTextPos;
+                    stripTextSize = snap.stripTextSize;
+                    stripTextColor = snap.stripTextColor;
+                    stripTextUserEdited = snap.stripTextUserEdited;
+                    selectedStripUrl = snap.selectedStripUrl;
+                    customStripObjectUrl = snap.customStripObjectUrl;
+                  }
+                } catch(_) {}
+                // Re-render Revolution úrovní a obnovíme náhled podle zálohy (kvůli barvám úrovní)
+                try { if (snap && snap.cardType === 'revolution') { renderRevolutionLevels(); setRevolutionPreview(snap.revolutionPreviewIndex || 0); } } catch(_) {}
                 await renderLogoSlot();
+                // Plná synchronizace UI po obnovení (náhled nápisu + strip)
+                try { updateNapisUI(); setTopModePreviewSrc(); } catch (_) {}
+                try { positionStrip(); setStripBackground(); renderStrip(); updateStripMiniUI(); } catch (_) {}
+                // Sync vstupů s obnovenými hodnotami
+                try { const si = document.getElementById('stripInput'); if (si) si.value = stripText; } catch(_) {}
+                try { const ta = document.getElementById('napisTextarea'); if (ta) ta.value = napisText; } catch(_) {}
             })();
 
             // Resetujeme příznaky a smažeme zálohu
