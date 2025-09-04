@@ -4936,7 +4936,12 @@ function pickDesignChoice(choice, el, targetCardType) {
 function nextStepNum() {
     switch (currentStep) {
         case 1: return 4;
-        case 4: return 4.5;
+        case 4:
+            // Procentní a Bodová: přeskočíme mezikrok nastavení (4.5) a jdeme rovnou na „Co bude v levém horním rohu?“ (krok 2)
+            if (cardType === 'procentni' || cardType === 'bodova') {
+                return 2;
+            }
+            return 4.5;
         case 4.5: return 2;
         case 2: return 2.5;
         case 2.5:
