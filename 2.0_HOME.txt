@@ -609,6 +609,43 @@
       height: auto;
       display: block;
     }
+    /* Pagination controls for preset grids */
+    .preset-pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .preset-page-btn {
+      padding: 6px 12px;
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      color: #374151;
+      transition: background 0.15s ease;
+    }
+    .preset-page-btn:hover:not([disabled]) {
+      background: #f3f4f6;
+    }
+    .preset-page-btn[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .preset-page-indicator {
+      font-size: 13px;
+      color: #6b7280;
+      min-width: 56px;
+      text-align: center;
+    }
+    /* Fixed 5-column grid for presets */
+    .preset-grid-5cols {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+    }
     /* --- KONEC PŘIDANÉHO KÓDU --- */
     /* Zvýraznění textu u výběru presetu */
     #presetMessagePanel {
@@ -963,6 +1000,54 @@
       </div>
     </div>
 
+    <!-- KROK 4.2: Barva karty (dodatečně pro Bodová/Procentní) -->
+    <div class="question-panel" data-step="4.2" id="step-4-2" style="display:none;">
+      <div class="q-title">Nastavte barvu vaší karty</div>
+      <div class="q-sub">Vyberte jednu z předvoleb nebo zvolte vlastní barvu</div>
+      <div class="color-row">
+        <!-- Neutrals -->
+        <div class="swatch" style="background:#FFFFFF" title="Bílá" onclick="pickPresetColor('#FFFFFF', this)"></div>
+        <div class="swatch" style="background:#F3F4F6" title="Světle šedá" onclick="pickPresetColor('#F3F4F6', this)"></div>
+        <div class="swatch" style="background:#9CA3AF" title="Šedá" onclick="pickPresetColor('#9CA3AF', this)"></div>
+        <div class="swatch" style="background:#6B7280" title="Tmavší šedá" onclick="pickPresetColor('#6B7280', this)"></div>
+        <div class="swatch" style="background:#374151" title="Tmavá šedá" onclick="pickPresetColor('#374151', this)"></div>
+        <div class="swatch" style="background:#111827" title="Černá" onclick="pickPresetColor('#111827', this)"></div>
+        <!-- Reds / Warm -->
+        <div class="swatch" style="background:#FEE2E2" title="Světle červená" onclick="pickPresetColor('#FEE2E2', this)"></div>
+        <div class="swatch" style="background:#F43F5E" title="Růžovo-červená" onclick="pickPresetColor('#F43F5E', this)"></div>
+        <div class="swatch" style="background:#EF4444" title="Červená" onclick="pickPresetColor('#EF4444', this)"></div>
+        <div class="swatch" style="background:#DC2626" title="Tmavší červená" onclick="pickPresetColor('#DC2626', this)"></div>
+        <div class="swatch" style="background:#F97316" title="Oranžová" onclick="pickPresetColor('#F97316', this)"></div>
+        <div class="swatch" style="background:#F59E0B" title="Amber" onclick="pickPresetColor('#F59E0B', this)"></div>
+        <div class="swatch" style="background:#EAB308" title="Žlutá" onclick="pickPresetColor('#EAB308', this)"></div>
+        <!-- Greens -->
+        <div class="swatch" style="background:#84CC16" title="Limetková" onclick="pickPresetColor('#84CC16', this)"></div>
+        <div class="swatch" style="background:#22C55E" title="Zelená" onclick="pickPresetColor('#22C55E', this)"></div>
+        <div class="swatch" style="background:#10B981" title="Smaragdová" onclick="pickPresetColor('#10B981', this)"></div>
+        <div class="swatch" style="background:#14B8A6" title="Tyrkysová" onclick="pickPresetColor('#14B8A6', this)"></div>
+        <!-- Blues -->
+        <div class="swatch" style="background:#06B6D4" title="Cyan" onclick="pickPresetColor('#06B6D4', this)"></div>
+        <div class="swatch" style="background:#38BDF8" title="Nebesky modrá" onclick="pickPresetColor('#38BDF8', this)"></div>
+        <div class="swatch" style="background:#3B82F6" title="Modrá" onclick="pickPresetColor('#3B82F6', this)"></div>
+        <div class="swatch" style="background:#2563EB" title="Tmavší modrá" onclick="pickPresetColor('#2563EB', this)"></div>
+        <div class="swatch" style="background:#6366F1" title="Indigo" onclick="pickPresetColor('#6366F1', this)"></div>
+        <!-- Purples -->
+        <div class="swatch" style="background:#8B5CF6" title="Fialová" onclick="pickPresetColor('#8B5CF6', this)"></div>
+        <div class="swatch" style="background:#A855F7" title="Purple" onclick="pickPresetColor('#A855F7', this)"></div>
+        <div class="swatch" style="background:#D946EF" title="Fuchsiová" onclick="pickPresetColor('#D946EF', this)"></div>
+        <div class="swatch" style="background:#EC4899" title="Růžová" onclick="pickPresetColor('#EC4899', this)"></div>
+        <!-- Custom -->
+        <div class="custom-color">
+          <label for="customColorLate">Vlastní</label>
+          <input type="color" id="customColorLate" value="#ffffff" onchange="pickCustomColor(this.value)">
+        </div>
+      </div>
+      <div class="q-actions">
+        <button class="btn btn-back" onclick="goBack()">Zpět</button>
+        <button class="btn btn-next" onclick="goNext()">Pokračovat</button>
+      </div>
+    </div>
+
     <!-- KROK 2.5: Barva textu -->
     <div class="question-panel" data-step="2.5" id="step-2-5" style="display:none;">
       <div class="q-title">Barva textů na kartě</div>
@@ -1009,11 +1094,9 @@
         <div class="q-title">Razítka – vyberte způsob</div>
         <div class="q-sub">Zvolte jak chcete razítka nastavit</div>
         <div class="options-row" style="justify-content:center;">
-          <button type="button" id="stampModePresetBtn" class="option" onclick="pickStampMode('preset', this)">Předpřipravené (doporučujeme)</button>
           <button type="button" id="stampModeStandardBtn" class="option" onclick="pickStampMode('standard', this)">Standardní</button>
           <button type="button" id="stampModePerBtn" class="option" onclick="pickStampMode('perStamp', this)">Vlastní pro každé</button>
         </div>
-        <div id="stampPresetNote" style="display:none; margin-top:8px; font-size:12px; color:#6b7280; text-align:center;">Režim "Předpřipravené" je v přípravě.</div>
         <div id="stampPerNote" style="display:none; margin-top:8px; font-size:12px; color:#6b7280; text-align:center;">Režim "Vlastní pro každé": V dalším kroku nastavíte počet razítek (1–20) a nahrajete strip pro každý stav (0 = bez razítek, 1 = po 1. razítku, …, N = po N. razítku).</div>
       </div>
 
@@ -1089,26 +1172,17 @@
 
       <!-- Revolution Card Presets -->
       <div id="presetSelectionPanel-revolution" class="preset-section" style="display: none;">
-          <h4>Revolution - Kadeřnictví / Barber</h4>
-          <div class="preset-grid">
-              <div class="preset-card" onclick="applyPreset('revolution-kadernictvi')">
-                  <img src="https://static.wixstatic.com/media/1cf87e_c66475389057414f989c3da03d7fa38c~mv2.png" alt="Revolution Kadeřnictví">
-              </div>
-              <div class="preset-card" onclick="applyPreset('revolution-kadernictvi-2')">
-                  <img src="https://static.wixstatic.com/media/1cf87e_cae0bddb2ce341a7ae5b0aed871f2360~mv2.png" alt="Revolution Kadeřnictví 2">
-              </div>
-              <div class="preset-card" onclick="applyPreset('revolution-blue')">
-                  <img src="https://static.wixstatic.com/media/1cf87e_c66475389057414f989c3da03d7fa38c~mv2.png" alt="Revolution Blue">
-              </div>
-              <div class="preset-card" onclick="applyPreset('revolution-green')">
-                  <img src="https://static.wixstatic.com/media/1cf87e_c66475389057414f989c3da03d7fa38c~mv2.png" alt="Revolution Green">
-              </div>
-              <div class="preset-card" onclick="applyPreset('revolution-purple')">
-                  <img src="https://static.wixstatic.com/media/1cf87e_c66475389057414f989c3da03d7fa38c~mv2.png" alt="Revolution Purple">
-              </div>
-              <div class="preset-card" onclick="applyPreset('revolution-red')">
-                  <img src="https://static.wixstatic.com/media/1cf87e_c66475389057414f989c3da03d7fa38c~mv2.png" alt="Revolution Red">
-              </div>
+          <div id="revolutionStateSwitcher" class="strip-mini" style="justify-content:center; gap:8px; margin-bottom:8px;">
+            <button type="button" class="mini-btn" onclick="revolutionPrevState()" aria-label="Předchozí stav">‹</button>
+            <select id="revolutionStateSelect" onchange="onRevolutionStateSelect(this)" style="height:34px; padding:6px 10px; border:1px solid #e5e7eb; border-radius:8px;"></select>
+            <button type="button" class="mini-btn" onclick="revolutionNextState()" aria-label="Další stav">›</button>
+            <button type="button" id="revolutionAnimToggleBtn" class="mini-btn" onclick="revolutionToggleAnimation()">Spustit animaci</button>
+          </div>
+          <div id="revolutionPresetGrid" class="preset-grid-5cols"></div>
+          <div class="preset-pagination" id="revolutionPresetPagination" style="display:none;">
+            <button type="button" class="preset-page-btn" id="revPrevBtn" onclick="revolutionPrevPage()">Předchozí</button>
+            <span class="preset-page-indicator" id="revPageIndicator">1 / 1</span>
+            <button type="button" class="preset-page-btn" id="revNextBtn" onclick="revolutionNextPage()">Další</button>
           </div>
       </div>
       
@@ -1122,12 +1196,14 @@
     <div class="question-panel" data-step="4.6" id="step-4-6-revolution" style="display:none;">
       <div class="keep-color-section" id="keepColorSection-revolution" style="margin-top:16px;">
         <div class="q-title">Chcete zachovat barvu karty?</div>
-        <div class="q-sub">Současná barva</div>
+        <div class="q-sub">Současná barva (pokud jste spokojeni klidněte na Pokračovat)</div>
         <div class="color-row">
           <div class="swatch selected" id="currentColorSwatch-revolution" title="Současná barva" onclick="chooseCurrentColor('keepColorSection-revolution', this)"></div>
         </div>
-        <div class="q-sub" style="margin-top:8px;">Změnit barvu na</div>
-        <div class="color-row">
+        <div class="q-sub collapsible-toggle" style="margin-top:8px; cursor:pointer;" onclick="toggleChangeColor('revolution')">Změnit barvu na</div>
+        <div id="changeColorToggleIcon-revolution" onclick="toggleChangeColor('revolution')" style="color:#9CA3AF; font-size:0; line-height:0; margin:2px 0 6px 0; cursor:pointer; user-select:none; text-align:center;">▸</div>
+        <div id="changeColorContainer-revolution" class="collapsible-content" style="display:none;">
+          <div class="color-row">
           <!-- Neutrals -->
           <div class="swatch" style="background:#FFFFFF" title="Bílá" onclick="pickPresetColor('#FFFFFF', this)"></div>
           <div class="swatch" style="background:#F3F4F6" title="Světle šedá" onclick="pickPresetColor('#F3F4F6', this)"></div>
@@ -1164,6 +1240,7 @@
             <label for="customColorAfter45-revolution">Vlastní</label>
             <input type="color" id="customColorAfter45-revolution" value="#ffffff" onchange="pickCustomColor(this.value)">
           </div>
+          </div>
         </div>
       </div>
       
@@ -1177,12 +1254,14 @@
     <div class="question-panel" data-step="4.6" id="step-4-6-razitkova" style="display:none;">
       <div class="keep-color-section" id="keepColorSection-razitkova" style="margin-top:16px;">
         <div class="q-title">Chcete zachovat barvu karty?</div>
-        <div class="q-sub">Současná barva</div>
+        <div class="q-sub">Současná barva (pokud jste spokojeni klidněte na Pokračovat)</div>
         <div class="color-row">
           <div class="swatch selected" id="currentColorSwatch-razitkova" title="Současná barva" onclick="chooseCurrentColor('keepColorSection-razitkova', this)"></div>
         </div>
-        <div class="q-sub" style="margin-top:8px;">Změnit barvu na</div>
-        <div class="color-row">
+        <div class="q-sub collapsible-toggle" style="margin-top:8px; cursor:pointer;" onclick="toggleChangeColor('razitkova')">Změnit barvu na</div>
+        <div id="changeColorToggleIcon-razitkova" onclick="toggleChangeColor('razitkova')" style="color:#9CA3AF; font-size:0; line-height:0; margin:2px 0 6px 0; cursor:pointer; user-select:none; text-align:center;">▸</div>
+        <div id="changeColorContainer-razitkova" class="collapsible-content" style="display:none;">
+          <div class="color-row">
           <!-- Neutrals -->
           <div class="swatch" style="background:#FFFFFF" title="Bílá" onclick="pickPresetColor('#FFFFFF', this)"></div>
           <div class="swatch" style="background:#F3F4F6" title="Světle šedá" onclick="pickPresetColor('#F3F4F6', this)"></div>
@@ -1218,6 +1297,7 @@
           <div class="custom-color">
             <label for="customColorAfter45-razitkova">Vlastní</label>
             <input type="color" id="customColorAfter45-razitkova" value="#ffffff" onchange="pickCustomColor(this.value)">
+          </div>
           </div>
         </div>
       </div>
@@ -1311,16 +1391,19 @@
 
       <!-- Razítková Card Presets -->
       <div id="presetSelectionPanel-razitkova" class="preset-section" style="display: none;">
-          <h4>Razítková - Tradiční věrnostní karty</h4>
-          <div class="preset-grid">
-              <div class="preset-card" onclick="applyPreset('razitkova-klasik')">
-                  <img src="https://via.placeholder.com/200x120/7c3aed/ffffff?text=Klasik" alt="Razítková Klasik">
-              </div>
-              <div class="preset-card" onclick="applyPreset('razitkova-modern')">
-                  <img src="https://via.placeholder.com/200x120/0891b2/ffffff?text=Modern" alt="Razítková Modern">
-              </div>
+          <div id="razitkovaStateSwitcher" class="strip-mini" style="justify-content:center; gap:8px; margin-bottom:8px;">
+            <button type="button" class="mini-btn" onclick="razitkovaPrevState()" aria-label="Předchozí stav">‹</button>
+            <select id="razitkovaStateSelect" onchange="onRazitkovaStateSelect(this)" style="height:34px; padding:6px 10px; border:1px solid #e5e7eb; border-radius:8px;"></select>
+            <button type="button" class="mini-btn" onclick="razitkovaNextState()" aria-label="Další stav">›</button>
+            <button type="button" id="razitkovaAnimToggleBtn" class="mini-btn" onclick="razitkovaToggleAnimation()">Spustit animaci</button>
           </div>
-      </div>
+          <div id="razitkovaPresetGrid" class="preset-grid-5cols"></div>
+          <div class="preset-pagination" id="razitkovaPresetPagination" style="display:none;">
+            <button type="button" class="preset-page-btn" id="razPrevBtn" onclick="razitkovaPrevPage()">Předchozí</button>
+            <span class="preset-page-indicator" id="razPageIndicator">1 / 1</span>
+            <button type="button" class="preset-page-btn" id="razNextBtn" onclick="razitkovaNextPage()">Další</button>
+          </div>
+       </div>
       
       <!-- (4.6 move) keep-color UI removed from 4.5 -->
       
@@ -1418,9 +1501,9 @@
       </div>
     </div>
 
-    <!-- KROK 6: Podmíněný krok
+    <!-- KROK 6: Nastavení razítek
          - Pokud Razítková + Standardní: detailní nastavení razítek
-         - Jinak: Zobrazovat text na stripu? -->
+         - Pokud Razítková + Vlastní pro každé: nahrávání stripů pro jednotlivé stavy -->
     <div class="question-panel" data-step="6" id="step-6" style="display:none;">
       <div id="step6StampStandard" style="display:none;">
         <div class="q-title">Razítka – standardní nastavení</div>
@@ -1495,21 +1578,11 @@
           <div id="perStripUploads" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; align-items:start;"></div>
         </div>
 
-        <div id="step6StripPanel">
-        <div class="q-title">Zobrazovat text na stripu?</div>
-        <div class="q-sub">Vyberte možnost</div>
-        <div class="options-row">
-          <button class="option" onclick="pickShowStrip(true, this)">Ano</button>
-          <button class="option" onclick="pickShowStrip(false, this)">Ne</button>
+        <div class="q-actions">
+          <button class="btn btn-back" onclick="goBack()">Zpět</button>
+          <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
         </div>
       </div>
-
-      <div class="q-actions">
-        <button class="btn btn-back" onclick="goBack()">Zpět</button>
-        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
-      </div>
-    </div>
-
     <!-- KROK 7: Ohraničení razítek -->
     <div class="question-panel" data-step="7" id="step-7" style="display:none;">
       <div class="q-title">Nastavení ohraničení</div>
@@ -1588,106 +1661,8 @@
         </div>
     </div>
 
-    <!-- KROK 8: Text na stripu -->
-    <div class="question-panel" data-step="8" id="step-8" style="display:none;">
-      <div class="q-title">Text na stripu</div>
-      <div class="q-sub">Zadejte krátký text, který se zobrazí na stripu (defaultně dole)</div>
-      <div style="display:flex; justify-content:center;">
-        <input type="text" id="stripInput" placeholder="Např. Desátá káva je na nás." oninput="onStripTextInput()" style="width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:8px;">
-      </div>
-      <!-- Minimal controls: position, color, size -->
-      <div class="strip-mini" style="justify-content:space-between; flex-wrap:wrap;">
-        <div class="mini-group" id="stripFontGroup">
-          <span class="mini-label">Styl písma</span>
-          <select id="stripFont" onchange="onStripFontChange()" style="padding: 4px 6px; border:1px solid #e5e7eb; border-radius:6px;">
-            <option value="tan-nimbus-2-webfont">Karrli</option>
-            <option value="Rubik Spray Paint">Rubik Spray Paint</option>
-            <option value="Staatliches">Staatliches</option>
-            <option value="Plaster">Plaster</option>
-            <option value="Coiny">Coiny</option>
-            <option value="Arial" selected>Arial</option>
-            <option value="Georgia">Georgia</option>
-            <option value="Helvetica">Helvetica</option>
-            <option value="Tahoma">Tahoma</option>
-            <option value="Trebuchet MS">Trebuchet MS</option>
-            <option value="Verdana">Verdana</option>
-            <option value="Wix Bold Sans">Wix Bold Sans</option>
-            <option value="Wix Handwritten">Wix Handwritten</option>
-            <option value="Wix Fancy Cursive">Wix Fancy Cursive</option>
-          </select>
-        </div>
-        <div class="mini-group" id="stripPosGroup">
-          <span class="mini-label">Umístění</span>
-          <button type="button" class="mini-btn" id="posTopBtn" onclick="pickStripPos('top', this)" title="Nahoře">▲</button>
-          <button type="button" class="mini-btn" id="posCenterBtn" onclick="pickStripPos('center', this)" title="Uprostřed">■</button>
-          <button type="button" class="mini-btn" id="posBottomBtn" onclick="pickStripPos('bottom', this)" title="Dole">▼</button>
-        </div>
-        <div class="mini-group" id="stripColorGroup">
-          <span class="mini-label">Barva</span>
-          <button type="button" class="mini-btn" onclick="toggleStripPalette()" title="Vyberte barvu">Vybrat</button>
-          <input type="color" id="stripColor" value="#FFFFFF" onmousedown="openStripPaletteFromColor(event)" onclick="return false;" onfocus="this.blur();" title="Zvolte barvu" style="width: 28px; height: 28px; border:none; background:transparent; padding:0;">
-        </div>
-        <div class="mini-group" id="stripSizeGroup">
-          <span class="mini-label">Velikost</span>
-          <button type="button" class="mini-btn" onclick="pickStripSize('XS', this)">XS</button>
-          <button type="button" class="mini-btn" onclick="pickStripSize('S', this)">S</button>
-          <button type="button" class="mini-btn" onclick="pickStripSize('M', this)">M</button>
-          <button type="button" class="mini-btn" onclick="pickStripSize('L', this)">L</button>
-        </div>
-        <div class="mini-group" id="stripBorderGroup">
-          <span class="mini-label">Ohraničení</span>
-          <button type="button" class="mini-btn" onclick="pickStripBorder(true, this)">Ano</button>
-          <button type="button" class="mini-btn" onclick="pickStripBorder(false, this)">Ne</button>
-          <input type="number" min="1" max="5" value="1" oninput="onStripBorderSizeChange(this)" style="width: 40px; text-align: center; padding: 4px; border:1px solid #e5e7eb; border-radius:6px;">
-        </div>
-      </div>
-      <!-- Paleta barev pro text na stripu -->
-      <div id="stripColorPalette" style="display:none; margin-top:8px;">
-        <div class="color-row">
-          <!-- Neutrals -->
-          <div class="swatch strip-swatch" style="background:#FFFFFF" title="Bílá" onclick="pickStripPresetColor('#FFFFFF', this)"></div>
-          <div class="swatch strip-swatch" style="background:#F3F4F6" title="Světle šedá" onclick="pickStripPresetColor('#F3F4F6', this)"></div>
-          <div class="swatch strip-swatch" style="background:#9CA3AF" title="Šedá" onclick="pickStripPresetColor('#9CA3AF', this)"></div>
-          <div class="swatch strip-swatch" style="background:#6B7280" title="Tmavší šedá" onclick="pickStripPresetColor('#6B7280', this)"></div>
-          <div class="swatch strip-swatch" style="background:#374151" title="Tmavá šedá" onclick="pickStripPresetColor('#374151', this)"></div>
-          <div class="swatch strip-swatch" style="background:#111827" title="Černá" onclick="pickStripPresetColor('#111827', this)"></div>
-          <!-- Reds / Warm -->
-          <div class="swatch strip-swatch" style="background:#FEE2E2" title="Světle červená" onclick="pickStripPresetColor('#FEE2E2', this)"></div>
-          <div class="swatch strip-swatch" style="background:#F43F5E" title="Růžovo-červená" onclick="pickStripPresetColor('#F43F5E', this)"></div>
-          <div class="swatch strip-swatch" style="background:#EF4444" title="Červená" onclick="pickStripPresetColor('#EF4444', this)"></div>
-          <div class="swatch strip-swatch" style="background:#DC2626" title="Tmavší červená" onclick="pickStripPresetColor('#DC2626', this)"></div>
-          <div class="swatch strip-swatch" style="background:#F97316" title="Oranžová" onclick="pickStripPresetColor('#F97316', this)"></div>
-          <div class="swatch strip-swatch" style="background:#F59E0B" title="Amber" onclick="pickStripPresetColor('#F59E0B', this)"></div>
-          <div class="swatch strip-swatch" style="background:#EAB308" title="Žlutá" onclick="pickStripPresetColor('#EAB308', this)"></div>
-          <!-- Greens -->
-          <div class="swatch strip-swatch" style="background:#84CC16" title="Limetková" onclick="pickStripPresetColor('#84CC16', this)"></div>
-          <div class="swatch strip-swatch" style="background:#22C55E" title="Zelená" onclick="pickStripPresetColor('#22C55E', this)"></div>
-          <div class="swatch strip-swatch" style="background:#10B981" title="Smaragdová" onclick="pickStripPresetColor('#10B981', this)"></div>
-          <div class="swatch strip-swatch" style="background:#14B8A6" title="Tyrkysová" onclick="pickStripPresetColor('#14B8A6', this)"></div>
-          <!-- Blues -->
-          <div class="swatch strip-swatch" style="background:#06B6D4" title="Cyan" onclick="pickStripPresetColor('#06B6D4', this)"></div>
-          <div class="swatch strip-swatch" style="background:#38BDF8" title="Nebesky modrá" onclick="pickStripPresetColor('#38BDF8', this)"></div>
-          <div class="swatch strip-swatch" style="background:#3B82F6" title="Modrá" onclick="pickStripPresetColor('#3B82F6', this)"></div>
-          <div class="swatch strip-swatch" style="background:#2563EB" title="Tmavší modrá" onclick="pickStripPresetColor('#2563EB', this)"></div>
-          <div class="swatch strip-swatch" style="background:#6366F1" title="Indigo" onclick="pickStripPresetColor('#6366F1', this)"></div>
-          <!-- Purples -->
-          <div class="swatch strip-swatch" style="background:#8B5CF6" title="Fialová" onclick="pickStripPresetColor('#8B5CF6', this)"></div>
-          <div class="swatch strip-swatch" style="background:#A855F7" title="Purple" onclick="pickStripPresetColor('#A855F7', this)"></div>
-          <div class="swatch strip-swatch" style="background:#D946EF" title="Fuchsiová" onclick="pickStripPresetColor('#D946EF', this)"></div>
-          <div class="swatch strip-swatch" style="background:#EC4899" title="Růžová" onclick="pickStripPresetColor('#EC4899', this)"></div>
-          <!-- Custom -->
-          <div class="custom-color">
-            <label for="stripCustomColor">Vlastní</label>
-            <input type="color" id="stripCustomColor" value="#000000" onchange="pickStripCustomColor(this.value)">
-          </div>
-        </div>
-      </div>
-      <div class="q-actions">
-        <button class="btn btn-back" onclick="goBack()">Zpět</button>
-        <button class="btn btn-next" disabled onclick="goNext()">Pokračovat</button>
-      </div>
-    </div>
-
+    
+    
     <!-- KROK 10: Shrnutí -->
     <div class="question-panel" data-step="10" id="step-10" style="display:none;">
       <div class="q-title">Shrnutí</div>
@@ -1707,6 +1682,7 @@
           let cardType = '';
           let designChoice = 'preset';
           let pickedColor = null;
+          let colorExplicitlyPicked = false;
           let textColor = '#000000';
           let topMode = null;
           let napisText = 'Text';
@@ -1777,6 +1753,14 @@
           let perStampTotal = 10;
           let perStripSelectedStep = 0;
           let perStripUrls = [];
+
+          // Razítková strip animation controls
+          let razitkovaAnimTimer = null;
+          let razitkovaAnimPausedByUser = false;
+
+          // Revolution strip animation controls
+          let revolutionAnimTimer = null;
+          let revolutionAnimPausedByUser = false;
 
           // Nastavení pro Bodovou kartu
           let bodRate = 10;
@@ -2094,19 +2078,83 @@
               stripTextSize: '14',
               stripTextColor: '#ffffff'
             }
+            ,
+            // --- RAZÍTKOVÁ: 11 identických presetů (data-driven, stránkované) ---
+            'razitkova-01': {
+              cardType: 'razitkova',
+              pickedColor: '#113FA2',
+              textColor: '#AC7E02',
+              topMode: 'napis',
+              napisText: 'Your\nLogo',
+              napisFont: 'tan-nimbus-2-webfont',
+              napisColor: '#AC7E02',
+              napisColorUserEdited: true,
+              napisSizeMode: 'auto',
+              stampMode: 'perStamp',
+              stampTotal: 8,
+              stampSize: 24,
+              stampGap: 8,
+              stampOpacity: 0.3,
+              stampBorderEnabled: true,
+              stampBorderShape: 'outline',
+              stampBorderSize: 2,
+              stampBorderOffset: 4,
+              stampBorderColor: '#ffffff',
+              stampBorderOpacity: 80,
+              stampIconUrl: 'https://static.wixstatic.com/media/1cf87e_f7284a8ad6d1438c9e79eb3d0818890a~mv2.png',
+              perStampTotal: 8,
+              perStripUrls: [
+                'https://static.wixstatic.com/media/1cf87e_a021e374f19f41b5b50d7e6cf2448705~mv2.png',
+                'https://static.wixstatic.com/media/1cf87e_3b0da08ae4354d2a82df27e7e4d35faf~mv2.png',
+                'https://static.wixstatic.com/media/1cf87e_868147e4411741fe88a2fcb90bd368a9~mv2.png',
+                'https://static.wixstatic.com/media/1cf87e_73f53948440b4a3b8accd0077395933b~mv2.png',
+                'https://static.wixstatic.com/media/1cf87e_cc5e3831c2e34ba484eee2c96cab16b4~mv2.png',
+                'https://static.wixstatic.com/media/1cf87e_b681578544fe425eb26fdbef2a5b15c5~mv2.png',
+                'https://static.wixstatic.com/media/1cf87e_dfd37ff7fa194329a94c63ab21070470~mv2.png',
+                'https://static.wixstatic.com/media/1cf87e_7a1fb509a3f44a20b6122015b366681b~mv2.png',
+                'https://static.wixstatic.com/media/1cf87e_bac580fca3ef4fb9bdf601453d7c2289~mv2.png'
+              ],
+              selectedStripUrl: '',
+              showStrip: false,
+              stripText: '',
+              stripTextPos: 'center',
+              stripTextSize: '14',
+              stripTextColor: '#ffffff',
+              previewUrl: 'https://static.wixstatic.com/media/1cf87e_cae0bddb2ce341a7ae5b0aed871f2360~mv2.png'
+            },
+            'razitkova-02': { $copy: 'razitkova-01' },
+            'razitkova-03': { $copy: 'razitkova-01' },
+            'razitkova-04': { $copy: 'razitkova-01' },
+            'razitkova-05': { $copy: 'razitkova-01' },
+            'razitkova-06': { $copy: 'razitkova-01' },
+            'razitkova-07': { $copy: 'razitkova-01' },
+            'razitkova-08': { $copy: 'razitkova-01' },
+            'razitkova-09': { $copy: 'razitkova-01' },
+            'razitkova-10': { $copy: 'razitkova-01' },
+            'razitkova-11': { $copy: 'razitkova-01' }
           };
 
           // --- START PŘIDANÉHO KÓDU ---
 function applyPreset(presetName) {
     stopExampleSlideshow();
+    try { stopRazitkovaAnimation(); } catch(_) {}
+    try { stopRevolutionAnimation(); } catch(_) {}
     document.getElementById('examplePreview').style.display = 'none';
     document.getElementById('fakeCard').style.display = 'block';
 
     // KLÍČOVÁ ZMĚNA: Příznak nastavíme HNED NA ZAČÁTKU
     presetApplied = true; 
 
+    // Resolve preset data (supports $copy aliasing) and handle by card type
+    let presetData = (typeof PRESET_DEFINITIONS !== 'undefined') ? PRESET_DEFINITIONS[presetName] : null;
+    if (presetData && typeof presetData.$copy === 'string') {
+        try {
+            const base = PRESET_DEFINITIONS[presetData.$copy] || {};
+            presetData = Object.assign({}, base, presetData);
+            delete presetData.$copy;
+        } catch (_) {}
+    }
     // Revolution Card Presets (data-driven)
-    const presetData = (typeof PRESET_DEFINITIONS !== 'undefined') ? PRESET_DEFINITIONS[presetName] : null;
     if (presetData && presetData.cardType === 'revolution') {
         // 1. Nastavíme všechny globální proměnné podle presetu (pouze definované klíče)
         if (presetData.cardType) cardType = presetData.cardType;
@@ -2130,6 +2178,10 @@ function applyPreset(presetName) {
             }
             revolutionGfxSelectedStep = Math.max(0, revolutionMilestones - 1);
             selectedStripUrl = revolutionGfxUrls[revolutionGfxSelectedStep];
+            // Pokud preset dodal konkrétní sadu obrázků, vynutíme dynamický progres a custom režim
+            if (typeof revolutionShowProgress === 'undefined') revolutionShowProgress = true;
+            if (!revolutionGfxMode) revolutionGfxMode = 'custom';
+            try { updateRevolutionGfxPreview(); } catch(_) {}
         }
 
         if (typeof presetData.showStrip !== 'undefined') showStrip = presetData.showStrip;
@@ -2137,9 +2189,84 @@ function applyPreset(presetName) {
         if (typeof presetData.stripTextPos !== 'undefined') stripTextPos = presetData.stripTextPos;
         if (typeof presetData.stripTextSize !== 'undefined') stripTextSize = presetData.stripTextSize;
         if (typeof presetData.stripTextColor !== 'undefined') stripTextColor = presetData.stripTextColor;
+
+        // Inicializace UI a automatické spuštění animace po kliknutí na preset (jen v kroku 4.5)
+        try { initRevolutionStateUI(); } catch(_) {}
+        revolutionAnimPausedByUser = false;
+        try { startRevolutionAnimation({ reset: true }); } catch(_) {}
+        try { updateRevolutionAnimToggleLabel(); } catch(_) {}
+    }
+    // Razítková Card Presets (data-driven)
+    else if (presetData && presetData.cardType === 'razitkova') {
+        if (presetData.cardType) cardType = presetData.cardType;
+        if (presetData.pickedColor) pickedColor = presetData.pickedColor;
+        if (presetData.textColor) textColor = presetData.textColor;
+
+        if (presetData.topMode) topMode = presetData.topMode;
+        if (typeof presetData.napisText !== 'undefined') napisText = presetData.napisText;
+        if (typeof presetData.napisFont !== 'undefined') napisFont = presetData.napisFont;
+        if (typeof presetData.napisColor !== 'undefined') napisColor = presetData.napisColor;
+        if (typeof presetData.napisColorUserEdited !== 'undefined') napisColorUserEdited = presetData.napisColorUserEdited;
+        if (typeof presetData.napisSizeMode !== 'undefined') napisSizeMode = presetData.napisSizeMode;
+
+        if (typeof presetData.stampMode !== 'undefined') stampMode = presetData.stampMode;
+        if (typeof presetData.stampTotal !== 'undefined') { stampTotal = presetData.stampTotal; perStampTotal = presetData.stampTotal; }
+        if (typeof presetData.stampSize !== 'undefined') stampSize = presetData.stampSize;
+        if (typeof presetData.stampGap !== 'undefined') stampGap = presetData.stampGap;
+        if (typeof presetData.stampOpacity !== 'undefined') stampOpacity = presetData.stampOpacity;
+        if (typeof presetData.stampIconUrl !== 'undefined') stampIconUrl = presetData.stampIconUrl;
+        if (typeof presetData.stampBorderEnabled !== 'undefined') stampBorderEnabled = presetData.stampBorderEnabled;
+        if (typeof presetData.stampBorderShape !== 'undefined') stampBorderShape = presetData.stampBorderShape;
+        if (typeof presetData.stampBorderSize !== 'undefined') stampBorderSize = presetData.stampBorderSize;
+        if (typeof presetData.stampBorderOffset !== 'undefined') stampBorderOffset = presetData.stampBorderOffset;
+        if (typeof presetData.stampBorderColor !== 'undefined') stampBorderColor = presetData.stampBorderColor;
+        if (typeof presetData.stampBorderOpacity !== 'undefined') stampBorderOpacity = presetData.stampBorderOpacity;
+        
+        // Optional: per-stamp (per state) preset support
+        // If a preset provides per-state strip images, preconfigure per-stamp mode
+        if (typeof presetData.perStampTotal !== 'undefined') {
+            perStampTotal = presetData.perStampTotal;
+        }
+        if (Array.isArray(presetData.perStripUrls)) {
+            try {
+                perStripUrls = presetData.perStripUrls.slice();
+            } catch(_) { perStripUrls = []; }
+            // If stampTotal not explicitly provided, derive it from perStampTotal or the array length - 1 (states 0..N)
+            if (typeof presetData.stampTotal === 'undefined') {
+                if (typeof presetData.perStampTotal !== 'undefined') {
+                    stampTotal = presetData.perStampTotal;
+                } else {
+                    stampTotal = Math.max(0, perStripUrls.length - 1);
+                }
+            }
+            // Default selected step to provided value, otherwise to perStampTotal or last array index
+            const fallbackSel = (typeof presetData.perStampTotal !== 'undefined') ? presetData.perStampTotal : Math.max(0, perStripUrls.length - 1);
+            try {
+                const desired = (typeof presetData.perStripSelectedStep !== 'undefined') ? presetData.perStripSelectedStep : fallbackSel;
+                perStripSelectedStep = Math.max(0, Math.min(Math.max(0, perStripUrls.length - 1), desired));
+            } catch(_) {
+                perStripSelectedStep = fallbackSel;
+            }
+            // Ensure mode switches to perStamp unless explicitly specified otherwise in the preset
+            if (!presetData.stampMode) {
+                stampMode = 'perStamp';
+            }
+        }
+
+        if (typeof presetData.showStrip !== 'undefined') showStrip = presetData.showStrip;
+        if (typeof presetData.stripText !== 'undefined') stripText = presetData.stripText;
+        if (typeof presetData.stripTextPos !== 'undefined') stripTextPos = presetData.stripTextPos;
+        if (typeof presetData.stripTextSize !== 'undefined') stripTextSize = presetData.stripTextSize;
+        if (typeof presetData.stripTextColor !== 'undefined') stripTextColor = presetData.stripTextColor;
+        if (typeof presetData.selectedStripUrl !== 'undefined') selectedStripUrl = presetData.selectedStripUrl;
+
+        // Initialize manual state UI and start animation for Razítková presets
+        try { initRazitkovaStateUI(); } catch(_) {}
+        try { startRazitkovaAnimation(); } catch(_) {}
     }
     // Legacy explicit presets
     else if (presetName === 'revolution-kadernictvi') {
+        try { stopRazitkovaAnimation(); } catch(_) {}
         // 1. Nastavíme všechny globální proměnné podle presetu
         pickedColor = '#111827';
         textColor = '#FFF3D1';
@@ -2164,6 +2291,12 @@ function applyPreset(presetName) {
         selectedStripUrl = revolutionGfxUrls[revolutionGfxSelectedStep];
         showStrip = false;
         stripText = 'Naspořené peníze lze uplatnit od 500 Kč.';
+
+        // Auto-start animace při kliknutí na legacy Revolution preset (v kroku 4.5)
+        try { initRevolutionStateUI(); } catch(_) {}
+        revolutionAnimPausedByUser = false;
+        try { if (currentStep === 4.5) startRevolutionAnimation({ reset: true }); } catch(_) {}
+        try { updateRevolutionAnimToggleLabel(); } catch(_) {}
     }
     // Procentní Card Presets
     else if (presetName === 'procentni-obchod') {
@@ -2350,9 +2483,197 @@ function applyPreset(presetName) {
         }
     }
 }
-// --- KONEC NOVÉ FUNKCE ---
-          // --- KONEC PŘIDANÉHO KÓDU ---
 
+// --- Revolution Preset Grid + Pagination (5x2) ---
+let revPresetList = [];
+let revPresetPage = 0;
+const revPresetPageSize = 10; // 5 x 2
+const REV_PREVIEW_FALLBACK = 'https://static.wixstatic.com/media/1cf87e_c66475389057414f989c3da03d7fa38c~mv2.png';
+// Explicit preview thumbnails (match original static previews)
+const REVOLUTION_PRESET_PREVIEWS = {
+  'revolution-kadernictvi': 'https://static.wixstatic.com/media/1cf87e_c66475389057414f989c3da03d7fa38c~mv2.png',
+  'revolution-kadernictvi-2': 'https://static.wixstatic.com/media/1cf87e_cae0bddb2ce341a7ae5b0aed871f2360~mv2.png',
+  'revolution-blue': 'https://static.wixstatic.com/media/1cf87e_c66475389057414f989c3da03d7fa38c~mv2.png',
+  'revolution-green': 'https://static.wixstatic.com/media/1cf87e_c66475389057414f989c3da03d7fa38c~mv2.png',
+  'revolution-purple': 'https://static.wixstatic.com/media/1cf87e_c66475389057414f989c3da03d7fa38c~mv2.png',
+  'revolution-red': 'https://static.wixstatic.com/media/1cf87e_c66475389057414f989c3da03d7fa38c~mv2.png'
+};
+
+function collectRevolutionPresetList() {
+  const list = [];
+  try {
+    if (typeof PRESET_DEFINITIONS === 'object' && PRESET_DEFINITIONS) {
+      for (const [key, val] of Object.entries(PRESET_DEFINITIONS)) {
+        if (val && val.cardType === 'revolution') {
+          // Prefer explicit preview mapping (keeps original thumbnails), then optional val.previewUrl, then fallback
+          let preview = REVOLUTION_PRESET_PREVIEWS[key] || val.previewUrl || REV_PREVIEW_FALLBACK;
+          list.push({ key, title: key, preview });
+        }
+      }
+    }
+  } catch(_) {}
+  // Fallback to known presets if none were found
+  if (!list.length) {
+    [
+      'revolution-kadernictvi',
+      'revolution-kadernictvi-2',
+      'revolution-blue',
+      'revolution-green',
+      'revolution-purple',
+      'revolution-red'
+    ].forEach(k => list.push({ key: k, title: k, preview: REV_PREVIEW_FALLBACK }));
+  }
+  return list;
+}
+
+function initRevolutionPresetPaging() {
+  revPresetList = collectRevolutionPresetList();
+  renderRevolutionPresetPage(0);
+}
+
+function renderRevolutionPresetPage(pageIndex) {
+  const grid = document.getElementById('revolutionPresetGrid');
+  if (!grid) return;
+  const totalPages = Math.max(1, Math.ceil(revPresetList.length / revPresetPageSize));
+  let idx = Number.isFinite(pageIndex) ? pageIndex : 0;
+  idx = Math.max(0, Math.min(totalPages - 1, idx));
+  revPresetPage = idx;
+
+  const start = idx * revPresetPageSize;
+  const slice = revPresetList.slice(start, start + revPresetPageSize);
+  grid.innerHTML = '';
+  slice.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'preset-card';
+    card.onclick = () => applyPreset(item.key);
+    const img = document.createElement('img');
+    img.src = item.preview || REV_PREVIEW_FALLBACK;
+    img.alt = item.title || item.key || 'Revolution Preset';
+    card.appendChild(img);
+    grid.appendChild(card);
+  });
+
+  updateRevolutionPaginationControls(totalPages);
+}
+
+function updateRevolutionPaginationControls(totalPages) {
+  const pag = document.getElementById('revolutionPresetPagination');
+  if (!pag) return;
+  if (totalPages <= 1) {
+    pag.style.display = 'none';
+    return;
+  }
+  pag.style.display = 'flex';
+  const prev = document.getElementById('revPrevBtn');
+  const next = document.getElementById('revNextBtn');
+  const ind = document.getElementById('revPageIndicator');
+  if (ind) ind.textContent = `${revPresetPage + 1} / ${totalPages}`;
+  if (prev) prev.disabled = (revPresetPage <= 0);
+  if (next) next.disabled = (revPresetPage >= totalPages - 1);
+}
+
+function revolutionPrevPage() { renderRevolutionPresetPage(revPresetPage - 1); }
+function revolutionNextPage() { renderRevolutionPresetPage(revPresetPage + 1); }
+// --- KONEC NOVÉ FUNKCE ---
+          
+          // --- Razítková Preset Grid + Pagination (5x2) ---
+          let razPresetList = [];
+          let razPresetPage = 0;
+          const razPresetPageSize = 10; // 5 x 2
+          const RAZ_PREVIEW_FALLBACK = 'https://via.placeholder.com/200x120/113FA2/AC7E02?text=Raz%C3%ADtkov%C3%A1';
+          
+          function collectRazitkovaPresetList() {
+            const list = [];
+            try {
+              if (typeof PRESET_DEFINITIONS === 'object' && PRESET_DEFINITIONS) {
+                for (const [key, val] of Object.entries(PRESET_DEFINITIONS)) {
+                  if (!val) continue;
+                  // Accept direct razitkova definitions or $copy that points to a razitkova base
+                  let isRazitkova = (val.cardType === 'razitkova');
+                  if (!isRazitkova && typeof val.$copy === 'string') {
+                    try {
+                      const base = PRESET_DEFINITIONS[val.$copy];
+                      isRazitkova = !!(base && base.cardType === 'razitkova');
+                    } catch(_) { isRazitkova = false; }
+                  }
+                  if (!isRazitkova) continue;
+                  // Pouze nová stránkovaná řada razitkova-01 .. razitkova-11
+                  if (!/^razitkova-(0[1-9]|10|11)$/.test(key)) continue;
+                  let preview = '';
+                  if (val && typeof val.previewUrl === 'string' && val.previewUrl) {
+                    preview = val.previewUrl;
+                  } else if (val && typeof val.$copy === 'string') {
+                    try {
+                      const base = PRESET_DEFINITIONS[val.$copy];
+                      preview = (base && base.previewUrl) ? base.previewUrl : RAZ_PREVIEW_FALLBACK;
+                    } catch(_) { preview = RAZ_PREVIEW_FALLBACK; }
+                  } else {
+                    preview = RAZ_PREVIEW_FALLBACK;
+                  }
+                  list.push({ key, title: key, preview });
+                }
+              }
+            } catch(_) {}
+            // Fallback: vygeneruj názvy, pokud nic nenalezeno
+            if (!list.length) {
+              const keys = ['01','02','03','04','05','06','07','08','09','10','11'].map(n => `razitkova-${n}`);
+              keys.forEach(k => list.push({ key: k, title: k, preview: RAZ_PREVIEW_FALLBACK }));
+            }
+            return list;
+          }
+          
+          function initRazitkovaPresetPaging() {
+            razPresetList = collectRazitkovaPresetList();
+            renderRazitkovaPresetPage(0);
+          }
+          
+          function renderRazitkovaPresetPage(pageIndex) {
+            const grid = document.getElementById('razitkovaPresetGrid');
+            if (!grid) return;
+            const totalPages = Math.max(1, Math.ceil(razPresetList.length / razPresetPageSize));
+            let idx = Number.isFinite(pageIndex) ? pageIndex : 0;
+            idx = Math.max(0, Math.min(totalPages - 1, idx));
+            razPresetPage = idx;
+            
+            const start = idx * razPresetPageSize;
+            const slice = razPresetList.slice(start, start + razPresetPageSize);
+            grid.innerHTML = '';
+            slice.forEach(item => {
+              const card = document.createElement('div');
+              card.className = 'preset-card';
+              card.onclick = () => applyPreset(item.key);
+              const img = document.createElement('img');
+              img.src = item.preview || RAZ_PREVIEW_FALLBACK;
+              img.alt = item.title || item.key || 'Razítková Preset';
+              card.appendChild(img);
+              grid.appendChild(card);
+            });
+            
+            updateRazitkovaPaginationControls(totalPages);
+          }
+          
+          function updateRazitkovaPaginationControls(totalPages) {
+            const pag = document.getElementById('razitkovaPresetPagination');
+            if (!pag) return;
+            if (totalPages <= 1) {
+              pag.style.display = 'none';
+              return;
+            }
+            pag.style.display = 'flex';
+            const prev = document.getElementById('razPrevBtn');
+            const next = document.getElementById('razNextBtn');
+            const ind = document.getElementById('razPageIndicator');
+            if (ind) ind.textContent = `${razPresetPage + 1} / ${totalPages}`;
+            if (prev) prev.disabled = (razPresetPage <= 0);
+            if (next) next.disabled = (razPresetPage >= totalPages - 1);
+          }
+          
+          function razitkovaPrevPage() { renderRazitkovaPresetPage(razPresetPage - 1); }
+          function razitkovaNextPage() { renderRazitkovaPresetPage(razPresetPage + 1); }
+          // --- KONEC RAZÍTKOVÁ PAGINACE ---
+          
+          // --- KONEC PŘIDANÉHO KÓDU ---
+          
           // --- Bodová handlers ---
           function pickBodRate(rate, el) {
             bodRate = rate;
@@ -2529,6 +2850,8 @@ function applyPreset(presetName) {
     }
 
     function showStep(n) {
+      // Zapamatujeme si, odkud odcházíme (kvůli zamrznutí Razítková animace mimo 4.5)
+      const prevStepBeforeShow = currentStep;
       // Special handling for step 4.5 - show the card type-specific section
       if (n === 4.5) {
         steps().forEach(p => { p.style.display = 'none'; });
@@ -2536,6 +2859,19 @@ function applyPreset(presetName) {
         const targetSection = document.getElementById(targetSectionId);
         if (targetSection) {
           targetSection.style.display = 'block';
+          // Při vstupu do razítkové sekce znovu spustíme animaci (pokud je relevantní)
+          try {
+            if (cardType === 'razitkova' && stampMode === 'perStamp') {
+              startRazitkovaAnimation({ reset: false });
+            }
+          } catch(_) {}
+          // Inicializace přepínače stavů pro Revolution (nepouštíme animaci automaticky)
+          try {
+            if (cardType === 'revolution') {
+              initRevolutionStateUI();
+              updateRevolutionAnimToggleLabel();
+            }
+          } catch(_) {}
           // Inicializace sekce zachování barvy: nastavíme "Současná barva" na pickedColor a označíme ji
           try {
             const cur = document.getElementById(`currentColorSwatch-${cardType}`);
@@ -2563,6 +2899,8 @@ function applyPreset(presetName) {
         const targetSection = document.getElementById(targetSectionId);
         if (targetSection) {
           targetSection.style.display = 'block';
+          // Collapsible starts closed each time we enter this step
+          resetChangeColorCollapse(cardType);
           // Inicializace: nastavíme "Současná barva" na pickedColor a označíme ji
           try {
             const cur = document.getElementById(`currentColorSwatch-${cardType}`);
@@ -2588,6 +2926,25 @@ function applyPreset(presetName) {
       updateNavState();
       const tmpPrev = document.getElementById('topModePreview');
       if (tmpPrev) tmpPrev.style.display = 'none';
+
+      // Pokud odcházíme z razítkové sekce 4.5 do jiné sekce,
+      // zastavíme animaci a zajistíme, že mimo 4.5 se bude ukazovat vždy maximální stav
+      if (prevStepBeforeShow === 4.5 && currentStep !== 4.5 && cardType === 'razitkova') {
+        try { stopRazitkovaAnimation(); } catch(_) {}
+        try { setStripBackground(); } catch(_) {}
+      }
+      // Pokud odcházíme z Revolution sekce 4.5 do jiné sekce, zastavíme animaci a nastavíme max stav
+      if (prevStepBeforeShow === 4.5 && currentStep !== 4.5 && cardType === 'revolution') {
+        try {
+          revolutionAnimPausedByUser = true;
+          stopRevolutionAnimation();
+          const maxIdx = (Array.isArray(revolutionGfxUrls) && revolutionGfxUrls.length > 0)
+            ? Math.max(0, revolutionGfxUrls.length - 1)
+            : Math.max(0, (revolutionMilestones || 1) - 1);
+          revolutionGfxSelectedStep = maxIdx;
+          setStripBackground();
+        } catch(_) {}
+      }
       
       if (n === 2) {
         // --- ZDE JE NOVÁ LOGIKA ---
@@ -2888,7 +3245,8 @@ function applyPreset(presetName) {
         if (std) std.style.display = isStampStandard ? 'block' : 'none';
         if (per) per.style.display = isStampPer ? 'block' : 'none';
         if (strip) {
-            strip.style.display = (!isStampStandard && !isStampPer) ? 'block' : 'none';
+            // U razítkové karty se dotaz přesouvá na samostatný krok 7.8
+            strip.style.display = (cardType !== 'razitkova') ? 'block' : 'none';
             // PŘIDÁNO: Synchronizace UI podle proměnné showStrip
             const yesBtn = strip.querySelector('.option[onclick*="true"]');
             const noBtn = strip.querySelector('.option[onclick*="false"]');
@@ -3012,28 +3370,64 @@ function applyPreset(presetName) {
           }
         }, 1000);
       }
-      if (n === 8) {
-        const next = getCurrentNextBtn();
-        if (next) next.disabled = (stripText.trim().length === 0);
-        updateStripMiniUI();
-      }
       if (n === 9) {
         const next = getCurrentNextBtn();
         if (next) next.disabled = !textColor;
       }
       if (n === 10) {
         const s = document.getElementById('summaryText');
+        // Prepare derived values
+        const cardTypeLabel = (cardType === 'bodova' ? 'Bodová' : cardType === 'procentni' ? 'Procentní' : cardType === 'razitkova' ? 'Razítková' : cardType === 'revolution' ? 'Revolution' : '');
+        const logoPreviewUrl = getLogoSummaryImageUrl();
+        const isRevolutionDynamic = (cardType === 'revolution' && !!revolutionShowProgress && revolutionGfxMode === 'custom' && Array.isArray(revolutionGfxUrls) && revolutionGfxUrls.length > 0);
+        const hasPerStripArray = Array.isArray(perStripUrls) && perStripUrls.length > 0;
+        const isRazDynamic = (cardType === 'razitkova' && hasPerStripArray);
+        const dynamicStripCount = isRevolutionDynamic ? revolutionGfxUrls.length : (isRazDynamic ? perStripUrls.length : 0);
+        const lastDynamicStripUrl = isRevolutionDynamic ? revolutionGfxUrls[revolutionGfxUrls.length - 1] : (isRazDynamic ? perStripUrls[perStripUrls.length - 1] : null);
+
+        // Per-level details for Revolution
+        let levelsHtml = '';
+        if (cardType === 'revolution' && Array.isArray(revolutionLevels)) {
+          levelsHtml += `<strong>Počet úrovní:</strong> ${revolutionLevels.length}<br>`;
+          revolutionLevels.forEach((lvl, idx) => {
+            const color = (lvl && lvl.color) ? lvl.color : (pickedColor || '#ffffff');
+            levelsHtml += `${idx+1}. úroveň — <strong>Název:</strong> ${escapeHtml(lvl?.name || '')}, <strong>Sleva:</strong> ${Number(lvl?.discount||0)}%, <strong>Cílová částka:</strong> ${Number(lvl?.threshold||0) === Infinity ? '∞' : Number(lvl?.threshold||0)} Kč, <strong>Barva:</strong> <span style="display:inline-block; width:12px; height:12px; background:${color}; border:1px solid #e5e7eb; vertical-align:middle;"></span> ${color}<br>`;
+          });
+        }
+
+        // Strip section (static vs dynamic)
+        let stripSectionHtml = '';
+        if (isRevolutionDynamic || isRazDynamic) {
+          stripSectionHtml += `<strong>Grafika stripu:</strong> Dynamická (${dynamicStripCount} stavů)<br>`;
+          // List all links
+          const list = isRevolutionDynamic ? revolutionGfxUrls : perStripUrls;
+          if (Array.isArray(list)) {
+            stripSectionHtml += list.map((u, i) => `<div style="margin-left:6px; font-size:12px;">${i+1}. <a href="${u}" target="_blank">${escapeHtml(u)}</a></div>`).join('');
+          }
+          // Show only the last image visually
+          if (lastDynamicStripUrl) {
+            stripSectionHtml += `<div style="margin-top:6px;"><img src="${lastDynamicStripUrl}" alt="Strip náhled" style="display:inline-block; width:120px; height:28px; object-fit:cover; border-radius:2px; border:1px solid #e5e7eb; vertical-align:middle;"> <a href="${lastDynamicStripUrl}" target="_blank" style="font-size:12px; margin-left:6px;">odkaz</a></div>`;
+          }
+        } else {
+          stripSectionHtml += `<strong>Grafika stripu:</strong> ${selectedStripUrl ? (customStripObjectUrl ? 'Vlastní' : 'Předvolená') : '—'}`;
+          if (selectedStripUrl) {
+            stripSectionHtml += ` <img src="${selectedStripUrl}" alt="Strip" style="display:inline-block; width:60px; height:14px; object-fit:cover; border-radius:2px; border:1px solid #e5e7eb; vertical-align:middle; margin-left:6px;"> <a href="${selectedStripUrl}" target="_blank" style="font-size:12px; margin-left:6px;">odkaz</a>`;
+          }
+          stripSectionHtml += '<br>';
+        }
+
+        // Build final summary
         s.innerHTML = `
           <strong>Barva karty:</strong> <span style="display:inline-block; width:12px; height:12px; background:${pickedColor || '#ffffff'}; border:1px solid #e5e7eb; vertical-align:middle;"></span> ${pickedColor || '#ffffff'}<br>
+          <strong>Barva textů na kartě:</strong> <span style="display:inline-block; width:12px; height:12px; background:${textColor || '#000000'}; border:1px solid #e5e7eb; vertical-align:middle;"></span> ${textColor || '#000000'}<br>
           <strong>Levý horní roh:</strong> ${topMode === 'napis' ? 'Text' : 'Logo'}<br>
           ${topMode === 'napis' ? `<strong>Text:</strong> ${escapeHtml(napisText)}` : `<strong>Logo URL:</strong> ${escapeHtml(logoUrl)}`}<br>
-          <strong>Typ karty:</strong> ${cardType === 'bodova' ? 'Bodová' : cardType === 'procentni' ? 'Procentní' : cardType === 'razitkova' ? 'Razítková' : cardType === 'revolution' ? 'Revolution' : ''}<br>
+          <strong>Logo (náhled + odkaz):</strong> ${logoPreviewUrl ? `<img src="${logoPreviewUrl}" alt="Logo náhled" style="display:inline-block; width:60px; height:28px; object-fit:contain; border-radius:2px; border:1px solid #e5e7eb; vertical-align:middle;"> <a href="${logoPreviewUrl}" target="_blank" style="font-size:12px; margin-left:6px;">odkaz</a>` : '—'}<br>
+          <strong>Typ karty:</strong> ${cardTypeLabel}<br>
           ${cardType === 'bodova' ? `<strong>Směnný kurz:</strong> ${bodPoints} BOD = ${Number(bodRate)} Kč<br><strong>Horní řádek:</strong> ${escapeHtml(bodTopMessage)}<br><strong>Spodní řádek:</strong> ${escapeHtml(bodBottomMessage)}<br>` : ''}
-          <strong>Vzhled stripu:</strong> ${selectedStripUrl ? (customStripObjectUrl ? 'Vlastní' : 'Předvolený') : '—'} ${selectedStripUrl ? `<img src="${selectedStripUrl}" alt="Strip" style="display:inline-block; width:60px; height:14px; object-fit:cover; border-radius:2px; border:1px solid #e5e7eb; vertical-align:middle; margin-left:6px;">` : ''}<br>
-          <strong>Text na stripu:</strong> ${showStrip ? escapeHtml(stripText) : 'Nezobrazovat'}<br>
-          ${showStrip ? `<strong>Umístění textu:</strong> ${stripTextPos}<br>` : ''}
-          ${showStrip ? `<strong>Velikost textu:</strong> ${stripTextSize}<br>` : ''}
-          ${showStrip ? `<strong>Barva textu stripu:</strong> <span style="display:inline-block; width:12px; height:12px; background:${stripTextColor || '#000000'}; border:1px solid #e5e7eb; vertical-align:middle;"></span> ${stripTextColor || '#000000'}` : ''}
+          ${cardType === 'revolution' ? `<strong>Minimální částka:</strong> ${Number(revolutionBonusMin||0)} Kč<br>` : ''}
+          ${levelsHtml}
+          ${stripSectionHtml}
           ${(cardType === 'razitkova' && stampMode === 'standard') ? `<br><strong>Razítka:</strong> ${stampTotal} ks, velikost ${stampSize}px, rozestup ${stampGap}px, průhlednost ${Math.round(stampOpacity*100)}%<br>` : ''}
           ${(cardType === 'razitkova' && stampMode === 'standard') ? (`<strong>Ohraničení razítek:</strong> ` + (stampBorderEnabled ? `${(stampBorderShape === 'icon' ? 'silueta razítka' : stampBorderShape === 'outline' ? 'obrys' : stampBorderShape)}, tloušťka ${stampBorderSize}px, vzdálenost ${stampBorderOffset}px, <span style=\"display:inline-block; width:12px; height:12px; background:${stampBorderColor}; border:1px solid #e5e7eb; vertical-align:middle;\"></span> ${stampBorderColor}, ${stampBorderOpacity}%` : 'Nezobrazovat')) : ''}
         `;
@@ -3092,7 +3486,21 @@ function pickDesignChoice(choice, el, targetCardType) {
             if (inp) { try { inp.value = toHex(colorToUse); } catch(_) { inp.value = colorToUse; } }
           }
         } catch(_) {}
+        // Render Revolution presets in 5x2 grid with pagination
+        if (targetCardType === 'revolution') {
+          try { initRevolutionPresetPaging(); } catch(_) {}
+        }
+        // Render Razítková presets in 5x2 grid with pagination
+        if (targetCardType === 'razitkova') {
+          try { initRazitkovaPresetPaging(); } catch(_) {}
+          // Prepare manual state switcher immediately
+          try { initRazitkovaStateUI(); } catch(_) {}
+        }
   } else { // 'custom'
+        // Pokud se v Razítkové části přepíná na Vlastní návrh, zastavíme animaci
+        if (targetCardType === 'razitkova') {
+          try { stopRazitkovaAnimation(); } catch(_) {}
+        }
         // Pokud existuje záloha (tzn. uživatel předtím zkoušel presety), obnovíme ji
         if (cardStateBeforePreset) {
             console.log('Obnovuji původní stav karty (přepnuto na Vlastní návrh).');
@@ -3273,6 +3681,9 @@ function pickDesignChoice(choice, el, targetCardType) {
     // Funkce pro změnu vybraného stavu v dropdownu
     function onRevolutionGfxStepChange(select) {
         try {
+            // Manuální změna stavu – zastavíme animaci
+            try { revolutionAnimPausedByUser = true; } catch(_) {}
+            try { stopRevolutionAnimation(); } catch(_) {}
             revolutionGfxSelectedStep = parseInt(select.value, 10) || 0;
             updateRevolutionGfxPreview();
         } catch(e) { console.error("Chyba při změně stavu:", e); }
@@ -3631,6 +4042,9 @@ function pickDesignChoice(choice, el, targetCardType) {
     }
 
     function onRevolutionGfxStepChange(sel) {
+        // Manuální změna stavu – zastavíme animaci
+        try { revolutionAnimPausedByUser = true; } catch(_) {}
+        try { stopRevolutionAnimation(); } catch(_) {}
         const v = parseInt(sel && sel.value, 10);
         revolutionGfxSelectedStep = isNaN(v) ? 0 : Math.max(0, Math.min(revolutionMilestones - 1, v));
         updateRevolutionGfxPreview();
@@ -3650,6 +4064,9 @@ function pickDesignChoice(choice, el, targetCardType) {
             
             // --- PŘIDANÝ ŘÁDEK ---
             // Vždy aktualizujeme strip na hlavní kartě, aby odpovídal náhledu
+            // Synchronizujeme také hodnoty přepínačů stavů (4.5 a 5.6)
+            try { const sel = document.getElementById('revolutionStateSelect'); if (sel) sel.value = String(revolutionGfxSelectedStep); } catch(_) {}
+            try { const sel2 = document.getElementById('revMilestoneStepSelect'); if (sel2) sel2.value = String(revolutionGfxSelectedStep); } catch(_) {}
             setStripBackground();
             // --- KONEC PŘIDANÉHO ŘÁDKU ---
 
@@ -3746,17 +4163,19 @@ function pickDesignChoice(choice, el, targetCardType) {
 
     // Razítková – handlers
     function pickStampMode(mode, el) {
-      stampMode = (mode === 'standard' || mode === 'perStamp' || mode === 'preset') ? mode : null;
+      // Odstraněna podpora pro 'preset' režim
+      stampMode = (mode === 'standard' || mode === 'perStamp') ? mode : null;
       const next = getCurrentNextBtn();
       if (next) next.disabled = !stampMode;
+      // Poznámka k preset režimu skryta/odstraněna
       const preNote = document.getElementById('stampPresetNote');
-      if (preNote) preNote.style.display = (stampMode === 'preset') ? 'block' : 'none';
+      if (preNote) preNote.style.display = 'none';
       const perNote = document.getElementById('stampPerNote');
       if (perNote) perNote.style.display = (stampMode === 'perStamp') ? 'block' : 'none';
       const pr = document.getElementById('stampModePresetBtn');
       const sb = document.getElementById('stampModeStandardBtn');
       const pb = document.getElementById('stampModePerBtn');
-      if (pr) pr.classList.toggle('selected', stampMode === 'preset');
+      if (pr) pr.classList.remove('selected');
       if (sb) sb.classList.toggle('selected', stampMode === 'standard');
       if (pb) pb.classList.toggle('selected', stampMode === 'perStamp');
     }
@@ -4098,9 +4517,16 @@ function pickDesignChoice(choice, el, targetCardType) {
             dl.setAttribute('rel', 'noopener');
           }
         }
-        // In per-stamp mode, use the chosen per-step image on the card and hide canvas
+        // In per-stamp mode, on step 4.5 follow the animated state; outside 4.5 freeze to max state
         if (img && (cardType === 'razitkova' && stampMode === 'perStamp')) {
-          img.src = url;
+          const hasArray = Array.isArray(perStripUrls) && perStripUrls.length > 0;
+          const maxState = hasArray ? Math.max(0, perStripUrls.length - 1) : Math.max(0, perStampTotal);
+          if (currentStep === 4.5) {
+            img.src = url;
+          } else {
+            const frozenUrl = (hasArray ? perStripUrls[maxState] : null) || fallback;
+            img.src = frozenUrl;
+          }
           img.style.display = 'block';
           if (cv) cv.style.display = 'none';
         }
@@ -4128,13 +4554,144 @@ function pickDesignChoice(choice, el, targetCardType) {
       return false;
     }
 
+    // --- Razítková animation & manual controls ---
+    function syncRazitkovaStateUI() {
+      try {
+        const sel = document.getElementById('razitkovaStateSelect');
+        if (!sel) return;
+        const maxState = (Array.isArray(perStripUrls) && perStripUrls.length > 0)
+          ? Math.max(0, perStripUrls.length - 1)
+          : Math.max(0, perStampTotal);
+        // Rebuild options if counts mismatch
+        if (sel.options.length !== (maxState + 1)) {
+          sel.innerHTML = '';
+          for (let i = 0; i <= maxState; i++) {
+            const opt = document.createElement('option');
+            opt.value = String(i);
+            opt.textContent = 'Stav ' + i;
+            sel.appendChild(opt);
+          }
+        }
+        sel.value = String(Math.max(0, Math.min(maxState, perStripSelectedStep)));
+      } catch(_) {}
+    }
+
+    function initRazitkovaStateUI() {
+      razitkovaAnimPausedByUser = false;
+      syncRazitkovaStateUI();
+      try { updateRazitkovaAnimToggleLabel(); } catch(_) {}
+    }
+
+    function stopRazitkovaAnimation() {
+      if (razitkovaAnimTimer) {
+        try { clearInterval(razitkovaAnimTimer); } catch(_) {}
+        razitkovaAnimTimer = null;
+      }
+      try { updateRazitkovaAnimToggleLabel(); } catch(_) {}
+    }
+
+    function startRazitkovaAnimation(opts) {
+      stopRazitkovaAnimation();
+      // Only animate for Razítková and when per-strip URLs available or perStampTotal defined
+      if (cardType !== 'razitkova') { try { updateRazitkovaAnimToggleLabel(); } catch(_) {} return; }
+      const total = (Array.isArray(perStripUrls) && perStripUrls.length > 0)
+        ? Math.max(0, perStripUrls.length - 1)
+        : Math.max(0, perStampTotal);
+      if (total <= 0) { try { updateRazitkovaAnimToggleLabel(); } catch(_) {} return; }
+      // Begin from the lowest state unless reset is disabled
+      const reset = !opts || opts.reset !== false;
+      if (reset) perStripSelectedStep = 0;
+      updatePerStripPreviewAndDownload();
+      syncRazitkovaStateUI();
+      if (razitkovaAnimPausedByUser) { try { updateRazitkovaAnimToggleLabel(); } catch(_) {} return; }
+      razitkovaAnimTimer = setInterval(() => {
+        try {
+          const max = (Array.isArray(perStripUrls) && perStripUrls.length > 0)
+            ? Math.max(0, perStripUrls.length - 1)
+            : Math.max(0, perStampTotal);
+          if (max <= 0) return;
+          perStripSelectedStep = (perStripSelectedStep + 1) % (max + 1);
+          updatePerStripPreviewAndDownload();
+          const sel = document.getElementById('razitkovaStateSelect');
+          if (sel) sel.value = String(perStripSelectedStep);
+        } catch(_) {}
+      }, 1000);
+      try { updateRazitkovaAnimToggleLabel(); } catch(_) {}
+    }
+
+    function onRazitkovaStateSelect(sel) {
+      razitkovaAnimPausedByUser = true;
+      stopRazitkovaAnimation();
+      const v = parseInt(sel && sel.value, 10);
+      const max = (Array.isArray(perStripUrls) && perStripUrls.length > 0)
+        ? Math.max(0, perStripUrls.length - 1)
+        : Math.max(0, perStampTotal);
+      perStripSelectedStep = isNaN(v) ? 0 : Math.max(0, Math.min(max, v));
+      updatePerStripPreviewAndDownload();
+      syncRazitkovaStateUI();
+      try { updateRazitkovaAnimToggleLabel(); } catch(_) {}
+    }
+
+    function razitkovaNextState() {
+      razitkovaAnimPausedByUser = true;
+      stopRazitkovaAnimation();
+      const max = (Array.isArray(perStripUrls) && perStripUrls.length > 0)
+        ? Math.max(0, perStripUrls.length - 1)
+        : Math.max(0, perStampTotal);
+      if (max <= 0) return;
+      perStripSelectedStep = (perStripSelectedStep + 1) % (max + 1);
+      updatePerStripPreviewAndDownload();
+      syncRazitkovaStateUI();
+      try { updateRazitkovaAnimToggleLabel(); } catch(_) {}
+    }
+
+    function razitkovaPrevState() {
+      razitkovaAnimPausedByUser = true;
+      stopRazitkovaAnimation();
+      const max = (Array.isArray(perStripUrls) && perStripUrls.length > 0)
+        ? Math.max(0, perStripUrls.length - 1)
+        : Math.max(0, perStampTotal);
+      if (max <= 0) return;
+      perStripSelectedStep = (perStripSelectedStep - 1 + (max + 1)) % (max + 1);
+      updatePerStripPreviewAndDownload();
+      syncRazitkovaStateUI();
+      try { updateRazitkovaAnimToggleLabel(); } catch(_) {}
+    }
+
+    function isRazitkovaAnimating() { return !!razitkovaAnimTimer; }
+
+    function updateRazitkovaAnimToggleLabel() {
+      try {
+        const btn = document.getElementById('razitkovaAnimToggleBtn');
+        if (!btn) return;
+        btn.textContent = isRazitkovaAnimating() ? 'Zastavit animaci' : 'Spustit animaci';
+      } catch(_) {}
+    }
+
+    function razitkovaToggleAnimation() {
+      try {
+        if (isRazitkovaAnimating()) {
+          razitkovaAnimPausedByUser = true;
+          stopRazitkovaAnimation();
+        } else {
+          razitkovaAnimPausedByUser = false;
+          startRazitkovaAnimation({ reset: false });
+        }
+        updateRazitkovaAnimToggleLabel();
+      } catch(_) {}
+    }
+
     function pickPresetColor(color, el) {
       clearSelected();
       if (el) el.classList.add('selected');
       setCardColor(color);
+      // User explicitly picked a color
+      colorExplicitlyPicked = true;
       // reset custom picker to match chosen
       const cc = document.getElementById('customColor');
-      try { cc.value = toHex(color); } catch(e) {}
+      try { if (cc) cc.value = toHex(color); } catch(e) {}
+      const cc2 = document.getElementById('customColorLate');
+      try { if (cc2) cc2.value = toHex(color); } catch(e) {}
       
       // Zastavení animace karet
       stopExampleSlideshow();
@@ -4145,6 +4702,8 @@ function pickDesignChoice(choice, el, targetCardType) {
     function pickCustomColor(color) {
       clearSelected();
       setCardColor(color);
+      // User explicitly picked a color
+      colorExplicitlyPicked = true;
       
       // Zastavení animace karet
       stopExampleSlideshow();
@@ -4161,6 +4720,47 @@ function pickDesignChoice(choice, el, targetCardType) {
       } catch(_) {}
       // Zachovat textColor nastavenou presetem
       setCardColor(pickedColor, { skipAutoTextColor: true });
+    }
+
+    // Render a centered pictogram (SVG) indicating collapsed/expanded state
+    function getCollapseIconHTML(expanded) {
+      // Uses currentColor for strokes so parent style can set color
+      if (expanded) {
+        return (
+          '<svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none">'
+          + '<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.25" fill="none" />'
+          + '<path d="M8 13l4-4 4 4" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />'
+          + '</svg>'
+        );
+      }
+      return (
+        '<svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none">'
+        + '<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.25" fill="none" />'
+        + '<path d="M8 11l4 4 4-4" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />'
+        + '</svg>'
+      );
+    }
+
+    // Toggle visibility of the "Změnit barvu na" collapsible section in step 4.6
+    function toggleChangeColor(cardType) {
+      try {
+        const cont = document.getElementById(`changeColorContainer-${cardType}`);
+        const icon = document.getElementById(`changeColorToggleIcon-${cardType}`);
+        if (!cont) return;
+        const isHidden = (cont.style.display === 'none' || cont.style.display === '');
+        cont.style.display = isHidden ? 'block' : 'none';
+        if (icon) icon.innerHTML = getCollapseIconHTML(!isHidden);
+      } catch (_) {}
+    }
+
+    // Ensure the collapsible starts in collapsed state when entering step 4.6
+    function resetChangeColorCollapse(cardType) {
+      try {
+        const cont = document.getElementById(`changeColorContainer-${cardType}`);
+        const icon = document.getElementById(`changeColorToggleIcon-${cardType}`);
+        if (cont) cont.style.display = 'none';
+        if (icon) icon.innerHTML = getCollapseIconHTML(false);
+      } catch (_) {}
     }
 
     function pickTopMode(mode, el) {
@@ -4215,12 +4815,7 @@ function pickDesignChoice(choice, el, targetCardType) {
         presetApplied = false;
         cardStateBeforePreset = null;
       }
-      // PŘIDÁNA LOGIKA PRO VÝCHOZÍ NASTAVENÍ RAZÍTKOVÉ KARTY
-      if (type === 'razitkova') {
-          stampMode = 'preset'; // Předvyplní "Předpřipravené"
-          designChoice = 'preset'; // Předvyplní "Vybrat z předpřipravených"
-      }
-      // KONEC ÚPRAVY
+      // Odebrána automatická volba 'Předpřipravené' pro razítkovou kartu – uživatel zvolí režim ručně ve kroku 5
 
       cardType = type;
 
@@ -4720,8 +5315,12 @@ function pickDesignChoice(choice, el, targetCardType) {
     function pickShowStrip(val, el) {
       showStrip = !!val;
       stripVisibilityUserEdited = true;
-      document.querySelectorAll('#step-6 .option').forEach(o => o.classList.remove('selected'));
-      if (el) el.classList.add('selected');
+      try {
+        const container = el && el.closest('.question-panel');
+        const scope = container || document.getElementById('step-6') || document;
+        scope.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+        if (el) el.classList.add('selected');
+      } catch(_) {}
       const next = getCurrentNextBtn();
       if (next) next.disabled = false;
       positionStrip();
@@ -5133,8 +5732,16 @@ function nextStepNum() {
     switch (currentStep) {
         case 1: return 4;
         case 4:
-            // Všechny typy jdou přes krok 4.5 (výběr předpřipraveného designu / vlastní návrh)
+            // Bodová/Procentní: pokud uživatel na začátku výslovně nevybral barvu,
+            // vložíme mezi kroky 4 a 2 dodatečný krok 4.2 pro výběr barvy.
+            if (cardType === 'bodova' || cardType === 'procentni') {
+                return (!colorExplicitlyPicked) ? 4.2 : 2;
+            }
+            // Ostatní typy jdou přes krok 4.5 (výběr předpřipraveného designu / vlastní návrh)
             return 4.5;
+        case 4.2:
+            // Po dodatečném výběru barvy pokračujeme na krok 2
+            return 2;
         case 4.5:
             if (cardType === 'revolution' || cardType === 'razitkova') {
                 return 4.6;
@@ -5147,21 +5754,37 @@ function nextStepNum() {
             if (cardType === 'revolution') {
                 return 5.5; // pokračujeme na Revolution nastavení úrovní
             }
-            return 3;
+            // Razítková: strip vybereme až PO kroku 5 (po volbě režimu)
+            if (cardType === 'razitkova') {
+                // Pokud je aktivní preset, přeskočíme krok 5 ("Razítka – vyberte způsob")
+                // a navíc přeskočíme i výběr vzhledu stripu (krok 3) -> rovnou na Shrnutí (10)
+                return (presetApplied ? 10 : 5);
+            }
+            // Ostatní typy: standardně bychom šli na krok 3 ("Vyberte vzhled stripu"),
+            // pokud je ale aktivní preset, krok 3 vynecháme a pokračujeme na nastavení typu karty (krok 5)
+            return (presetApplied ? 5 : 3);
         case 3:
             if (cardType === 'revolution') {
-                // Sem se dostáváme až po 5.6 při volbě Statická grafika -> poté pokračujeme na otázku o textu
+                // Po výběru stripu u Revolution již text neřešíme
+                return 10;
+            }
+            if (cardType === 'razitkova') {
+                // Po výběru stripu u Razítkové pokračujeme na nastavení razítek
                 return 6;
             }
             return 5;
         case 5:
-            // Show detailed stamp settings (step 6) when Razítková with Standard mode.
-            // Previously this incorrectly skipped to step 7, hiding the standard settings panel.
-            return 6;
+            // Razítková: Standardní -> nejdříve výběr vzhledu stripu (3), poté 6; Vlastní pro každé -> přímo na 6
+            if (cardType === 'razitkova') {
+                return (stampMode === 'standard') ? 3 : 6;
+            }
+            // U ostatních typů po kroku 5 již text na stripu nenabízíme
+            return 10;
         case 5.5:
             // POKUD byl aplikován preset, přeskočíme krok 5.6 (Vizuální progres)
             if (presetApplied) {
-                return 6; // Jdeme rovnou na otázku "Text na stripu?"
+                // A zároveň přeskočíme i "Zobrazovat text na stripu?" a "Text na stripu"
+                return 10; // Jdeme rovnou na Shrnutí
             }
             return 5.6; // Jinak pokračujeme na nastavení Vizuálního progresu
         case 5.6:
@@ -5169,18 +5792,18 @@ function nextStepNum() {
             if (cardType === 'revolution' && !revolutionShowProgress) {
                 return 3;
             }
-            return 6;
+            // Po 5.6 již dotaz na text neřešíme
+            return 10;
         case 6:
+            // Krok 6 nyní slouží pouze pro detailní nastavení razítek u Razítkové karty
             if (cardType === 'razitkova') {
                 return 7;
             }
-             if (showStrip === false) {
-                return 10;
-            }
-            return 8;
+            return 10;
         case 7: return 7.5;
-        case 7.5: return 8;
-        case 8: return 10;
+        case 7.5:
+            // Po vzhledu ohraničení již text na stripu neřešíme
+            return 10;
         default: return 10;
     }
 }
@@ -5192,11 +5815,16 @@ function prevStepNum() {
   // Fallback, pokud by historie byla prázdná
   switch (currentStep) {
     case 4: return 1;
+    case 4.2: return 4;
     case 4.5: return 4;
     case 2:
       // Revolution a Razítková: vracíme se nejprve na 4.6 (nový krok zachování barvy)
       if (cardType === 'revolution' || cardType === 'razitkova') {
         return 4.6;
+      }
+      // Bodová a Procentní: vracíme se přímo na krok 4 (výběr typu karty)
+      if (cardType === 'bodova' || cardType === 'procentni') {
+        return 4;
       }
       // Ostatní typy: vracíme se na 4.5 (volba preset/vlastní)
       return 4.5;
@@ -5205,6 +5833,15 @@ function prevStepNum() {
     case 3: return 2.5;
     case 5: return 3;
     case 5.5: return 3;
+    case 7.5: return 7;
+    case 7: return 6;
+    case 6:
+      // Pokud jsme v Razítkové: návrat podle zvoleného režimu razítek
+      if (cardType === 'razitkova') {
+        return (stampMode === 'standard') ? 3 : 5;
+      }
+      // Ostatní typy by se do 6 neměly dostat, vraťme se bezpečně na 5
+      return 5;
     default: return 1;
   }
 }
@@ -5240,7 +5877,6 @@ function prevStepNum() {
           if (!revolutionMilestones || revolutionMilestones <= 1) return;
         }
       }
-      if (currentStep === 8 && !stripText.trim()) return;
     
     stepHistory.push(currentStep); // PŘIDANÝ ŘÁDEK
       showStep(nextStepNum());
@@ -5312,6 +5948,64 @@ function prevStepNum() {
       return str.replace(/[&<>"']/g, function(m) {
         return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]);
       });
+    }
+
+    // Vytvoří náhledový obrázek loga pro Shrnutí:
+    // - pokud je nápis, vykreslí text na canvas a vrátí data URL
+    // - pokud je nahrané logo, vrátí přímo jeho URL
+    // - jinak vrátí prázdný řetězec
+    function getLogoSummaryImageUrl() {
+      try {
+        if (topMode === 'logo' && logoUrl && logoUrl.trim()) {
+          return logoUrl.trim();
+        }
+        if (topMode === 'napis' && napisText && napisText.trim()) {
+          const text = (napisText || '').replace(/\r/g, '');
+          const parts = text.split('\n');
+          const W = 300;
+          const H = 120;
+          const canvas = document.createElement('canvas');
+          canvas.width = W;
+          canvas.height = H;
+          const ctx = canvas.getContext('2d');
+          // transparent background
+          ctx.clearRect(0, 0, W, H);
+          const fontSelect = document.getElementById('napisFont');
+          const fontName = fontSelect ? fontSelect.value : (typeof napisFont === 'string' ? napisFont : 'Arial');
+          let size = (napisSizeMode === 'auto') ? 28 : (parseInt(napisManualSize, 10) || 16);
+          const maxW = W - 24; // padding
+          const lines = parts.length > 1 ? [parts[0], parts[1]] : [parts[0]];
+          const lineGap = 6;
+          const align = (napisAlign === 'center') ? 'center' : (napisAlign === 'right') ? 'right' : 'left';
+          ctx.textAlign = align;
+          ctx.textBaseline = 'top';
+
+          // Fit font size so that the longest line fits width and total height fits box
+          if (napisSizeMode === 'auto') {
+            for (let i = 0; i < 30; i++) {
+              ctx.font = `bold ${size}px ${fontName}`;
+              const heights = lines.length * (size * 1.2) + (lines.length > 1 ? lineGap : 0);
+              const tooTall = heights > (H - 16);
+              const tooWide = lines.some(t => ctx.measureText(t || '').width > maxW);
+              if (!tooTall && !tooWide) break;
+              size -= 1; if (size < 8) { size = 8; break; }
+            }
+          } else {
+            ctx.font = `bold ${size}px ${fontName}`;
+          }
+
+          ctx.fillStyle = napisColor || '#000000';
+          const totalHeight = lines.length * (size * 1.2) + (lines.length > 1 ? lineGap : 0);
+          const startY = Math.max(4, Math.round((H - totalHeight) / 2));
+          const x = align === 'center' ? Math.round(W/2) : (align === 'right' ? (W - 12) : 12);
+          lines.forEach((t, idx) => {
+            const y = startY + idx * (size * 1.2 + (idx === 0 ? 0 : 0)) + (idx === 1 ? lineGap : 0);
+            ctx.fillText(t || '', x, y);
+          });
+          return canvas.toDataURL('image/png');
+        }
+      } catch(_) {}
+      return '';
     }
 
     // Intro preview slideshow
@@ -5524,13 +6218,26 @@ function applyCardType(type) {
       let usePerStampImage = cardType === 'razitkova' && stampMode === 'perStamp';
 
       if (useProgressImage) {
-        const currentStep = revolutionGfxSelectedStep; // Opraveno - použijeme přímo vybraný stav místo výpočtu
-        finalUrl = revolutionGfxUrls[currentStep] || selectedStripUrl || 'https://static.wixstatic.com/media/1cf87e_3ae4f6a9c66a44ef9aa950f489356001~mv2.png';
+        const maxIdx = (Array.isArray(revolutionGfxUrls) && revolutionGfxUrls.length > 0)
+          ? Math.max(0, revolutionGfxUrls.length - 1)
+          : Math.max(0, (revolutionMilestones || 1) - 1);
+        const idx = (currentStep === 4.5)
+          ? Math.max(0, Math.min(maxIdx, revolutionGfxSelectedStep))
+          : maxIdx;
+        finalUrl = revolutionGfxUrls[idx] || selectedStripUrl || 'https://static.wixstatic.com/media/1cf87e_3ae4f6a9c66a44ef9aa950f489356001~mv2.png';
         img.src = finalUrl;
         img.style.display = 'block';
         if (cv) cv.style.display = 'none';
       } else if (usePerStampImage) {
-        finalUrl = perStripUrls[perStripSelectedStep] || selectedStripUrl || 'https://static.wixstatic.com/media/1cf87e_3ae4f6a9c66a44ef9aa950f489356001~mv2.png';
+        // Mimo sekci 4.5 se má vždy zobrazovat maximální stav (např. 8),
+        // v samotné sekci 4.5 běží animace dle perStripSelectedStep
+        const maxState = (Array.isArray(perStripUrls) && perStripUrls.length > 0)
+          ? Math.max(0, perStripUrls.length - 1)
+          : Math.max(0, perStampTotal);
+        const idx = (currentStep === 4.5)
+          ? Math.max(0, Math.min(maxState, perStripSelectedStep))
+          : maxState;
+        finalUrl = perStripUrls[idx] || selectedStripUrl || 'https://static.wixstatic.com/media/1cf87e_3ae4f6a9c66a44ef9aa950f489356001~mv2.png';
         img.src = finalUrl;
         img.style.display = 'block';
         if (cv) cv.style.display = 'none';
@@ -5543,6 +6250,113 @@ function applyCardType(type) {
           renderStripOnCanvas(finalUrl);
         }
       }
+    }
+
+    // --- Revolution animation & state controls ---
+    function isRevolutionAnimating() { return !!revolutionAnimTimer; }
+
+    function updateRevolutionAnimToggleLabel() {
+      try {
+        const btn = document.getElementById('revolutionAnimToggleBtn');
+        if (!btn) return;
+        btn.textContent = isRevolutionAnimating() ? 'Zastavit animaci' : 'Spustit animaci';
+      } catch(_) {}
+    }
+
+    function stopRevolutionAnimation() {
+      if (revolutionAnimTimer) {
+        try { clearInterval(revolutionAnimTimer); } catch(_) {}
+        revolutionAnimTimer = null;
+      }
+      try { updateRevolutionAnimToggleLabel(); } catch(_) {}
+    }
+
+    function startRevolutionAnimation(opts) {
+      stopRevolutionAnimation();
+      if (cardType !== 'revolution') { try { updateRevolutionAnimToggleLabel(); } catch(_) {} return; }
+      const maxIdx = (Array.isArray(revolutionGfxUrls) && revolutionGfxUrls.length > 0)
+        ? Math.max(0, revolutionGfxUrls.length - 1)
+        : Math.max(0, (revolutionMilestones || 1) - 1);
+      if (maxIdx <= 0) { try { updateRevolutionAnimToggleLabel(); } catch(_) {} return; }
+      if (revolutionAnimPausedByUser) { try { updateRevolutionAnimToggleLabel(); } catch(_) {} return; }
+      if (opts && opts.reset) {
+        revolutionGfxSelectedStep = 0;
+        try { updateRevolutionGfxPreview(); } catch(_) {}
+      }
+      revolutionAnimTimer = setInterval(() => {
+        if (currentStep !== 4.5) { stopRevolutionAnimation(); return; }
+        const next = (revolutionGfxSelectedStep + 1) % (maxIdx + 1);
+        revolutionGfxSelectedStep = next;
+        try { updateRevolutionGfxPreview(); } catch(_) {}
+      }, 1000);
+      try { updateRevolutionAnimToggleLabel(); } catch(_) {}
+    }
+
+    function revolutionToggleAnimation() {
+      if (isRevolutionAnimating()) {
+        revolutionAnimPausedByUser = true;
+        stopRevolutionAnimation();
+      } else {
+        revolutionAnimPausedByUser = false;
+        startRevolutionAnimation({ reset: false });
+      }
+      try { updateRevolutionAnimToggleLabel(); } catch(_) {}
+    }
+
+    function initRevolutionStateUI() {
+      try {
+        const sel = document.getElementById('revolutionStateSelect');
+        if (!sel) return;
+        const maxIdx = (Array.isArray(revolutionGfxUrls) && revolutionGfxUrls.length > 0)
+          ? Math.max(0, revolutionGfxUrls.length - 1)
+          : Math.max(0, (revolutionMilestones || 1) - 1);
+        sel.innerHTML = '';
+        for (let i = 0; i <= maxIdx; i++) {
+          const opt = document.createElement('option');
+          opt.value = String(i);
+          opt.textContent = `Stav ${i}`;
+          sel.appendChild(opt);
+        }
+        sel.value = String(Math.max(0, Math.min(maxIdx, revolutionGfxSelectedStep || 0)));
+      } catch(_) {}
+    }
+
+    function onRevolutionStateSelect(select) {
+      try {
+        // Manuální změna stavu (v kroku 4.5) – zastavíme animaci
+        try { revolutionAnimPausedByUser = true; } catch(_) {}
+        try { stopRevolutionAnimation(); } catch(_) {}
+        const v = parseInt(select && select.value, 10);
+        const maxIdx = (Array.isArray(revolutionGfxUrls) && revolutionGfxUrls.length > 0)
+          ? Math.max(0, revolutionGfxUrls.length - 1)
+          : Math.max(0, (revolutionMilestones || 1) - 1);
+        if (!isNaN(v)) {
+          revolutionGfxSelectedStep = Math.max(0, Math.min(maxIdx, v));
+          updateRevolutionGfxPreview();
+        }
+      } catch(_) {}
+    }
+
+    function revolutionPrevState() {
+      try {
+        const sel = document.getElementById('revolutionStateSelect');
+        const v = Math.max(0, parseInt(sel && sel.value, 10) - 1 || 0);
+        if (sel) sel.value = String(v);
+        onRevolutionStateSelect(sel);
+      } catch(_) {}
+    }
+
+    function revolutionNextState() {
+      try {
+        const sel = document.getElementById('revolutionStateSelect');
+        const maxIdx = (Array.isArray(revolutionGfxUrls) && revolutionGfxUrls.length > 0)
+          ? Math.max(0, revolutionGfxUrls.length - 1)
+          : Math.max(0, (revolutionMilestones || 1) - 1);
+        const curr = parseInt(sel && sel.value, 10) || 0;
+        const v = Math.min(maxIdx, curr + 1);
+        if (sel) sel.value = String(v);
+        onRevolutionStateSelect(sel);
+      } catch(_) {}
     }
 
     // --- Procentní karta – handlers & helpers ---
@@ -5651,28 +6465,12 @@ function applyCardType(type) {
             </div>
           </td>
           <td>
-            ${index === 0 ? '<span>(Hlavní barva)</span>' : 
-            `<div class=\"procentni-level-color\">
-                <div class=\"swatches-row\" style=\"display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px;\">
-                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#000000\" title=\"#000000\" onclick=\"setProcentniLevelColor(${index}, '#000000'); event.stopPropagation()\"></div>
-                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#111827\" title=\"#111827\" onclick=\"setProcentniLevelColor(${index}, '#111827'); event.stopPropagation()\"></div>
-                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#374151\" title=\"#374151\" onclick=\"setProcentniLevelColor(${index}, '#374151'); event.stopPropagation()\"></div>
-                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#6B7280\" title=\"#6B7280\" onclick=\"setProcentniLevelColor(${index}, '#6B7280'); event.stopPropagation()\"></div>
-                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#9CA3AF\" title=\"#9CA3AF\" onclick=\"setProcentniLevelColor(${index}, '#9CA3AF'); event.stopPropagation()\"></div>
-                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#FFFFFF\" title=\"#FFFFFF\" onclick=\"setProcentniLevelColor(${index}, '#FFFFFF'); event.stopPropagation()\"></div>
-                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#EF4444\" title=\"#EF4444\" onclick=\"setProcentniLevelColor(${index}, '#EF4444'); event.stopPropagation()\"></div>
-                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#F97316\" title=\"#F97316\" onclick=\"setProcentniLevelColor(${index}, '#F97316'); event.stopPropagation()\"></div>
-                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#F59E0B\" title=\"#F59E0B\" onclick=\"setProcentniLevelColor(${index}, '#F59E0B'); event.stopPropagation()\"></div>
-                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#EAB308\" title=\"#EAB308\" onclick=\"setProcentniLevelColor(${index}, '#EAB308'); event.stopPropagation()\"></div>
-                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#22C55E\" title=\"#22C55E\" onclick=\"setProcentniLevelColor(${index}, '#22C55E'); event.stopPropagation()\"></div>
-                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#10B981\" title=\"#10B981\" onclick=\"setProcentniLevelColor(${index}, '#10B981'); event.stopPropagation()\"></div>
-                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#06B6D4\" title=\"#06B6D4\" onclick=\"setProcentniLevelColor(${index}, '#06B6D4'); event.stopPropagation()\"></div>
-                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#3B82F6\" title=\"#3B82F6\" onclick=\"setProcentniLevelColor(${index}, '#3B82F6'); event.stopPropagation()\"></div>
-                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#2563EB\" title=\"#2563EB\" onclick=\"setProcentniLevelColor(${index}, '#2563EB'); event.stopPropagation()\"></div>
-                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#8B5CF6\" title=\"#8B5CF6\" onclick=\"setProcentniLevelColor(${index}, '#8B5CF6'); event.stopPropagation()\"></div>
-                  <div class=\"swatch\" style=\"width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:#EC4899\" title=\"#EC4899\" onclick=\"setProcentniLevelColor(${index}, '#EC4899'); event.stopPropagation()\"></div>
+          ${index === 0 ? '<span>(Hlavní barva)</span>' : 
+            `<div class="procentni-level-color">
+                <div class="current-color-only" style="display:flex; align-items:center; gap:8px;">
+                  <div class="swatch" style="width:18px;height:18px;border-radius:4px;border:1px solid #e5e7eb; background:${level.color || pickedColor || '#ffffff'}" title="${level.color || pickedColor || '#ffffff'}" onclick="event.stopPropagation(); document.getElementById('colorPicker-${index}').click();"></div>
+                  <input id="colorPicker-${index}" type="color" value="${level.color || pickedColor || '#ffffff'}" onchange="onProcentniLevelChange(${index}, 'color', this.value)" onclick="event.stopPropagation()" style="position:absolute; left:-9999px; width:0; height:0; opacity:0;">
                 </div>
-                <input type=\"color\" value=\"${level.color || pickedColor || '#ffffff'}\" onchange=\"onProcentniLevelChange(${index}, 'color', this.value)\" onclick=\"event.stopPropagation()\">
              </div>`
             }
           </td>
