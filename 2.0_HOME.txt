@@ -599,6 +599,12 @@
       transition: all 0.2s ease-in-out;
       background: #f9fafb;
     }
+    /* Selected state for preset cards */
+    .preset-card.selected {
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 2px rgba(79,70,229,0.15) inset;
+      transform: translateY(-2px);
+    }
     .preset-card:hover {
       border-color: #4f46e5;
       transform: translateY(-4px);
@@ -1669,6 +1675,16 @@
       <div class="q-sub" id="summaryText" style="text-align:left; line-height:1.6;">
         
       </div>
+      <div id="advancedDataWrap" style="margin-top:10px;">
+        <button class="btn" id="toggleAdvancedBtn" onclick="toggleAdvancedData()">Zobrazit pokročilá data</button>
+        <div id="advancedDataPanel" style="display:none; margin-top:8px; padding:10px; border:1px solid #e5e7eb; border-radius:8px; background:#f9fafb;">
+          <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+            <button type="button" class="btn" onclick="copyAdvancedDataToClipboard()">Kopírovat JSON</button>
+            <button type="button" class="btn" onclick="downloadAdvancedData()">Stáhnout JSON</button>
+          </div>
+          <pre id="advancedDataPre" style="white-space:pre-wrap; word-break:break-word; max-height:220px; overflow:auto; margin:0;"></pre>
+        </div>
+      </div>
       <div class="q-actions">
         <button class="btn btn-back" onclick="goBack()">Zpět</button>
         <button class="btn btn-next" onclick="finishWizard()">Dokončit</button>
@@ -1691,6 +1707,7 @@
           let napisColorUserEdited = false;
           let napisAlign = 'left';
           let logoUrl = '';
+          let logoObjectUrl = null;
           
           // Nastavení pro Revolution kartu - GLOBÁLNÍ PROMĚNNÉ
           let revolutionMode = null; // 'preset' nebo 'custom'
@@ -2531,6 +2548,10 @@ function initRevolutionPresetPaging() {
   renderRevolutionPresetPage(0);
 }
 
+// Remember which Revolution preset is currently selected (for visual persistence)
+// Use window-scoped variable to avoid TDZ issues on redefinitions
+try { window.selectedRevolutionPresetKey = window.selectedRevolutionPresetKey || ''; } catch(_) { /* browser context expected */ }
+
 function renderRevolutionPresetPage(pageIndex) {
   const grid = document.getElementById('revolutionPresetGrid');
   if (!grid) return;
@@ -2545,7 +2566,28 @@ function renderRevolutionPresetPage(pageIndex) {
   slice.forEach(item => {
     const card = document.createElement('div');
     card.className = 'preset-card';
-    card.onclick = () => applyPreset(item.key);
+    card.dataset.presetKey = item.key;
+    // Highlight if this is the previously selected preset
+    if (window.selectedRevolutionPresetKey && item.key === window.selectedRevolutionPresetKey) {
+      card.classList.add('selected');
+      try {
+        const nextBtn = document.querySelector('#step-4-5-revolution .btn-next');
+        if (nextBtn) nextBtn.disabled = false;
+      } catch(_) {}
+    }
+    card.onclick = () => {
+      applyPreset(item.key);
+      // After applying, immediately reflect the selection in UI
+      try {
+        window.selectedRevolutionPresetKey = item.key;
+        // Clear previous selections on current page
+        grid.querySelectorAll('.preset-card.selected').forEach(el => el.classList.remove('selected'));
+        card.classList.add('selected');
+        // Enable Next button once a preset is picked
+        const nextBtn = document.querySelector('#step-4-5-revolution .btn-next');
+        if (nextBtn) nextBtn.disabled = false;
+      } catch(_) {}
+    };
     const img = document.createElement('img');
     img.src = item.preview || REV_PREVIEW_FALLBACK;
     img.alt = item.title || item.key || 'Revolution Preset';
@@ -2554,6 +2596,13 @@ function renderRevolutionPresetPage(pageIndex) {
   });
 
   updateRevolutionPaginationControls(totalPages);
+  // If we have a saved selection (even if on another page), keep Next enabled
+  try {
+    if (window.selectedRevolutionPresetKey) {
+      const nextBtn = document.querySelector('#step-4-5-revolution .btn-next');
+      if (nextBtn) nextBtn.disabled = false;
+    }
+  } catch(_) {}
 }
 
 function updateRevolutionPaginationControls(totalPages) {
@@ -2627,6 +2676,9 @@ function revolutionNextPage() { renderRevolutionPresetPage(revPresetPage + 1); }
             renderRazitkovaPresetPage(0);
           }
           
+          // Remember selected Razítková preset across renders
+          try { window.selectedRazitkovaPresetKey = window.selectedRazitkovaPresetKey || ''; } catch(_) {}
+          
           function renderRazitkovaPresetPage(pageIndex) {
             const grid = document.getElementById('razitkovaPresetGrid');
             if (!grid) return;
@@ -2641,7 +2693,27 @@ function revolutionNextPage() { renderRevolutionPresetPage(revPresetPage + 1); }
             slice.forEach(item => {
               const card = document.createElement('div');
               card.className = 'preset-card';
-              card.onclick = () => applyPreset(item.key);
+              card.dataset.presetKey = item.key;
+              // Highlight if previously selected
+              if (window.selectedRazitkovaPresetKey && item.key === window.selectedRazitkovaPresetKey) {
+                card.classList.add('selected');
+                try {
+                  const nextBtn = document.querySelector('#step-4-5-razitkova .btn-next');
+                  if (nextBtn) nextBtn.disabled = false;
+                } catch(_) {}
+              }
+              card.onclick = () => {
+                applyPreset(item.key);
+                try {
+                  window.selectedRazitkovaPresetKey = item.key;
+                  // Clear previous selections on current page
+                  grid.querySelectorAll('.preset-card.selected').forEach(el => el.classList.remove('selected'));
+                  card.classList.add('selected');
+                  // Enable Next button once a preset is picked
+                  const nextBtn = document.querySelector('#step-4-5-razitkova .btn-next');
+                  if (nextBtn) nextBtn.disabled = false;
+                } catch(_) {}
+              };
               const img = document.createElement('img');
               img.src = item.preview || RAZ_PREVIEW_FALLBACK;
               img.alt = item.title || item.key || 'Razítková Preset';
@@ -2650,6 +2722,13 @@ function revolutionNextPage() { renderRevolutionPresetPage(revPresetPage + 1); }
             });
             
             updateRazitkovaPaginationControls(totalPages);
+            // If we have a saved selection (even if on another page), keep Next enabled
+            try {
+              if (window.selectedRazitkovaPresetKey) {
+                const nextBtn = document.querySelector('#step-4-5-razitkova .btn-next');
+                if (nextBtn) nextBtn.disabled = false;
+              }
+            } catch(_) {}
           }
           
           function updateRazitkovaPaginationControls(totalPages) {
@@ -3381,7 +3460,7 @@ function revolutionNextPage() { renderRevolutionPresetPage(revPresetPage + 1); }
         const logoPreviewUrl = getLogoSummaryImageUrl();
         const isRevolutionDynamic = (cardType === 'revolution' && !!revolutionShowProgress && revolutionGfxMode === 'custom' && Array.isArray(revolutionGfxUrls) && revolutionGfxUrls.length > 0);
         const hasPerStripArray = Array.isArray(perStripUrls) && perStripUrls.length > 0;
-        const isRazDynamic = (cardType === 'razitkova' && hasPerStripArray);
+        const isRazDynamic = (cardType === 'razitkova' && stampMode === 'perStamp' && hasPerStripArray);
         const dynamicStripCount = isRevolutionDynamic ? revolutionGfxUrls.length : (isRazDynamic ? perStripUrls.length : 0);
         const lastDynamicStripUrl = isRevolutionDynamic ? revolutionGfxUrls[revolutionGfxUrls.length - 1] : (isRazDynamic ? perStripUrls[perStripUrls.length - 1] : null);
 
@@ -3398,15 +3477,21 @@ function revolutionNextPage() { renderRevolutionPresetPage(revPresetPage + 1); }
         // Strip section (static vs dynamic)
         let stripSectionHtml = '';
         if (isRevolutionDynamic || isRazDynamic) {
-          stripSectionHtml += `<strong>Grafika stripu:</strong> Dynamická (${dynamicStripCount} stavů)<br>`;
-          // List all links
+          // First show state 0 separately under plain label
           const list = isRevolutionDynamic ? revolutionGfxUrls : perStripUrls;
-          if (Array.isArray(list)) {
-            stripSectionHtml += list.map((u, i) => `<div style="margin-left:6px; font-size:12px;">${i+1}. <a href="${u}" target="_blank">${escapeHtml(u)}</a></div>`).join('');
-          }
-          // Show only the last image visually
-          if (lastDynamicStripUrl) {
-            stripSectionHtml += `<div style="margin-top:6px;"><img src="${lastDynamicStripUrl}" alt="Strip náhled" style="display:inline-block; width:120px; height:28px; object-fit:cover; border-radius:2px; border:1px solid #e5e7eb; vertical-align:middle;"> <a href="${lastDynamicStripUrl}" target="_blank" style="font-size:12px; margin-left:6px;">odkaz</a></div>`;
+          if (Array.isArray(list) && list.length > 0) {
+            const state0 = list[0];
+            stripSectionHtml += `<strong>Grafika stripu:</strong> stav 0`;
+            if (state0) {
+              stripSectionHtml += ` <img src="${state0}" alt="Strip stav 0" style="display:inline-block; width:60px; height:14px; object-fit:cover; border-radius:2px; border:1px solid #e5e7eb; vertical-align:middle; margin-left:6px;"> <a href="${state0}" target="_blank" style="font-size:12px; margin-left:6px;">odkaz</a>`;
+            }
+            stripSectionHtml += '<br>';
+            // Then list remaining dynamic states (1..max)
+            const restCount = Math.max(list.length - 1, 0);
+            if (restCount > 0) {
+              stripSectionHtml += `<strong>Grafika stripu:</strong> Dynamická (${restCount} stavů)<br>`;
+              stripSectionHtml += list.slice(1).map((u, i) => `<div style="margin-left:6px; font-size:12px;">stav ${i+1} <a href="${u}" target="_blank">${escapeHtml(u)}</a></div>`).join('');
+            }
           }
         } else {
           stripSectionHtml += `<strong>Grafika stripu:</strong> ${selectedStripUrl ? (customStripObjectUrl ? 'Vlastní' : 'Předvolená') : '—'}`;
@@ -3420,8 +3505,7 @@ function revolutionNextPage() { renderRevolutionPresetPage(revPresetPage + 1); }
         s.innerHTML = `
           <strong>Barva karty:</strong> <span style="display:inline-block; width:12px; height:12px; background:${pickedColor || '#ffffff'}; border:1px solid #e5e7eb; vertical-align:middle;"></span> ${pickedColor || '#ffffff'}<br>
           <strong>Barva textů na kartě:</strong> <span style="display:inline-block; width:12px; height:12px; background:${textColor || '#000000'}; border:1px solid #e5e7eb; vertical-align:middle;"></span> ${textColor || '#000000'}<br>
-          <strong>Levý horní roh:</strong> ${topMode === 'napis' ? 'Text' : 'Logo'}<br>
-          ${topMode === 'napis' ? `<strong>Text:</strong> ${escapeHtml(napisText)}` : `<strong>Logo URL:</strong> ${escapeHtml(logoUrl)}`}<br>
+          <strong>Logo(Text):</strong> ${topMode === 'napis' ? `${escapeHtml(napisText)}` : (logoUrl ? `${escapeHtml(logoUrl)}` : '—')}<br>
           <strong>Logo (náhled + odkaz):</strong> ${logoPreviewUrl ? `<img src="${logoPreviewUrl}" alt="Logo náhled" style="display:inline-block; width:60px; height:28px; object-fit:contain; border-radius:2px; border:1px solid #e5e7eb; vertical-align:middle;"> <a href="${logoPreviewUrl}" target="_blank" style="font-size:12px; margin-left:6px;">odkaz</a>` : '—'}<br>
           <strong>Typ karty:</strong> ${cardTypeLabel}<br>
           ${cardType === 'bodova' ? `<strong>Směnný kurz:</strong> ${bodPoints} BOD = ${Number(bodRate)} Kč<br><strong>Horní řádek:</strong> ${escapeHtml(bodTopMessage)}<br><strong>Spodní řádek:</strong> ${escapeHtml(bodBottomMessage)}<br>` : ''}
@@ -3431,6 +3515,17 @@ function revolutionNextPage() { renderRevolutionPresetPage(revPresetPage + 1); }
           ${(cardType === 'razitkova' && stampMode === 'standard') ? `<br><strong>Razítka:</strong> ${stampTotal} ks, velikost ${stampSize}px, rozestup ${stampGap}px, průhlednost ${Math.round(stampOpacity*100)}%<br>` : ''}
           ${(cardType === 'razitkova' && stampMode === 'standard') ? (`<strong>Ohraničení razítek:</strong> ` + (stampBorderEnabled ? `${(stampBorderShape === 'icon' ? 'silueta razítka' : stampBorderShape === 'outline' ? 'obrys' : stampBorderShape)}, tloušťka ${stampBorderSize}px, vzdálenost ${stampBorderOffset}px, <span style=\"display:inline-block; width:12px; height:12px; background:${stampBorderColor}; border:1px solid #e5e7eb; vertical-align:middle;\"></span> ${stampBorderColor}, ${stampBorderOpacity}%` : 'Nezobrazovat')) : ''}
         `;
+        // Prepare Advanced Data JSON preview on enter
+        try {
+          const advPre = document.getElementById('advancedDataPre');
+          if (advPre) {
+            advPre.textContent = JSON.stringify(buildAdvancedDataSnapshot(), null, 2);
+          }
+          const tBtn = document.getElementById('toggleAdvancedBtn');
+          if (tBtn) tBtn.textContent = 'Zobrazit pokročilá data';
+          const advPanel = document.getElementById('advancedDataPanel');
+          if (advPanel) advPanel.style.display = 'none';
+        } catch(_) {}
       }
     }
 
@@ -3598,6 +3693,23 @@ function pickDesignChoice(choice, el, targetCardType) {
         const withProgressPanel = document.getElementById('revolutionWithProgressPanel');
         if (withProgressPanel) {
             withProgressPanel.style.display = show ? 'block' : 'none';
+        }
+
+        // Pokud je zvolena Dynamická grafika, skryjeme výběr Předpřipravené/Vlastní a vynutíme Vlastní grafiku
+        if (show) {
+            const gfxModeRow = document.querySelector('#revolutionWithProgressPanel .options-row');
+            if (gfxModeRow) gfxModeRow.style.display = 'none';
+            try {
+              pickRevolutionGfxMode('custom');
+            } catch(_) {
+              // Fallback: ručně zobrazíme custom panel
+              const presetNote = document.getElementById('revolutionGfxPresetNote');
+              const customPanel = document.getElementById('revolutionGfxCustomPanel');
+              if (presetNote) presetNote.style.display = 'none';
+              if (customPanel) customPanel.style.display = 'block';
+              revolutionGfxMode = 'custom';
+              if (typeof setupRevolutionGfxUploads === 'function') setupRevolutionGfxUploads();
+            }
         }
 
         // Aktivace tlačítka "Pokračovat"
@@ -4278,6 +4390,19 @@ function pickDesignChoice(choice, el, targetCardType) {
       try {
         document.querySelectorAll('#step-7 .option').forEach(btn => btn.classList.remove('selected'));
         if (el) el.classList.add('selected');
+      } catch(_) {}
+
+      // Okamžitě přerenderujeme strip, aby se ohraničení skrylo/zobrazilo hned
+      if (cardType === 'razitkova') {
+        try {
+          renderStrip();
+        } catch (e) {
+          console.warn('Chyba při renderStrip v pickStampBorderEnabled:', e);
+        }
+      }
+
+      // Povolíme navigační tlačítko "Další"
+      try {
         const next = getCurrentNextBtn();
         if (next) next.disabled = false;
       } catch(_) {}
@@ -5800,7 +5925,12 @@ function nextStepNum() {
                 return 7;
             }
             return 10;
-        case 7: return 7.5;
+        case 7:
+            // Pokud u Razítkové nezobrazujeme ohraničení, krok 7.5 (Vzhled ohraničení) přeskočíme
+            if (cardType === 'razitkova' && stampBorderEnabled === false) {
+                return 10;
+            }
+            return 7.5;
         case 7.5:
             // Po vzhledu ohraničení již text na stripu neřešíme
             return 10;
@@ -6006,6 +6136,136 @@ function prevStepNum() {
         }
       } catch(_) {}
       return '';
+    }
+    
+    // Advanced data: build complete snapshot of current configuration
+    function buildAdvancedDataSnapshot() {
+      try {
+        const snapshot = {
+          core: {
+            cardType: cardType || '',
+            designChoice: designChoice || '',
+            pickedColor: pickedColor || null,
+            textColor: textColor || '#000000'
+          },
+          top: {
+            topMode: topMode || null,
+            napisText: (typeof napisText === 'string' ? napisText : ''),
+            napisFont: napisFont || '',
+            napisColor: napisColor || '#000000',
+            napisColorUserEdited: !!napisColorUserEdited,
+            napisAlign: napisAlign || 'left',
+            napisSizeMode: napisSizeMode || 'auto',
+            napisManualSize: typeof napisManualSize === 'number' ? napisManualSize : parseInt(napisManualSize,10) || 16,
+            logoUrl: logoUrl || ''
+          },
+          strip: {
+            showStrip: !!showStrip,
+            selectedStripUrl: selectedStripUrl || '',
+            customStripObjectUrl: customStripObjectUrl || null,
+            revolutionShowProgress: !!revolutionShowProgress,
+            revolutionGfxMode: revolutionGfxMode || null,
+            revolutionGfxUrls: Array.isArray(revolutionGfxUrls) ? [...revolutionGfxUrls] : [],
+            revolutionGfxSelectedStep: typeof revolutionGfxSelectedStep === 'number' ? revolutionGfxSelectedStep : 0,
+            perStripUrls: Array.isArray(perStripUrls) ? [...perStripUrls] : [],
+            perStripSelectedStep: typeof perStripSelectedStep === 'number' ? perStripSelectedStep : 0
+          },
+          revolution: {
+            revolutionMode: revolutionMode || null,
+            revolutionLevels: Array.isArray(revolutionLevels) ? JSON.parse(JSON.stringify(revolutionLevels)) : [],
+            revolutionPreviewIndex: typeof revolutionPreviewIndex === 'number' ? revolutionPreviewIndex : 0,
+            revolutionBonusMin: typeof revolutionBonusMin === 'number' ? revolutionBonusMin : 0,
+            revolutionMilestones: typeof revolutionMilestones === 'number' ? revolutionMilestones : 0
+          },
+          razitkova: {
+            stampMode: stampMode || null,
+            stampTotal: typeof stampTotal === 'number' ? stampTotal : 0,
+            stampOpacity: typeof stampOpacity === 'number' ? stampOpacity : 1,
+            stampSize: typeof stampSize === 'number' ? stampSize : 0,
+            stampGap: typeof stampGap === 'number' ? stampGap : 0,
+            stampIconUrl: stampIconUrl || '',
+            stampCustomObjectUrl: stampCustomObjectUrl || null,
+            stampBorderEnabled: !!stampBorderEnabled,
+            stampBorderSize: typeof stampBorderSize === 'number' ? stampBorderSize : 0,
+            stampBorderOffset: typeof stampBorderOffset === 'number' ? stampBorderOffset : 0,
+            stampBorderOpacity: typeof stampBorderOpacity === 'number' ? stampBorderOpacity : 0,
+            stampBorderColor: stampBorderColor || '#000000',
+            stampBorderShape: stampBorderShape || '',
+            stampPreviewMode: stampPreviewMode || '',
+            stampBorderCustomUrl: stampBorderCustomUrl || null,
+            perStampTotal: typeof perStampTotal === 'number' ? perStampTotal : 0
+          },
+          bodova: {
+            bodRate: typeof bodRate === 'number' ? bodRate : 0,
+            bodPoints: typeof bodPoints === 'number' ? bodPoints : 0,
+            bodTopMessage: bodTopMessage || '',
+            bodBottomMessage: bodBottomMessage || '',
+            bodTopUserEdited: !!bodTopUserEdited,
+            bodBottomUserEdited: !!bodBottomUserEdited
+          },
+          procentni: {
+            procentniLevels: Array.isArray(procentniLevels) ? JSON.parse(JSON.stringify(procentniLevels)) : []
+          },
+          preset: {
+            presetApplied: !!presetApplied
+          }
+        };
+        return snapshot;
+      } catch (e) {
+        try { console.warn('buildAdvancedDataSnapshot failed', e); } catch(_) {}
+        return {};
+      }
+    }
+
+    function toggleAdvancedData() {
+      try {
+        const panel = document.getElementById('advancedDataPanel');
+        const btn = document.getElementById('toggleAdvancedBtn');
+        const pre = document.getElementById('advancedDataPre');
+        if (!panel || !btn || !pre) return;
+        if (panel.style.display === 'none' || panel.style.display === '') {
+          // Opening: rebuild snapshot
+          pre.textContent = JSON.stringify(buildAdvancedDataSnapshot(), null, 2);
+          panel.style.display = 'block';
+          btn.textContent = 'Skrýt pokročilá data';
+        } else {
+          panel.style.display = 'none';
+          btn.textContent = 'Zobrazit pokročilá data';
+        }
+      } catch(_) {}
+    }
+
+    function copyAdvancedDataToClipboard() {
+      try {
+        const pre = document.getElementById('advancedDataPre');
+        const text = pre ? pre.textContent : '';
+        if (!text) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).catch(() => {
+            // Fallback
+            const ta = document.createElement('textarea');
+            ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+          });
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+        }
+      } catch(_) {}
+    }
+
+    function downloadAdvancedData() {
+      try {
+        const json = JSON.stringify(buildAdvancedDataSnapshot(), null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'vernostni-karta.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch(_) {}
     }
 
     // Intro preview slideshow
@@ -6221,9 +6481,9 @@ function applyCardType(type) {
         const maxIdx = (Array.isArray(revolutionGfxUrls) && revolutionGfxUrls.length > 0)
           ? Math.max(0, revolutionGfxUrls.length - 1)
           : Math.max(0, (revolutionMilestones || 1) - 1);
-        const idx = (currentStep === 4.5)
-          ? Math.max(0, Math.min(maxIdx, revolutionGfxSelectedStep))
-          : maxIdx;
+        // VŽDY zobrazuji aktuálně zvolený stav náhledu (revolutionGfxSelectedStep),
+        // aby fake karta přesně odpovídala části "Náhled a stažení" bez ohledu na krok průvodce
+        const idx = Math.max(0, Math.min(maxIdx, (typeof revolutionGfxSelectedStep === 'number' ? revolutionGfxSelectedStep : 0)));
         finalUrl = revolutionGfxUrls[idx] || selectedStripUrl || 'https://static.wixstatic.com/media/1cf87e_3ae4f6a9c66a44ef9aa950f489356001~mv2.png';
         img.src = finalUrl;
         img.style.display = 'block';
